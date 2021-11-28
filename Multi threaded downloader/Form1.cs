@@ -132,7 +132,6 @@ namespace Multi_threaded_downloader
             }
             Stream stream = File.OpenWrite(fn);
             int errorCode = downloader.Download(stream);
-            stream.Close();
             stream.Dispose();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
             if (errorCode != 200)

@@ -17,13 +17,11 @@ namespace Multi_threaded_downloader
             {
                 if (webResponse != null)
                 {
-                    webResponse.Close();
                     webResponse.Dispose();
                     webResponse = null;
                 }
                 if (ContentData != null)
                 {
-                    ContentData.Close();
                     ContentData.Dispose();
                     ContentData = null;
                     Length = -1L;
@@ -74,7 +72,6 @@ namespace Multi_threaded_downloader
                 {
                     if (webResponse != null)
                     {
-                        webResponse.Close();
                         webResponse.Dispose();
                         webResponse = null;
                     }
@@ -94,7 +91,6 @@ namespace Multi_threaded_downloader
                     System.Diagnostics.Debug.WriteLine(ex.Message);
                     if (webResponse != null)
                     {
-                        webResponse.Close();
                         webResponse.Dispose();
                         webResponse = null;
                     }
@@ -194,7 +190,6 @@ namespace Multi_threaded_downloader
             }
             long size = content.Length;
             content.Dispose();
-            memoryStream.Close();
             memoryStream.Dispose();
 
             WorkFinished?.Invoke(this, _bytesTransfered, size, LastErrorCode);

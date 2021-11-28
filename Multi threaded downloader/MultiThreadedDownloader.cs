@@ -226,8 +226,6 @@ namespace Multi_threaded_downloader
 
                 Stream stream = File.OpenWrite(chunkFileName);
                 errorCode = downloader.Download(stream);
-
-                stream.Close();
                 stream.Dispose();
 
                 if (errorCode != 200 && errorCode != 206)
@@ -319,7 +317,6 @@ namespace Multi_threaded_downloader
                     System.Diagnostics.Debug.WriteLine(ex.Message);
                     if (outputStream != null)
                     {
-                        outputStream.Close();
                         outputStream.Dispose();
                     }
                     return DOWNLOAD_ERROR_CREATE_FILE;
@@ -337,11 +334,9 @@ namespace Multi_threaded_downloader
                         }
                         Stream streamChunk = File.OpenRead(chunkFileName);
                         bool appended = AppendStream(streamChunk, outputStream);
-                        streamChunk.Close();
                         streamChunk.Dispose();
                         if (!appended)
                         {
-                            outputStream.Close();
                             outputStream.Dispose();
                             return DOWNLOAD_ERROR_MERGING_CHUNKS;
                         }
@@ -362,11 +357,9 @@ namespace Multi_threaded_downloader
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine(ex.Message);
-                    outputStream.Close();
                     outputStream.Dispose();
                     return DOWNLOAD_ERROR_MERGING_CHUNKS;
                 }
-                outputStream.Close();
                 outputStream.Dispose();
 
                 if (aborted)
