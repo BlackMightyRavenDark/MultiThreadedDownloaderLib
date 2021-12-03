@@ -53,8 +53,12 @@ namespace Multi_threaded_downloader
 
         
         public string Url { get; set; } = null;
-        public string TempDirectory { get; set; } = null;
+        /// <summary>
+        /// Warning! The file name will be automatically changed after downloading if a file with that name already exists!
+        /// Therefore, you need to double-check this value after the download is complete.
+        /// </summary>
         public string OutputFileName { get; set; } = null;
+        public string TempDirectory { get; set; } = null;
         public string MergingDirectory { get; set; } = null;
         public long ContentLength { get; private set; } = -1L;
         public long DownloadedBytes { get; private set; } = 0L;
