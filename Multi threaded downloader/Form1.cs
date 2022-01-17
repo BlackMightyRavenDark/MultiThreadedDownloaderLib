@@ -248,6 +248,10 @@ namespace Multi_threaded_downloader
                     MessageBox.Show("Не указана ссылка!", "Ошибка!",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                     break;
+                case FileDownloader.DOWNLOAD_ERROR_INVALID_URL:
+                    MessageBox.Show("Указана неправильная ссылка!", "Ошибка!",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
                 case MultiThreadedDownloader.DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED:
                     MessageBox.Show("Не указано имя файла!", "Ошибка!",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -278,6 +282,14 @@ namespace Multi_threaded_downloader
                     break;
                 case FileDownloader.DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT:
                     MessageBox.Show("Файл на сервере пуст!", "Ошибка!",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
+                case 403:
+                    MessageBox.Show("Файл по ссылке не доступен!", "Ошибка!",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
+                case 404:
+                    MessageBox.Show("Файл по ссылке не найден!", "Ошибка!",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                     break;
                 case FileDownloader.DOWNLOAD_ERROR_UNKNOWN:

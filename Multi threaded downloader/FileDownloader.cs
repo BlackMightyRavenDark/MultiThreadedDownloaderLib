@@ -21,6 +21,7 @@ namespace Multi_threaded_downloader
         public const int DOWNLOAD_ERROR_INCOMPLETE_DATA_READ = -3;
         public const int DOWNLOAD_ERROR_RANGE = -4;
         public const int DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT = -5;
+        public const int DOWNLOAD_ERROR_INVALID_URL = -6;
 
         public delegate void WorkStartedDelegate(object sender, long contentLength);
         public delegate void WorkProgressDelegate(object sender, long bytesTransfered, long contentLength);
@@ -250,6 +251,26 @@ namespace Multi_threaded_downloader
                 {
                     return ex.HResult;
                 }
+            }
+            catch (NotSupportedException ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.Message);
+                if (webResponse != null)
+                {
+                    webResponse.Dispose();
+                    webResponse = null;
+                }
+                return FileDownloader.DOWNLOAD_ERROR_INVALID_URL;
+            }
+            catch (UriFormatException ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.Message);
+                if (webResponse != null)
+                {
+                    webResponse.Dispose();
+                    webResponse = null;
+                }
+                return FileDownloader.DOWNLOAD_ERROR_INVALID_URL;
             }
             catch (Exception ex)
             {
