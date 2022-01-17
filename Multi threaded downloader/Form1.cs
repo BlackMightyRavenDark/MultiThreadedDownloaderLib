@@ -81,6 +81,7 @@ namespace Multi_threaded_downloader
 
             btnDownloadSingleThreaded.Text = "Stop";
             btnDownloadMultiThreaded.Enabled = false;
+            cbKeepDownloadedFileInMergingDirectory.Enabled = false;
             lblMergingProgress.Text = null;
 
             FileDownloader downloader = new FileDownloader();
@@ -145,6 +146,7 @@ namespace Multi_threaded_downloader
             btnDownloadSingleThreaded.Text = "Download single threaded";
             btnDownloadSingleThreaded.Enabled = true;
             btnDownloadMultiThreaded.Enabled = true;
+            cbKeepDownloadedFileInMergingDirectory.Enabled = true;
         }
 
         private async void btnDownloadMultiThreaded_Click(object sender, EventArgs e)
@@ -161,6 +163,7 @@ namespace Multi_threaded_downloader
 
             btnDownloadMultiThreaded.Text = "Stop";
             btnDownloadSingleThreaded.Enabled = false;
+            cbKeepDownloadedFileInMergingDirectory.Enabled = false;
             numericUpDownThreadCount.Enabled = false;
             lblMergingProgress.Text = null;
 
@@ -220,6 +223,7 @@ namespace Multi_threaded_downloader
             multiThreadedDownloader.OutputFileName = editFileName.Text;
             multiThreadedDownloader.TempDirectory = editTempPath.Text;
             multiThreadedDownloader.MergingDirectory = editMergingPath.Text;
+            multiThreadedDownloader.KeepDownloadedFileInMergingDirectory = cbKeepDownloadedFileInMergingDirectory.Checked;
             int errorCode = await multiThreadedDownloader.Download();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
             if (errorCode != 200)
@@ -234,6 +238,7 @@ namespace Multi_threaded_downloader
             btnDownloadMultiThreaded.Enabled = true;
             btnDownloadSingleThreaded.Enabled = true;
             numericUpDownThreadCount.Enabled = true;
+            cbKeepDownloadedFileInMergingDirectory.Enabled = true;
         }
 
         private void ShowErrorMessage(int errorCode)

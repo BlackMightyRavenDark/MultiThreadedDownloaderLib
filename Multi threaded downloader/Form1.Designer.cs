@@ -47,6 +47,7 @@ namespace Multi_threaded_downloader
             this.numericUpDownThreadCount = new System.Windows.Forms.NumericUpDown();
             this.label5 = new System.Windows.Forms.Label();
             this.lblMergingProgress = new System.Windows.Forms.Label();
+            this.cbKeepDownloadedFileInMergingDirectory = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownThreadCount)).BeginInit();
             this.SuspendLayout();
             // 
@@ -220,11 +221,22 @@ namespace Multi_threaded_downloader
             this.lblMergingProgress.TabIndex = 17;
             this.lblMergingProgress.Text = "lblMergingProgress";
             // 
+            // cbKeepDownloadedFileInMergingDirectory
+            // 
+            this.cbKeepDownloadedFileInMergingDirectory.AutoSize = true;
+            this.cbKeepDownloadedFileInMergingDirectory.Location = new System.Drawing.Point(409, 122);
+            this.cbKeepDownloadedFileInMergingDirectory.Name = "cbKeepDownloadedFileInMergingDirectory";
+            this.cbKeepDownloadedFileInMergingDirectory.Size = new System.Drawing.Size(215, 17);
+            this.cbKeepDownloadedFileInMergingDirectory.TabIndex = 18;
+            this.cbKeepDownloadedFileInMergingDirectory.Text = "Оставить файл в папке объединения";
+            this.cbKeepDownloadedFileInMergingDirectory.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(768, 194);
+            this.Controls.Add(this.cbKeepDownloadedFileInMergingDirectory);
             this.Controls.Add(this.lblMergingProgress);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.numericUpDownThreadCount);
@@ -274,5 +286,6 @@ namespace Multi_threaded_downloader
         private System.Windows.Forms.NumericUpDown numericUpDownThreadCount;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label lblMergingProgress;
+        private System.Windows.Forms.CheckBox cbKeepDownloadedFileInMergingDirectory;
     }
 }
