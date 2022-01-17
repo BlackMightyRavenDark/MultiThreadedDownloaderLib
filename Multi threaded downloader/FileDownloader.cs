@@ -7,98 +7,6 @@ namespace Multi_threaded_downloader
 {
     public sealed class FileDownloader
     {
-        public sealed class WebContent : IDisposable
-        {
-            private HttpWebResponse webResponse = null;
-            public long Length { get; private set; } = -1L;
-            public Stream ContentData { get; private set; } = null;
-
-            public void Dispose()
-            {
-                if (webResponse != null)
-                {
-                    webResponse.Dispose();
-                    webResponse = null;
-                }
-                if (ContentData != null)
-                {
-                    ContentData.Dispose();
-                    ContentData = null;
-                    Length = -1L;
-                }
-            }
-
-            public int GetResponseStream(string url)
-            {
-                int errorCode = GetResponseStream(url, 0L, 0L);
-                return errorCode;
-            }
-
-            public int GetResponseStream(string url, long rangeFrom, long rangeTo)
-            {
-                int errorCode = GetResponseStream(url, rangeFrom, rangeTo, out Stream stream);
-                if (errorCode == 200 || errorCode == 206)
-                {
-                    ContentData = stream;
-                    Length = webResponse.ContentLength;
-                }
-                else
-                {
-                    ContentData = null;
-                    Length = -1L;
-                }
-                return errorCode;
-            }
-
-            public int GetResponseStream(string url, long rangeFrom, long rangeTo, out Stream stream)
-            {
-                stream = null;
-                try
-                {
-                    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-                    if (rangeTo > 0L)
-                    {
-                        if (rangeFrom > rangeTo)
-                        {
-                            return DOWNLOAD_ERROR_RANGE;
-                        }
-                        request.AddRange(rangeFrom, rangeTo);
-                    }
-                    webResponse = (HttpWebResponse)request.GetResponse();
-                    stream = webResponse.GetResponseStream();
-                    return 200;
-                }
-                catch (WebException ex)
-                {
-                    if (webResponse != null)
-                    {
-                        webResponse.Dispose();
-                        webResponse = null;
-                    }
-                    if (ex.Status == WebExceptionStatus.ProtocolError)
-                    {
-                        HttpWebResponse httpWebResponse = (HttpWebResponse)ex.Response;
-                        int statusCode = (int)httpWebResponse.StatusCode;
-                        return statusCode;
-                    }
-                    else
-                    {
-                        return ex.HResult;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine(ex.Message);
-                    if (webResponse != null)
-                    {
-                        webResponse.Dispose();
-                        webResponse = null;
-                    }
-                    return ex.HResult;
-                }
-            }
-        }
-
         public string Url { get; set; }
         public long StreamSize { get; private set; } = 0L;
         private long _bytesTransfered = 0L;
@@ -255,6 +163,104 @@ namespace Multi_threaded_downloader
         {
             _rangeFrom = from;
             _rangeTo = to;
+        }
+    }
+
+    public sealed class WebContent : IDisposable
+    {
+        private HttpWebResponse webResponse = null;
+        public long Length { get; private set; } = -1L;
+        public Stream ContentData { get; private set; } = null;
+
+        public void Dispose()
+        {
+            if (webResponse != null)
+            {
+                webResponse.Dispose();
+                webResponse = null;
+            }
+            if (ContentData != null)
+            {
+                ContentData.Dispose();
+                ContentData = null;
+                Length = -1L;
+            }
+        }
+
+        public int GetResponseStream(string url)
+        {
+            int errorCode = GetResponseStream(url, 0L, 0L);
+            return errorCode;
+        }
+
+        public int GetResponseStream(string url, long rangeFrom, long rangeTo)
+        {
+            int errorCode = GetResponseStream(url, rangeFrom, rangeTo, out Stream stream);
+            if (errorCode == 200 || errorCode == 206)
+            {
+                ContentData = stream;
+                Length = webResponse.ContentLength;
+            }
+            else
+            {
+                ContentData = null;
+                Length = -1L;
+            }
+            return errorCode;
+        }
+
+        public int GetResponseStream(string url, long rangeFrom, long rangeTo, out Stream stream)
+        {
+            stream = null;
+            if (rangeTo > 0L && rangeFrom > rangeTo)
+            {
+                return FileDownloader.DOWNLOAD_ERROR_RANGE;
+            }
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                if (rangeTo > 0L)
+                {
+                    request.AddRange(rangeFrom, rangeTo);
+                }
+
+                webResponse = (HttpWebResponse)request.GetResponse();
+                int statusCode = (int)webResponse.StatusCode;
+                if (statusCode == 200 || statusCode == 206)
+                {
+                    stream = webResponse.GetResponseStream();
+                }
+                return statusCode;
+            }
+            catch (WebException ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.Message);
+                if (webResponse != null)
+                {
+                    webResponse.Dispose();
+                    webResponse = null;
+                }
+                if (ex.Status == WebExceptionStatus.ProtocolError)
+                {
+                    HttpWebResponse httpWebResponse = (HttpWebResponse)ex.Response;
+                    int statusCode = (int)httpWebResponse.StatusCode;
+                    return statusCode;
+                }
+                else
+                {
+                    return ex.HResult;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.Message);
+                if (webResponse != null)
+                {
+                    webResponse.Dispose();
+                    webResponse = null;
+                }
+                return ex.HResult;
+            }
         }
     }
 }
