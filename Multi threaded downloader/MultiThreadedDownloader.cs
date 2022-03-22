@@ -35,6 +35,8 @@ namespace Multi_threaded_downloader
         public const int DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS = -205;
         public const int DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS = -206;
 
+        public delegate void ConnectingDelegate(object sender, string url);
+        public delegate void ConnectedDelegate(object sender, string url, long contentLength, ref int errorCode);
         public delegate void DownloadStartedDelegate(object sender, long contentLenth);
         public delegate void DownloadProgressDelegate(object sender, long bytesTransfered);
         public delegate void DownloadFinishedDelegate(object sender, long bytesTransfered, int errorCode, string fileName);
@@ -43,6 +45,8 @@ namespace Multi_threaded_downloader
         public delegate void MergingProgressDelegate(object sender, int chunkId);
         public delegate void MergingFinishedDelegate(object sender, int errorCode);
 
+        public ConnectingDelegate Connecting;
+        public ConnectedDelegate Connected;
         public DownloadStartedDelegate DownloadStarted;
         public DownloadProgressDelegate DownloadProgress;
         public DownloadFinishedDelegate DownloadFinished;
@@ -51,7 +55,6 @@ namespace Multi_threaded_downloader
         public MergingProgressDelegate MergingProgress;
         public MergingFinishedDelegate MergingFinished;
 
-        
         public string Url { get; set; } = null;
         /// <summary>
         /// Warning! The file name will be automatically changed after downloading if a file with that name already exists!
@@ -64,6 +67,7 @@ namespace Multi_threaded_downloader
         public long ContentLength { get; private set; } = -1L;
         public long DownloadedBytes { get; private set; } = 0L;
         public int UpdateInterval { get; set; } = 10;
+        public int LastErrorCode { get; private set; }
         public int ThreadCount { get; set; } = 2;
         private bool aborted = false;
         public List<string> Chunks { get; private set; } = new List<string>();
@@ -138,27 +142,40 @@ namespace Multi_threaded_downloader
             DownloadedBytes = 0;
             if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
             {
+                LastErrorCode = DOWNLOAD_ERROR_NO_URL_SPECIFIED;
                 return DOWNLOAD_ERROR_NO_URL_SPECIFIED;
             }
             if (string.IsNullOrEmpty(OutputFileName) || string.IsNullOrWhiteSpace(OutputFileName))
             {
+                LastErrorCode = DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED;
                 return DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED;
             }
             if (!string.IsNullOrEmpty(TempDirectory) && !string.IsNullOrWhiteSpace(TempDirectory) && !Directory.Exists(TempDirectory))
             {
+                LastErrorCode = DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS;
                 return DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS;
             }
             if (!string.IsNullOrEmpty(MergingDirectory) && !string.IsNullOrWhiteSpace(MergingDirectory) && !Directory.Exists(MergingDirectory))
             {
+                LastErrorCode = DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS;
                 return DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS;
             }
-            int errorCode = GetUrlContentLength(Url, out long contentLength);
-            if (errorCode != 200)
+
+            Connecting?.Invoke(this, Url);
+            LastErrorCode = GetUrlContentLength(Url, out long contentLength);
+            int errorCode = LastErrorCode;
+            Connected?.Invoke(this, Url, contentLength, ref errorCode);
+            if (LastErrorCode != errorCode)
             {
-                return errorCode;
+                LastErrorCode = errorCode;
+            }
+            if (LastErrorCode != 200)
+            {
+                return LastErrorCode;
             }
             if (contentLength == 0)
             {
+                LastErrorCode = DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
                 return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
             }
 
@@ -216,6 +233,7 @@ namespace Multi_threaded_downloader
                 downloader.ProgressUpdateInterval = UpdateInterval;
                 downloader.Url = Url;
                 downloader.SetRange(chunkFirstByte, chunkLastByte);
+
                 downloader.WorkProgress += (object sender, long transfered, long contentLen) =>
                 {
                     reporter.Report(new ProgressItem(chunkFileName, id, transfered, chunkLastByte));
@@ -230,16 +248,16 @@ namespace Multi_threaded_downloader
                 };
 
                 Stream stream = File.OpenWrite(chunkFileName);
-                errorCode = downloader.Download(stream);
+                LastErrorCode = downloader.Download(stream);
                 stream.Dispose();
 
-                if (errorCode != 200 && errorCode != 206)
+                if (LastErrorCode != 200 && LastErrorCode != 206)
                 {
                     if (aborted)
                     {
                         throw new OperationCanceledException();
                     }
-                    throw new Exception($"Error code = {errorCode}");
+                    throw new Exception($"Error code = {LastErrorCode}");
                 }
             }
             ));
@@ -267,8 +285,8 @@ namespace Multi_threaded_downloader
             if (Chunks.Count > 1)
             {
                 MergingStarted?.Invoke(this, Chunks.Count);
-                errorCode = await MergeChunks();
-                MergingFinished?.Invoke(this, errorCode);
+                LastErrorCode = await MergeChunks();
+                MergingFinished?.Invoke(this, LastErrorCode);
             }
             else
             {
@@ -278,13 +296,13 @@ namespace Multi_threaded_downloader
                     OutputFileName = GetNumberedFileName(OutputFileName);
                     File.Move(chunkFileName, OutputFileName);
                 }
-                errorCode = 200;
+                LastErrorCode = 200;
             }
             Chunks.Clear();
 
-            DownloadFinished?.Invoke(this, DownloadedBytes, errorCode, OutputFileName);
+            DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
 
-            return errorCode;
+            return LastErrorCode;
         }
 
         private async Task<int> MergeChunks()

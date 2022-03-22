@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Multi_threaded_downloader
@@ -84,7 +87,39 @@ namespace Multi_threaded_downloader
             cbKeepDownloadedFileInMergingDirectory.Enabled = false;
             lblMergingProgress.Text = null;
 
+            string fn = editFileName.Text;
+            if (File.Exists(fn))
+            {
+                File.Delete(fn);
+            }
+
             FileDownloader downloader = new FileDownloader();
+            downloader.Connecting += (s, url) =>
+            {
+                progressBar1.Value = 0;
+                progressBar1.Maximum = 100;
+                lblDownloadingProgress.Text = "Подключение...";
+            };
+            downloader.Connected += (object s, string url, long contentLen, ref int errCode) =>
+            {
+                if (errCode == 200 || errCode == 206)
+                {
+                    lblDownloadingProgress.Text = "Подключено!";
+                    if (contentLen > 0L)
+                    {
+                        DriveInfo driveInfo = new DriveInfo(fn[0].ToString());
+                        long minimumFreeSpaceRequired = (long)(contentLen * 1.1);
+                        if (driveInfo.AvailableFreeSpace <= minimumFreeSpaceRequired)
+                        {
+                            errCode = FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
+                        }
+                    }
+                }
+                else
+                {
+                    lblDownloadingProgress.Text = $"Ошибка {errCode}";
+                }
+            };
             downloader.WorkStarted += (s, max) =>
             {
                 progressBar1.Value = 0;
@@ -126,17 +161,16 @@ namespace Multi_threaded_downloader
             };
 
             downloader.Url = editUrl.Text;
-            string fn = editFileName.Text;
-            if (File.Exists(fn))
-            {
-                File.Delete(fn);
-            }
             Stream stream = File.OpenWrite(fn);
             int errorCode = downloader.Download(stream);
             stream.Dispose();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
             if (errorCode != 200)
             {
+                if (errorCode == FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE)
+                {
+                    lblDownloadingProgress.Text = "Ошибка: Недостаточно места на диске!";
+                }
                 ShowErrorMessage(errorCode);
             }
 
@@ -168,6 +202,39 @@ namespace Multi_threaded_downloader
             lblMergingProgress.Text = null;
 
             MultiThreadedDownloader multiThreadedDownloader = new MultiThreadedDownloader();
+            multiThreadedDownloader.Connecting += (s, url) =>
+            {
+                lblDownloadingProgress.Text = "Подключение...";
+            };
+            multiThreadedDownloader.Connected += (object s, string url, long contentLen, ref int errCode) =>
+            {
+                if (errCode == 200)
+                {
+                    lblDownloadingProgress.Text = "Подключено!";
+                    if (contentLen > 0L)
+                    {
+                        MultiThreadedDownloader mtd = s as MultiThreadedDownloader;
+                        List<char> driveLetters = new List<char>() { mtd.OutputFileName.ToUpper()[0] };
+                        if (!string.IsNullOrEmpty(mtd.TempDirectory) && !driveLetters.Contains(mtd.TempDirectory.ToUpper()[0]))
+                        {
+                            driveLetters.Add(mtd.TempDirectory.ToUpper()[0]);
+                        }
+                        if (!string.IsNullOrEmpty(mtd.MergingDirectory) && !driveLetters.Contains(mtd.MergingDirectory.ToUpper()[0]))
+                        {
+                            driveLetters.Add(mtd.MergingDirectory.ToUpper()[0]);
+                        }
+                        long minimumFreeSpaceRequired = (long)(contentLen * 1.1);
+                        if (!IsEnoughDiskSpace(driveLetters, minimumFreeSpaceRequired))
+                        {
+                            errCode = FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
+                        }
+                    }
+                }
+                else
+                {
+                    lblDownloadingProgress.Text = $"Ошибка {errCode}";
+                }
+            };
             multiThreadedDownloader.DownloadStarted += (s, max) =>
             {
                 progressBar1.Value = 0;
@@ -228,6 +295,10 @@ namespace Multi_threaded_downloader
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
             if (errorCode != 200)
             {
+                if (errorCode == FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE)
+                {
+                    lblDownloadingProgress.Text = "Ошибка: Недостаточно места на диске!";
+                }
                 ShowErrorMessage(errorCode);
             }
 
@@ -239,6 +310,19 @@ namespace Multi_threaded_downloader
             btnDownloadSingleThreaded.Enabled = true;
             numericUpDownThreadCount.Enabled = true;
             cbKeepDownloadedFileInMergingDirectory.Enabled = true;
+        }
+
+        private bool IsEnoughDiskSpace(IEnumerable<char> driveLetters, long contentLength)
+        {
+            foreach (char letter in driveLetters)
+            {
+                DriveInfo driveInfo = new DriveInfo(letter.ToString());
+                if (driveInfo.AvailableFreeSpace < contentLength)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private void ShowErrorMessage(int errorCode)
@@ -295,6 +379,10 @@ namespace Multi_threaded_downloader
                     break;
                 case 404:
                     MessageBox.Show("Файл по ссылке не найден!", "Ошибка!",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
+                case FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE:
+                    MessageBox.Show("Недостаточно места на диске!", "Ошибка!",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                     break;
                 case FileDownloader.DOWNLOAD_ERROR_UNKNOWN:

@@ -14,7 +14,8 @@ namespace Multi_threaded_downloader
         private long _rangeTo = 0L;
         public int ProgressUpdateInterval { get; set; } = 10;
         public bool Stopped { get; private set; } = false;
-        public int LastErrorCode { get; private set; } = DOWNLOAD_ERROR_UNKNOWN;
+        public int LastErrorCode { get; private set; } = 200;
+        public bool HasErrors => LastErrorCode != 200 && LastErrorCode != 206;
 
         public const int DOWNLOAD_ERROR_UNKNOWN = -1;
         public const int DOWNLOAD_ERROR_ABORTED_BY_USER = -2;
@@ -22,11 +23,16 @@ namespace Multi_threaded_downloader
         public const int DOWNLOAD_ERROR_RANGE = -4;
         public const int DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT = -5;
         public const int DOWNLOAD_ERROR_INVALID_URL = -6;
+        public const int DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE = -7;
 
+        public delegate void ConnectingDelegate(object sender, string url);
+        public delegate void ConnectedDelegate(object sender, string url, long contentLength, ref int errorCode);
         public delegate void WorkStartedDelegate(object sender, long contentLength);
         public delegate void WorkProgressDelegate(object sender, long bytesTransfered, long contentLength);
         public delegate void WorkFinishedDelegate(object sender, long bytesTransfered, long contentLength, int errorCode);
         public delegate void CancelTestDelegate(object sender, ref bool stop);
+        public ConnectingDelegate Connecting;
+        public ConnectedDelegate Connected;
         public WorkStartedDelegate WorkStarted;
         public WorkProgressDelegate WorkProgress;
         public WorkFinishedDelegate WorkFinished;
@@ -35,15 +41,20 @@ namespace Multi_threaded_downloader
         public int Download(Stream stream)
         {          
             Stopped = false;
+
             LastErrorCode = DOWNLOAD_ERROR_UNKNOWN;
             _bytesTransfered = 0L;
             StreamSize = stream.Length;
- 
-            WebContent content = new WebContent();
 
+            Connecting?.Invoke(this, Url);
+
+            WebContent content = new WebContent();
             LastErrorCode = content.GetResponseStream(Url, _rangeFrom, _rangeTo);
-            if (LastErrorCode != 200 && LastErrorCode != 206)
-            { 
+            int errorCode = 200;
+            Connected?.Invoke(this, Url, content.Length, ref errorCode);
+            LastErrorCode = errorCode;
+            if (HasErrors)
+            {
                 content.Dispose();
                 return LastErrorCode;
             }
@@ -70,14 +81,13 @@ namespace Multi_threaded_downloader
             resString = null;
 
             Stopped = false;
-            LastErrorCode = DOWNLOAD_ERROR_UNKNOWN;
             _bytesTransfered = 0L;
             StreamSize = 0L;
 
             WebContent content = new WebContent();
 
             LastErrorCode = content.GetResponseStream(Url, _rangeFrom, _rangeTo);
-            if (LastErrorCode != 200 && LastErrorCode != 206)
+            if (HasErrors)
             {
                 content.Dispose();
                 return LastErrorCode;
