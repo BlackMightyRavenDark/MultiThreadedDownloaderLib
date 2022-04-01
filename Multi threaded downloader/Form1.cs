@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Net;
-using System.Threading;
 using System.Windows.Forms;
 
 namespace Multi_threaded_downloader
@@ -63,6 +62,16 @@ namespace Multi_threaded_downloader
                     folderBrowserDialog.SelectedPath.EndsWith("\\")
                     ? folderBrowserDialog.SelectedPath : folderBrowserDialog.SelectedPath + "\\";
             }
+        }
+
+        private void btnHeaders_Click(object sender, EventArgs e)
+        {
+            NameValueCollection testCollection = new NameValueCollection();
+            testCollection.Add("User-Agent", "Mozilla/Firefoxxx 66.6");
+            testCollection.Add("Accept", "*/*");
+
+            FormHeadersEditor editor = new FormHeadersEditor(testCollection);
+            editor.ShowDialog();
         }
 
         private void btnDownloadSingleThreaded_Click(object sender, EventArgs e)

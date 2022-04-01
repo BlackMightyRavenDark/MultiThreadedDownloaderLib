@@ -48,6 +48,7 @@ namespace Multi_threaded_downloader
             this.label5 = new System.Windows.Forms.Label();
             this.lblMergingProgress = new System.Windows.Forms.Label();
             this.cbKeepDownloadedFileInMergingDirectory = new System.Windows.Forms.CheckBox();
+            this.btnHeaders = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownThreadCount)).BeginInit();
             this.SuspendLayout();
             // 
@@ -231,11 +232,23 @@ namespace Multi_threaded_downloader
             this.cbKeepDownloadedFileInMergingDirectory.Text = "Оставить файл в папке объединения";
             this.cbKeepDownloadedFileInMergingDirectory.UseVisualStyleBackColor = true;
             // 
+            // btnHeaders
+            // 
+            this.btnHeaders.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnHeaders.Location = new System.Drawing.Point(681, 116);
+            this.btnHeaders.Name = "btnHeaders";
+            this.btnHeaders.Size = new System.Drawing.Size(75, 23);
+            this.btnHeaders.TabIndex = 19;
+            this.btnHeaders.Text = "Заголовки";
+            this.btnHeaders.UseVisualStyleBackColor = true;
+            this.btnHeaders.Click += new System.EventHandler(this.btnHeaders_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(768, 194);
+            this.Controls.Add(this.btnHeaders);
             this.Controls.Add(this.cbKeepDownloadedFileInMergingDirectory);
             this.Controls.Add(this.lblMergingProgress);
             this.Controls.Add(this.label5);
@@ -287,5 +300,6 @@ namespace Multi_threaded_downloader
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label lblMergingProgress;
         private System.Windows.Forms.CheckBox cbKeepDownloadedFileInMergingDirectory;
+        private System.Windows.Forms.Button btnHeaders;
     }
 }
