@@ -11,6 +11,7 @@ namespace Multi_threaded_downloader
     {
         private bool isDownloading = false;
         private bool needCancel = false;
+        private NameValueCollection headerCollection;
 
         public Form1()
         {
@@ -22,6 +23,10 @@ namespace Multi_threaded_downloader
             ServicePointManager.DefaultConnectionLimit = 100;
             lblDownloadingProgress.Text = null;
             lblMergingProgress.Text = null;
+
+            headerCollection = new NameValueCollection();
+            headerCollection.Add("User-Agent", "Mozilla/Firefoxxx 66.6");
+            headerCollection.Add("Accept", "*/*");
         }
 
         private void btnSelectFile_Click(object sender, EventArgs e)
@@ -66,12 +71,17 @@ namespace Multi_threaded_downloader
 
         private void btnHeaders_Click(object sender, EventArgs e)
         {
-            NameValueCollection testCollection = new NameValueCollection();
-            testCollection.Add("User-Agent", "Mozilla/Firefoxxx 66.6");
-            testCollection.Add("Accept", "*/*");
-
-            FormHeadersEditor editor = new FormHeadersEditor(testCollection);
-            editor.ShowDialog();
+            FormHeadersEditor editor = new FormHeadersEditor(headerCollection);
+            if (editor.ShowDialog() == DialogResult.OK)
+            {
+                headerCollection.Clear();
+                for (int i = 0; i < editor.Headers.Count; i++)
+                {
+                    string headerName = editor.Headers.GetKey(i);
+                    string headerValue = editor.Headers.Get(i);
+                    headerCollection.Add(headerName, headerValue);
+                }
+            }
         }
 
         private void btnDownloadSingleThreaded_Click(object sender, EventArgs e)
