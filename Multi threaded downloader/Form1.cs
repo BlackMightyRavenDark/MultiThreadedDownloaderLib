@@ -180,6 +180,7 @@ namespace Multi_threaded_downloader
             };
 
             downloader.Url = editUrl.Text;
+            downloader.Headers = headerCollection;
             Stream stream = File.OpenWrite(fn);
             int errorCode = downloader.Download(stream);
             stream.Dispose();
