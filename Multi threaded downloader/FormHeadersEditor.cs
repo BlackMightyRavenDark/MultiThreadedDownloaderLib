@@ -47,7 +47,7 @@ namespace Multi_threaded_downloader
                         {
                             continue;
                         }
-                        string[] splitted = str.Split(':');
+                        string[] splitted = str.Split(new char[] { ':' }, 2);
                         string headerName = splitted[0];
                         if (!string.IsNullOrEmpty(headerName) && !string.IsNullOrWhiteSpace(headerName))
                         {
