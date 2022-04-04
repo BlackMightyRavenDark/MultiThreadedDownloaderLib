@@ -126,11 +126,15 @@ namespace Multi_threaded_downloader
                     lblDownloadingProgress.Text = "Подключено!";
                     if (contentLen > 0L)
                     {
-                        DriveInfo driveInfo = new DriveInfo(fn[0].ToString());
-                        long minimumFreeSpaceRequired = (long)(contentLen * 1.1);
-                        if (driveInfo.AvailableFreeSpace <= minimumFreeSpaceRequired)
+                        char driveLetter = fn.Length > 2 && fn[1] == ':' && fn[2] == '\\' ? fn[0] : Application.ExecutablePath[0];
+                        if (driveLetter != '\\')
                         {
-                            errCode = FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
+                            DriveInfo driveInfo = new DriveInfo(driveLetter.ToString());
+                            long minimumFreeSpaceRequired = (long)(contentLen * 1.1);
+                            if (driveInfo.AvailableFreeSpace <= minimumFreeSpaceRequired)
+                            {
+                                errCode = FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
+                            }
                         }
                     }
                 }
@@ -234,7 +238,9 @@ namespace Multi_threaded_downloader
                     if (contentLen > 0L)
                     {
                         MultiThreadedDownloader mtd = s as MultiThreadedDownloader;
-                        List<char> driveLetters = new List<char>() { mtd.OutputFileName.ToUpper()[0] };
+                        string outputFilePath = mtd.OutputFileName.ToUpper();
+                        List<char> driveLetters = new List<char>() 
+                            { outputFilePath.Length > 2 && outputFilePath[1] == ':' && outputFilePath[2] == '\\' ? outputFilePath[0] : Application.ExecutablePath[0] };
                         if (!string.IsNullOrEmpty(mtd.TempDirectory) && !driveLetters.Contains(mtd.TempDirectory.ToUpper()[0]))
                         {
                             driveLetters.Add(mtd.TempDirectory.ToUpper()[0]);
