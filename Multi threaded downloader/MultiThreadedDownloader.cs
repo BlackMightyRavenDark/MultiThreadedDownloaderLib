@@ -75,25 +75,24 @@ namespace Multi_threaded_downloader
         private bool aborted = false;
         public List<string> Chunks { get; private set; } = new List<string>();
 
-        public static string GetNumberedFileName(string fn)
+        public static string GetNumberedFileName(string filePath)
         {
-            if (File.Exists(fn))
+            if (File.Exists(filePath))
             {
-                int n = fn.LastIndexOf(".");
-                string part1 = fn.Substring(0, n);
-                string ext = fn.Substring(n, fn.Length - n);
+                string dirPath = Path.GetDirectoryName(filePath);
+                string fileName = Path.GetFileNameWithoutExtension(filePath);
+                string ext = Path.GetExtension(filePath);
+                string part1 = !string.IsNullOrEmpty(dirPath) ? $"{dirPath}\\{fileName}" : fileName;
                 string newFileName;
+                bool isExtensionPresent = !string.IsNullOrEmpty(ext) && !string.IsNullOrWhiteSpace(ext);
                 int i = 2;
                 do
                 {
-                    newFileName = $"{part1}_{i++}{ext}";
+                    newFileName = isExtensionPresent ? $"{part1}_{i++}{ext}" : $"{part1}_{i++}";
                 } while (File.Exists(newFileName));
                 return newFileName;
             }
-            else
-            {
-                return fn;
-            }
+            return filePath;
         }
 
         public static bool AppendStream(Stream streamFrom, Stream streamTo)
