@@ -305,6 +305,7 @@ namespace Multi_threaded_downloader
                 stop = needCancel;
             };
 
+            multiThreadedDownloader.Headers = headerCollection;
             multiThreadedDownloader.ThreadCount = (int)numericUpDownThreadCount.Value;
             multiThreadedDownloader.Url = editUrl.Text;
             multiThreadedDownloader.OutputFileName = editFileName.Text;

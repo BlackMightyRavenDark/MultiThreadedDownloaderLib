@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -56,6 +57,8 @@ namespace Multi_threaded_downloader
         public MergingFinishedDelegate MergingFinished;
 
         public string Url { get; set; } = null;
+        public NameValueCollection Headers = new NameValueCollection();
+
         /// <summary>
         /// Warning! The file name will be automatically changed after downloading if a file with that name already exists!
         /// Therefore, you need to double-check this value after the download is complete.
@@ -110,9 +113,10 @@ namespace Multi_threaded_downloader
             return streamTo.Length == size + streamFrom.Length;
         }
 
-        public static int GetUrlContentLength(string url, out long contentLength)
+        public static int GetUrlContentLength(string url, NameValueCollection headers, out long contentLength)
         {
             WebContent webContent = new WebContent();
+            webContent.Headers = headers;
             int errorCode = webContent.GetResponseStream(url);
             contentLength = errorCode == 200 ? webContent.Length : -1L;
             webContent.Dispose();
@@ -162,7 +166,7 @@ namespace Multi_threaded_downloader
             }
 
             Connecting?.Invoke(this, Url);
-            LastErrorCode = GetUrlContentLength(Url, out long contentLength);
+            LastErrorCode = GetUrlContentLength(Url, Headers, out long contentLength);
             int errorCode = LastErrorCode;
             Connected?.Invoke(this, Url, contentLength, ref errorCode);
             if (LastErrorCode != errorCode)
@@ -232,6 +236,7 @@ namespace Multi_threaded_downloader
                 FileDownloader downloader = new FileDownloader();
                 downloader.ProgressUpdateInterval = UpdateInterval;
                 downloader.Url = Url;
+                downloader.Headers = Headers;
                 downloader.SetRange(chunkFirstByte, chunkLastByte);
 
                 downloader.WorkProgress += (object sender, long transfered, long contentLen) =>
