@@ -10,21 +10,25 @@ namespace Multi_threaded_downloader
 {
     public sealed class MultiThreadedDownloader
     {
-        private sealed class ProgressItem
-        {
-            public string FileName { get; set; }
-            public int Id { get; }
-            public long Processed { get; }
-            public long Total { get; }
+        public string Url { get; set; } = null;
 
-            public ProgressItem(string fileName, int id, long processed, long total)
-            {
-                FileName = fileName;
-                Id = id;
-                Processed = processed;
-                Total = total;
-            }
-        }
+        /// <summary>
+        /// Warning! The file name will be automatically changed after downloading if a file with that name already exists!
+        /// Therefore, you need to double-check this value after the download is complete.
+        /// </summary>
+        public string OutputFileName { get; set; } = null;
+
+        public string TempDirectory { get; set; } = null;
+        public string MergingDirectory { get; set; } = null;
+        public bool KeepDownloadedFileInMergingDirectory { get; set; } = false;
+        public long ContentLength { get; private set; } = -1L;
+        public long DownloadedBytes { get; private set; } = 0L;
+        public int UpdateInterval { get; set; } = 10;
+        public int LastErrorCode { get; private set; }
+        public int ThreadCount { get; set; } = 2;
+        public List<string> Chunks { get; private set; } = new List<string>();
+        public NameValueCollection Headers = new NameValueCollection();
+        private bool aborted = false;
 
         public const int MEGABYTE = 1048576; //1024 * 1024;
 
@@ -55,25 +59,6 @@ namespace Multi_threaded_downloader
         public MergingStartedDelegate MergingStarted;
         public MergingProgressDelegate MergingProgress;
         public MergingFinishedDelegate MergingFinished;
-
-        public string Url { get; set; } = null;
-        public NameValueCollection Headers = new NameValueCollection();
-
-        /// <summary>
-        /// Warning! The file name will be automatically changed after downloading if a file with that name already exists!
-        /// Therefore, you need to double-check this value after the download is complete.
-        /// </summary>
-        public string OutputFileName { get; set; } = null;
-        public string TempDirectory { get; set; } = null;
-        public string MergingDirectory { get; set; } = null;
-        public bool KeepDownloadedFileInMergingDirectory { get; set; } = false;
-        public long ContentLength { get; private set; } = -1L;
-        public long DownloadedBytes { get; private set; } = 0L;
-        public int UpdateInterval { get; set; } = 10;
-        public int LastErrorCode { get; private set; }
-        public int ThreadCount { get; set; } = 2;
-        private bool aborted = false;
-        public List<string> Chunks { get; private set; } = new List<string>();
 
         public static string GetNumberedFileName(string filePath)
         {
@@ -189,9 +174,9 @@ namespace Multi_threaded_downloader
             Progress<ProgressItem> progress = new Progress<ProgressItem>();
             progress.ProgressChanged += (s, progressItem) =>
             {
-                threadProgressDict[progressItem.Id] = progressItem;
+                threadProgressDict[progressItem.TaskId] = progressItem;
 
-                DownloadedBytes = threadProgressDict.Values.Select(it => it.Processed).Sum();
+                DownloadedBytes = threadProgressDict.Values.Select(it => it.ProcessedBytes).Sum();
 
                 DownloadProgress?.Invoke(this, DownloadedBytes);
                 CancelTest?.Invoke(this, ref aborted);
@@ -207,7 +192,7 @@ namespace Multi_threaded_downloader
                 ThreadCount = 2;
             }
             int chunkCount = contentLength > MEGABYTE ? ThreadCount : 1;
-            var tasks = Split(contentLength, chunkCount).Select((range, id) => Task.Run(() =>
+            var tasks = Split(contentLength, chunkCount).Select((range, taskId) => Task.Run(() =>
             {
                 long chunkFirstByte = range.Item1;
                 long chunkLastByte = range.Item2;
@@ -218,7 +203,7 @@ namespace Multi_threaded_downloader
                 if (chunkCount > 1)
                 {
                     string path = Path.GetFileName(OutputFileName);
-                    chunkFileName = $"{path}.chunk_{id}.tmp";
+                    chunkFileName = $"{path}.chunk_{taskId}.tmp";
                     if (!string.IsNullOrEmpty(TempDirectory) && !string.IsNullOrWhiteSpace(TempDirectory))
                     {
                         chunkFileName = TempDirectory.EndsWith("\\") ? 
@@ -240,11 +225,11 @@ namespace Multi_threaded_downloader
 
                 downloader.WorkProgress += (object sender, long transfered, long contentLen) =>
                 {
-                    reporter.Report(new ProgressItem(chunkFileName, id, transfered, chunkLastByte));
+                    reporter.Report(new ProgressItem(chunkFileName, taskId, transfered, chunkLastByte));
                 };
                 downloader.WorkFinished += (object sender, long transfered, long contentLen, int errCode) =>
                 {
-                    reporter.Report(new ProgressItem(chunkFileName, id, transfered, chunkLastByte));
+                    reporter.Report(new ProgressItem(chunkFileName, taskId, transfered, chunkLastByte));
                 };
                 downloader.CancelTest += (object s, ref bool stop) =>
                 {
@@ -407,6 +392,22 @@ namespace Multi_threaded_downloader
             });
 
             return res;
+        }
+    }
+
+    public sealed class ProgressItem
+    {
+        public string FileName { get; set; }
+        public int TaskId { get; }
+        public long ProcessedBytes { get; }
+        public long TotalBytes { get; }
+
+        public ProgressItem(string fileName, int taskId, long processedBytes, long totalBtyes)
+        {
+            FileName = fileName;
+            TaskId = taskId;
+            ProcessedBytes = processedBytes;
+            TotalBytes = totalBtyes;
         }
     }
 }
