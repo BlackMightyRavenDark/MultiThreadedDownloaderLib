@@ -252,11 +252,6 @@ namespace Multi_threaded_downloader
                         List<char> driveLetters = mtd.GetUsedDriveLetters();
                         if (driveLetters.Count > 0)
                         {
-                            if (!mtd.IsDrivesReady(driveLetters))
-                            {
-                                errCode = FileDownloader.DOWNLOAD_ERROR_DRIVE_NOT_READY;
-                                return;
-                            }
                             long minimumFreeSpaceRequired = (long)(contentLen * 1.1);
                             if (!IsEnoughDiskSpace(driveLetters, minimumFreeSpaceRequired))
                             {

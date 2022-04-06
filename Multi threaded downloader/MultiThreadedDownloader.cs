@@ -149,6 +149,12 @@ namespace Multi_threaded_downloader
                 return DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS;
             }
 
+            List<char> driveLetters = GetUsedDriveLetters();
+            if (driveLetters.Count > 0 && !driveLetters.Contains('\\') && !IsDrivesReady(driveLetters))
+            {
+                return DOWNLOAD_ERROR_DRIVE_NOT_READY;
+            }
+
             Connecting?.Invoke(this, Url);
             LastErrorCode = GetUrlContentLength(Url, Headers, out long contentLength);
             int errorCode = LastErrorCode;
