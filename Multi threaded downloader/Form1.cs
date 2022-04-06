@@ -130,6 +130,11 @@ namespace Multi_threaded_downloader
                         if (driveLetter != '\\')
                         {
                             DriveInfo driveInfo = new DriveInfo(driveLetter.ToString());
+                            if (!driveInfo.IsReady)
+                            {
+                                errCode = FileDownloader.DOWNLOAD_ERROR_DRIVE_NOT_READY;
+                                return;
+                            }
                             long minimumFreeSpaceRequired = (long)(contentLen * 1.1);
                             if (driveInfo.AvailableFreeSpace <= minimumFreeSpaceRequired)
                             {
@@ -191,9 +196,15 @@ namespace Multi_threaded_downloader
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
             if (errorCode != 200)
             {
-                if (errorCode == FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE)
+                switch (errorCode)
                 {
-                    lblDownloadingProgress.Text = "Ошибка: Недостаточно места на диске!";
+                    case FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE:
+                        lblDownloadingProgress.Text = "Ошибка: Недостаточно места на диске!";
+                        break;
+
+                    case FileDownloader.DOWNLOAD_ERROR_DRIVE_NOT_READY:
+                        lblDownloadingProgress.Text = "Ошибка: Диск не готов!";
+                        break;
                 }
                 ShowErrorMessage(errorCode);
             }
@@ -241,6 +252,11 @@ namespace Multi_threaded_downloader
                         List<char> driveLetters = mtd.GetUsedDriveLetters();
                         if (driveLetters.Count > 0)
                         {
+                            if (!mtd.IsDrivesReady(driveLetters))
+                            {
+                                errCode = FileDownloader.DOWNLOAD_ERROR_DRIVE_NOT_READY;
+                                return;
+                            }
                             long minimumFreeSpaceRequired = (long)(contentLen * 1.1);
                             if (!IsEnoughDiskSpace(driveLetters, minimumFreeSpaceRequired))
                             {
@@ -315,9 +331,15 @@ namespace Multi_threaded_downloader
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
             if (errorCode != 200)
             {
-                if (errorCode == FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE)
+                switch (errorCode)
                 {
-                    lblDownloadingProgress.Text = "Ошибка: Недостаточно места на диске!";
+                    case FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE:
+                        lblDownloadingProgress.Text = "Ошибка: Недостаточно места на диске!";
+                        break;
+
+                    case FileDownloader.DOWNLOAD_ERROR_DRIVE_NOT_READY:
+                        lblDownloadingProgress.Text = "Ошибка: Диск не готов!";
+                        break;
                 }
                 ShowErrorMessage(errorCode);
             }
@@ -403,6 +425,10 @@ namespace Multi_threaded_downloader
                     break;
                 case FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE:
                     MessageBox.Show("Недостаточно места на диске!", "Ошибка!",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
+                case FileDownloader.DOWNLOAD_ERROR_DRIVE_NOT_READY:
+                    MessageBox.Show("Диск не готов!", "Ошибка!",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                     break;
                 case FileDownloader.DOWNLOAD_ERROR_UNKNOWN:

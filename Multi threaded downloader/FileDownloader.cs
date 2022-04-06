@@ -26,6 +26,7 @@ namespace Multi_threaded_downloader
         public const int DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT = -5;
         public const int DOWNLOAD_ERROR_INVALID_URL = -6;
         public const int DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE = -7;
+        public const int DOWNLOAD_ERROR_DRIVE_NOT_READY = -8;
 
         public delegate void ConnectingDelegate(object sender, string url);
         public delegate void ConnectedDelegate(object sender, string url, long contentLength, ref int errorCode);

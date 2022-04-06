@@ -413,6 +413,23 @@ namespace Multi_threaded_downloader
             }
             return driveLetters;
         }
+
+        public bool IsDrivesReady(IEnumerable<char> driveLetters)
+        {
+            foreach (char driveLetter in driveLetters)
+            {
+                if (driveLetter == '\\')
+                {
+                    return false;
+                }
+                DriveInfo driveInfo = new DriveInfo(driveLetter.ToString());
+                if (!driveInfo.IsReady)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
     public sealed class ProgressItem
