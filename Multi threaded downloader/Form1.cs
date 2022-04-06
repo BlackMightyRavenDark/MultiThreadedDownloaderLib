@@ -238,21 +238,14 @@ namespace Multi_threaded_downloader
                     if (contentLen > 0L)
                     {
                         MultiThreadedDownloader mtd = s as MultiThreadedDownloader;
-                        string outputFilePath = mtd.OutputFileName.ToUpper();
-                        List<char> driveLetters = new List<char>() 
-                            { outputFilePath.Length > 2 && outputFilePath[1] == ':' && outputFilePath[2] == '\\' ? outputFilePath[0] : Application.ExecutablePath[0] };
-                        if (!string.IsNullOrEmpty(mtd.TempDirectory) && !driveLetters.Contains(mtd.TempDirectory.ToUpper()[0]))
+                        List<char> driveLetters = mtd.GetUsedDriveLetters();
+                        if (driveLetters.Count > 0)
                         {
-                            driveLetters.Add(mtd.TempDirectory.ToUpper()[0]);
-                        }
-                        if (!string.IsNullOrEmpty(mtd.MergingDirectory) && !driveLetters.Contains(mtd.MergingDirectory.ToUpper()[0]))
-                        {
-                            driveLetters.Add(mtd.MergingDirectory.ToUpper()[0]);
-                        }
-                        long minimumFreeSpaceRequired = (long)(contentLen * 1.1);
-                        if (!IsEnoughDiskSpace(driveLetters, minimumFreeSpaceRequired))
-                        {
-                            errCode = FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
+                            long minimumFreeSpaceRequired = (long)(contentLen * 1.1);
+                            if (!IsEnoughDiskSpace(driveLetters, minimumFreeSpaceRequired))
+                            {
+                                errCode = FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
+                            }
                         }
                     }
                 }

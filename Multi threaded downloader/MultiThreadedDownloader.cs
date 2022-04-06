@@ -93,7 +93,7 @@ namespace Multi_threaded_downloader
                 }
                 streamTo.Write(buf, 0, bytesRead);
             } while (true);
-            
+
             return streamTo.Length == size + streamFrom.Length;
         }
 
@@ -206,7 +206,7 @@ namespace Multi_threaded_downloader
                     chunkFileName = $"{path}.chunk_{taskId}.tmp";
                     if (!string.IsNullOrEmpty(TempDirectory) && !string.IsNullOrWhiteSpace(TempDirectory))
                     {
-                        chunkFileName = TempDirectory.EndsWith("\\") ? 
+                        chunkFileName = TempDirectory.EndsWith("\\") ?
                             TempDirectory + chunkFileName : $"{TempDirectory}\\{chunkFileName}";
                     }
                 }
@@ -310,7 +310,7 @@ namespace Multi_threaded_downloader
                     Directory.Exists(MergingDirectory))
                 {
                     string fn = Path.GetFileName(OutputFileName);
-                    tmpFileName = MergingDirectory.EndsWith("\\") ? 
+                    tmpFileName = MergingDirectory.EndsWith("\\") ?
                         $"{MergingDirectory}{fn}.tmp" : $"{MergingDirectory}\\{fn}.tmp";
                 }
                 else
@@ -392,6 +392,26 @@ namespace Multi_threaded_downloader
             });
 
             return res;
+        }
+
+        public List<char> GetUsedDriveLetters()
+        {
+            List<char> driveLetters = new List<char>();
+            if (!string.IsNullOrEmpty(OutputFileName) && !string.IsNullOrWhiteSpace(OutputFileName))
+            {
+                char c = OutputFileName.Length > 2 && OutputFileName[1] == ':' && OutputFileName[2] == '\\' ? OutputFileName[0] :
+                    Environment.GetCommandLineArgs()[0][0];
+                driveLetters.Add(char.ToUpper(c));
+            }
+            if (!string.IsNullOrEmpty(TempDirectory) && !driveLetters.Contains(char.ToUpper(TempDirectory[0])))
+            {
+                driveLetters.Add(char.ToUpper(TempDirectory[0]));
+            }
+            if (!string.IsNullOrEmpty(MergingDirectory) && !driveLetters.Contains(char.ToUpper(MergingDirectory[0])))
+            {
+                driveLetters.Add(char.ToUpper(MergingDirectory[0]));
+            }
+            return driveLetters;
         }
     }
 
