@@ -177,11 +177,6 @@ namespace Multi_threaded_downloader
                     MessageBox.Show($"Скачано {bytes} байт", "Скачано!",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
-                else
-                {
-                    MessageBox.Show($"Код ошибки: {errCode}", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
             };
             downloader.CancelTest += (object s, ref bool stop) =>
             {
