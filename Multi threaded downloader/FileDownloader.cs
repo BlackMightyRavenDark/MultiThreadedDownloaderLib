@@ -55,9 +55,12 @@ namespace Multi_threaded_downloader
             content.Headers = Headers;
 
             LastErrorCode = content.GetResponseStream(Url, _rangeFrom, _rangeTo);
-            int errorCode = 200;
+            int errorCode = LastErrorCode;
             Connected?.Invoke(this, Url, content.Length, ref errorCode);
-            LastErrorCode = errorCode;
+            if (LastErrorCode != errorCode)
+            {
+                LastErrorCode = errorCode;
+            }
             if (HasErrors)
             {
                 content.Dispose();
