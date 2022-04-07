@@ -245,73 +245,7 @@ namespace Multi_threaded_downloader
 
                 if (Headers != null)
                 {
-                    for (int i = 0; i < Headers.Count; i++)
-                    {
-                        string headerName = Headers.GetKey(i);
-                        string headerValue = Headers.Get(i);
-
-                        string headerNameLowercased = headerName.ToLower();
-                        //TODO: Complete headers support.
-                        if (headerNameLowercased.Equals("accept"))
-                        {
-                            request.Accept = headerValue;
-                            continue;
-                        }
-                        else if (headerNameLowercased.Equals("user-agent"))
-                        {
-                            request.UserAgent = headerValue;
-                            continue;
-                        }
-                        else if (headerNameLowercased.Equals("referer"))
-                        {
-                            request.Referer = headerValue;
-                            continue;
-                        }
-                        else if (headerNameLowercased.Equals("host"))
-                        {
-                            request.Host = headerValue;
-                            continue;
-                        }
-                        else if (headerNameLowercased.Equals("content-type"))
-                        {
-                            request.ContentType = headerValue;
-                            continue;
-                        }
-                        else if (headerNameLowercased.Equals("content-length"))
-                        {
-                            if (long.TryParse(headerValue, out long length))
-                            {
-                                request.ContentLength = length;
-                            }
-                            else
-                            {
-                                System.Diagnostics.Debug.WriteLine("Can't parse value of \"Content-Length\" header!");
-                            }
-                            continue;
-                        }
-                        else if (headerNameLowercased.Equals("connection"))
-                        {
-                            System.Diagnostics.Debug.WriteLine("The \"Connection\" header is not supported yet.");
-                            continue;
-                        }
-                        else if (headerNameLowercased.Equals("range"))
-                        {
-                            System.Diagnostics.Debug.WriteLine("The \"Range\" header is not supported yet.");
-                            continue;
-                        }
-                        else if (headerNameLowercased.Equals("if-modified-since"))
-                        {
-                            System.Diagnostics.Debug.WriteLine("The \"If-Modified-Since\" header is not supported yet.");
-                            continue;
-                        }
-                        else if (headerNameLowercased.Equals("transfer-encoding"))
-                        {
-                            System.Diagnostics.Debug.WriteLine("The \"Transfer-Encoding\" header is not supported yet.");
-                            continue;
-                        }
-
-                        request.Headers.Add(headerName, headerValue);
-                    }
+                    SetRequestHeaders(request, Headers);
                 }
 
                 webResponse = (HttpWebResponse)request.GetResponse();
@@ -370,6 +304,78 @@ namespace Multi_threaded_downloader
                     webResponse = null;
                 }
                 return ex.HResult;
+            }
+        }
+
+        public static void SetRequestHeaders(HttpWebRequest request, NameValueCollection headers)
+        {
+            request.Headers.Clear();
+            for (int i = 0; i < headers.Count; i++)
+            {
+                string headerName = headers.GetKey(i);
+                string headerValue = headers.Get(i);
+                string headerNameLowercased = headerName.ToLower();
+
+                //TODO: Complete headers support.
+                if (headerNameLowercased.Equals("accept"))
+                {
+                    request.Accept = headerValue;
+                    continue;
+                }
+                else if (headerNameLowercased.Equals("user-agent"))
+                {
+                    request.UserAgent = headerValue;
+                    continue;
+                }
+                else if (headerNameLowercased.Equals("referer"))
+                {
+                    request.Referer = headerValue;
+                    continue;
+                }
+                else if (headerNameLowercased.Equals("host"))
+                {
+                    request.Host = headerValue;
+                    continue;
+                }
+                else if (headerNameLowercased.Equals("content-type"))
+                {
+                    request.ContentType = headerValue;
+                    continue;
+                }
+                else if (headerNameLowercased.Equals("content-length"))
+                {
+                    if (long.TryParse(headerValue, out long length))
+                    {
+                        request.ContentLength = length;
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("Can't parse value of \"Content-Length\" header!");
+                    }
+                    continue;
+                }
+                else if (headerNameLowercased.Equals("connection"))
+                {
+                    System.Diagnostics.Debug.WriteLine("The \"Connection\" header is not supported yet.");
+                    continue;
+                }
+                else if (headerNameLowercased.Equals("range"))
+                {
+                    System.Diagnostics.Debug.WriteLine("The \"Range\" header is not supported yet.");
+                    continue;
+                }
+                else if (headerNameLowercased.Equals("if-modified-since"))
+                {
+                    System.Diagnostics.Debug.WriteLine("The \"If-Modified-Since\" header is not supported yet.");
+                    continue;
+                }
+                else if (headerNameLowercased.Equals("transfer-encoding"))
+                {
+                    System.Diagnostics.Debug.WriteLine("The \"Transfer-Encoding\" header is not supported yet.");
+                    continue;
+                }
+
+                request.Headers.Add(headerName, headerValue);
             }
         }
     }
