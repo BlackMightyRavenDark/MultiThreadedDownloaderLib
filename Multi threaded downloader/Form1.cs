@@ -172,11 +172,6 @@ namespace Multi_threaded_downloader
                     progressBar1.Value = (int)percent;
                     lblDownloadingProgress.Text = $"Скачано {bytes} из {max} ({string.Format("{0:F3}", percent)}%)";
                 }
-                if (errCode == 200)
-                {
-                    MessageBox.Show($"Скачано {bytes} байт", "Скачано!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
             };
             downloader.CancelTest += (object s, ref bool stop) =>
             {
@@ -189,7 +184,12 @@ namespace Multi_threaded_downloader
             int errorCode = downloader.Download(stream);
             stream.Dispose();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
-            if (errorCode != 200)
+            if (errorCode == 200)
+            {
+                MessageBox.Show($"Скачано {downloader.StreamSize} байт", "Скачано!",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
             {
                 switch (errorCode)
                 {
