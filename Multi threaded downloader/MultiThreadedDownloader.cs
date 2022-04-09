@@ -34,11 +34,10 @@ namespace Multi_threaded_downloader
 
         public const int DOWNLOAD_ERROR_MERGING_CHUNKS = -200;
         public const int DOWNLOAD_ERROR_CREATE_FILE = -201;
-        public const int DOWNLOAD_ERROR_CANCELED = -202;
-        public const int DOWNLOAD_ERROR_NO_URL_SPECIFIED = -203;
-        public const int DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED = -204;
-        public const int DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS = -205;
-        public const int DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS = -206;
+        public const int DOWNLOAD_ERROR_NO_URL_SPECIFIED = -202;
+        public const int DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED = -203;
+        public const int DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS = -204;
+        public const int DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS = -205;
 
         public delegate void ConnectingDelegate(object sender, string url);
         public delegate void ConnectedDelegate(object sender, string url, long contentLength, ref int errorCode);
@@ -264,7 +263,7 @@ namespace Multi_threaded_downloader
             catch (OperationCanceledException ex)
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
-                return DOWNLOAD_ERROR_CANCELED;
+                return DOWNLOAD_ERROR_CANCELED_BY_USER;
             }
             catch (Exception ex)
             {
@@ -382,7 +381,7 @@ namespace Multi_threaded_downloader
 
                 if (aborted)
                 {
-                    return DOWNLOAD_ERROR_CANCELED;
+                    return DOWNLOAD_ERROR_CANCELED_BY_USER;
                 }
 
                 if (KeepDownloadedFileInMergingDirectory &&

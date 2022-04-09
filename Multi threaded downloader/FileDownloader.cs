@@ -20,7 +20,7 @@ namespace Multi_threaded_downloader
         public bool HasErrors => LastErrorCode != 200 && LastErrorCode != 206;
 
         public const int DOWNLOAD_ERROR_UNKNOWN = -1;
-        public const int DOWNLOAD_ERROR_ABORTED_BY_USER = -2;
+        public const int DOWNLOAD_ERROR_CANCELED_BY_USER = -2;
         public const int DOWNLOAD_ERROR_INCOMPLETE_DATA_READ = -3;
         public const int DOWNLOAD_ERROR_RANGE = -4;
         public const int DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT = -5;
@@ -167,7 +167,7 @@ namespace Multi_threaded_downloader
             }
             if (Stopped)
             {
-                errorCode = DOWNLOAD_ERROR_ABORTED_BY_USER;
+                errorCode = DOWNLOAD_ERROR_CANCELED_BY_USER;
             }
             else if (errorCode == 200)
             {

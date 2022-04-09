@@ -359,7 +359,7 @@ namespace Multi_threaded_downloader
 
         private void ShowErrorMessage(int errorCode)
         {
-            string messageCaption = errorCode == FileDownloader.DOWNLOAD_ERROR_ABORTED_BY_USER ?
+            string messageCaption = errorCode == FileDownloader.DOWNLOAD_ERROR_CANCELED_BY_USER ?
                 "Отменятор отменения отмены" : "Ошибка!";
             string messageText = ErrorCodeToString(errorCode);
             MessageBox.Show(messageText, messageCaption,
@@ -370,7 +370,7 @@ namespace Multi_threaded_downloader
         {
             switch (errorCode)
             {
-                case MultiThreadedDownloader.DOWNLOAD_ERROR_CANCELED:
+                case FileDownloader.DOWNLOAD_ERROR_CANCELED_BY_USER:
                     return "Скачивание успешно отменено!";
 
                 case MultiThreadedDownloader.DOWNLOAD_ERROR_NO_URL_SPECIFIED:
