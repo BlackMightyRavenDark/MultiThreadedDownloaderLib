@@ -359,76 +359,67 @@ namespace Multi_threaded_downloader
 
         private void ShowErrorMessage(int errorCode)
         {
+            string messageCaption = errorCode == FileDownloader.DOWNLOAD_ERROR_ABORTED_BY_USER ?
+                "Отменятор отменения отмены" : "Ошибка!";
+            string messageText = ErrorCodeToString(errorCode);
+            MessageBox.Show(messageText, messageCaption,
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        private string ErrorCodeToString(int errorCode)
+        {
             switch (errorCode)
             {
                 case MultiThreadedDownloader.DOWNLOAD_ERROR_CANCELED:
-                    MessageBox.Show("Скачивание успешно отменено!", "Отменятор отменения отмены",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return "Скачивание успешно отменено!";
+
                 case MultiThreadedDownloader.DOWNLOAD_ERROR_NO_URL_SPECIFIED:
-                    MessageBox.Show("Не указана ссылка!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return "Не указана ссылка!";
+
                 case FileDownloader.DOWNLOAD_ERROR_INVALID_URL:
-                    MessageBox.Show("Указана неправильная ссылка!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return "Указана неправильная ссылка!";
+
                 case MultiThreadedDownloader.DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED:
-                    MessageBox.Show("Не указано имя файла!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return "Не указано имя файла!";
+
                 case MultiThreadedDownloader.DOWNLOAD_ERROR_MERGING_CHUNKS:
-                    MessageBox.Show("Ошибка объединения чанков!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return "Ошибка объединения чанков!";
+
                 case MultiThreadedDownloader.DOWNLOAD_ERROR_CREATE_FILE:
-                    MessageBox.Show("Ошибка создания файла!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return "Ошибка создания файла!";
+
                 case MultiThreadedDownloader.DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS:
-                    MessageBox.Show("Не найдена папка для временных файлов!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return "Не найдена папка для временных файлов!";
+
                 case MultiThreadedDownloader.DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS:
-                    MessageBox.Show("Не найдена папка для объединения чанков!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return "Не найдена папка для объединения чанков!";
+
                 case FileDownloader.DOWNLOAD_ERROR_INCOMPLETE_DATA_READ:
-                    MessageBox.Show("Ошибка чтения данных!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return "Ошибка чтения данных!";
+
                 case FileDownloader.DOWNLOAD_ERROR_RANGE:
-                    MessageBox.Show("Указан неверный диапазон!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return "Указан неверный диапазон!";
+
                 case FileDownloader.DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT:
-                    MessageBox.Show("Файл на сервере пуст!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
-                case 403:
-                    MessageBox.Show("Файл по ссылке не доступен!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
-                case 404:
-                    MessageBox.Show("Файл по ссылке не найден!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
-                case FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE:
-                    MessageBox.Show("Недостаточно места на диске!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return "Файл на сервере пуст!";
+
                 case FileDownloader.DOWNLOAD_ERROR_DRIVE_NOT_READY:
-                    MessageBox.Show("Диск не готов!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return "Диск не готов!";
+
+                case FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE:
+                    return "Недостаточно места на диске!";
+
+                case 403:
+                    return "Файл по ссылке не доступен!";
+
+                case 404:
+                    return "Файл по ссылке не найден!";
+
                 case FileDownloader.DOWNLOAD_ERROR_UNKNOWN:
-                    MessageBox.Show("Неизвестная ошибка!", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return "Неизвестная ошибка!";
+
                 default:
-                    MessageBox.Show($"Код ошибки: {errorCode}", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                    return $"Код ошибки: {errorCode}";
             }
         }
     }
