@@ -409,6 +409,9 @@ namespace Multi_threaded_downloader
                 case FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE:
                     return "Недостаточно места на диске!";
 
+                case 400:
+                    return "Ошибка клиента!";
+
                 case 403:
                     return "Файл по ссылке не доступен!";
 
