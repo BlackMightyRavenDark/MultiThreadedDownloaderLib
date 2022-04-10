@@ -184,6 +184,48 @@ namespace Multi_threaded_downloader
             _rangeFrom = from;
             _rangeTo = to;
         }
+
+        public static string ErrorCodeToString(int errorCode)
+        {
+            switch (errorCode)
+            {
+                case 400:
+                    return "Ошибка клиента!";
+
+                case 403:
+                    return "Файл по ссылке не доступен!";
+
+                case 404:
+                    return "Файл по ссылке не найден!";
+
+                case DOWNLOAD_ERROR_CANCELED_BY_USER:
+                    return "Скачивание успешно отменено!";
+
+                case DOWNLOAD_ERROR_INVALID_URL:
+                    return "Указана неправильная ссылка!";
+
+                case DOWNLOAD_ERROR_INCOMPLETE_DATA_READ:
+                    return "Ошибка чтения данных!";
+
+                case DOWNLOAD_ERROR_RANGE:
+                    return "Указан неверный диапазон!";
+
+                case DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT:
+                    return "Файл на сервере пуст!";
+
+                case DOWNLOAD_ERROR_DRIVE_NOT_READY:
+                    return "Диск не готов!";
+
+                case DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE:
+                    return "Недостаточно места на диске!";
+
+                case DOWNLOAD_ERROR_UNKNOWN:
+                    return "Неизвестная ошибка!";
+
+                default:
+                    return $"Код ошибки: {errorCode}";
+            }
+        }
     }
 
     public sealed class WebContent : IDisposable

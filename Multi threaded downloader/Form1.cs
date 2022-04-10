@@ -53,7 +53,6 @@ namespace Multi_threaded_downloader
                     folderBrowserDialog.SelectedPath.EndsWith("\\")
                     ? folderBrowserDialog.SelectedPath : folderBrowserDialog.SelectedPath + "\\";
             }
-
         }
 
         private void btnSelectMergingDir_Click(object sender, EventArgs e)
@@ -361,69 +360,8 @@ namespace Multi_threaded_downloader
         {
             string messageCaption = errorCode == FileDownloader.DOWNLOAD_ERROR_CANCELED_BY_USER ?
                 "Отменятор отменения отмены" : "Ошибка!";
-            string messageText = ErrorCodeToString(errorCode);
-            MessageBox.Show(messageText, messageCaption,
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-
-        private string ErrorCodeToString(int errorCode)
-        {
-            switch (errorCode)
-            {
-                case FileDownloader.DOWNLOAD_ERROR_CANCELED_BY_USER:
-                    return "Скачивание успешно отменено!";
-
-                case MultiThreadedDownloader.DOWNLOAD_ERROR_NO_URL_SPECIFIED:
-                    return "Не указана ссылка!";
-
-                case FileDownloader.DOWNLOAD_ERROR_INVALID_URL:
-                    return "Указана неправильная ссылка!";
-
-                case MultiThreadedDownloader.DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED:
-                    return "Не указано имя файла!";
-
-                case MultiThreadedDownloader.DOWNLOAD_ERROR_MERGING_CHUNKS:
-                    return "Ошибка объединения чанков!";
-
-                case MultiThreadedDownloader.DOWNLOAD_ERROR_CREATE_FILE:
-                    return "Ошибка создания файла!";
-
-                case MultiThreadedDownloader.DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS:
-                    return "Не найдена папка для временных файлов!";
-
-                case MultiThreadedDownloader.DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS:
-                    return "Не найдена папка для объединения чанков!";
-
-                case FileDownloader.DOWNLOAD_ERROR_INCOMPLETE_DATA_READ:
-                    return "Ошибка чтения данных!";
-
-                case FileDownloader.DOWNLOAD_ERROR_RANGE:
-                    return "Указан неверный диапазон!";
-
-                case FileDownloader.DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT:
-                    return "Файл на сервере пуст!";
-
-                case FileDownloader.DOWNLOAD_ERROR_DRIVE_NOT_READY:
-                    return "Диск не готов!";
-
-                case FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE:
-                    return "Недостаточно места на диске!";
-
-                case 400:
-                    return "Ошибка клиента!";
-
-                case 403:
-                    return "Файл по ссылке не доступен!";
-
-                case 404:
-                    return "Файл по ссылке не найден!";
-
-                case FileDownloader.DOWNLOAD_ERROR_UNKNOWN:
-                    return "Неизвестная ошибка!";
-
-                default:
-                    return $"Код ошибки: {errorCode}";
-            }
+            string messageText = MultiThreadedDownloader.ErrorCodeToString(errorCode);
+            MessageBox.Show(messageText, messageCaption, MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

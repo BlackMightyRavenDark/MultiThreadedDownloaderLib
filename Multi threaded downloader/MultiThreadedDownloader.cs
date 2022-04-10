@@ -435,6 +435,33 @@ namespace Multi_threaded_downloader
             }
             return true;
         }
+
+        public static string ErrorCodeToString(int errorCode)
+        {
+            switch (errorCode)
+            {
+                case DOWNLOAD_ERROR_NO_URL_SPECIFIED:
+                    return "Не указана ссылка!";
+
+                case DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED:
+                    return "Не указано имя файла!";
+
+                case DOWNLOAD_ERROR_MERGING_CHUNKS:
+                    return "Ошибка объединения чанков!";
+
+                case DOWNLOAD_ERROR_CREATE_FILE:
+                    return "Ошибка создания файла!";
+
+                case DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS:
+                    return "Не найдена папка для временных файлов!";
+
+                case DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS:
+                    return "Не найдена папка для объединения чанков!";
+
+                default:
+                    return FileDownloader.ErrorCodeToString(errorCode);
+            }
+        }
     }
 
     public sealed class ProgressItem
