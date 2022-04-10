@@ -17,6 +17,7 @@ namespace Multi_threaded_downloader
         public int ProgressUpdateInterval { get; set; } = 10;
         public bool Stopped { get; private set; } = false;
         public int LastErrorCode { get; private set; } = 200;
+        public string LastErrorMessage { get; private set; }
         public bool HasErrors => LastErrorCode != 200 && LastErrorCode != 206;
 
         public const int DOWNLOAD_ERROR_UNKNOWN = -1;
@@ -45,7 +46,6 @@ namespace Multi_threaded_downloader
         {          
             Stopped = false;
 
-            LastErrorCode = DOWNLOAD_ERROR_UNKNOWN;
             _bytesTransfered = 0L;
             StreamSize = stream.Length;
 
@@ -63,6 +63,7 @@ namespace Multi_threaded_downloader
             }
             if (HasErrors)
             {
+                LastErrorMessage = content.LastErrorMessage;
                 content.Dispose();
                 return LastErrorCode;
             }
@@ -98,6 +99,7 @@ namespace Multi_threaded_downloader
             LastErrorCode = content.GetResponseStream(Url, _rangeFrom, _rangeTo);
             if (HasErrors)
             {
+                LastErrorMessage = content.LastErrorMessage;
                 content.Dispose();
                 return LastErrorCode;
             }
@@ -161,8 +163,10 @@ namespace Multi_threaded_downloader
                 }
                 while (bytesRead > 0);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine(ex.Message);
+                LastErrorMessage = ex.Message;
                 errorCode = DOWNLOAD_ERROR_UNKNOWN;
             }
             if (Stopped)
@@ -173,7 +177,7 @@ namespace Multi_threaded_downloader
             {
                 if (content.Length >= 0L && _bytesTransfered != content.Length)
                 {
-                    LastErrorCode = DOWNLOAD_ERROR_INCOMPLETE_DATA_READ;
+                    errorCode = DOWNLOAD_ERROR_INCOMPLETE_DATA_READ;
                 }
             }
             return errorCode;
@@ -235,6 +239,7 @@ namespace Multi_threaded_downloader
         private HttpWebResponse webResponse = null;
         public long Length { get; private set; } = -1L;
         public Stream ContentData { get; private set; } = null;
+        public string LastErrorMessage { get; private set; }
 
         public void Dispose()
         {
@@ -304,6 +309,7 @@ namespace Multi_threaded_downloader
             catch (WebException ex)
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
+                LastErrorMessage = ex.Message;
                 if (webResponse != null)
                 {
                     webResponse.Dispose();
@@ -323,6 +329,7 @@ namespace Multi_threaded_downloader
             catch (NotSupportedException ex)
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
+                LastErrorMessage = ex.Message;
                 if (webResponse != null)
                 {
                     webResponse.Dispose();
@@ -333,6 +340,7 @@ namespace Multi_threaded_downloader
             catch (UriFormatException ex)
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
+                LastErrorMessage = ex.Message;
                 if (webResponse != null)
                 {
                     webResponse.Dispose();
@@ -343,6 +351,7 @@ namespace Multi_threaded_downloader
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
+                LastErrorMessage = ex.Message;
                 if (webResponse != null)
                 {
                     webResponse.Dispose();

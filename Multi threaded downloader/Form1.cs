@@ -185,8 +185,8 @@ namespace Multi_threaded_downloader
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
             if (errorCode == 200)
             {
-                MessageBox.Show($"Скачано {downloader.StreamSize} байт", "Скачано!",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                string messageText = $"Скачано {downloader.StreamSize} байт";
+                MessageBox.Show(messageText, "Скачано!", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
@@ -200,7 +200,13 @@ namespace Multi_threaded_downloader
                         lblDownloadingProgress.Text = "Ошибка: Диск не готов!";
                         break;
                 }
-                ShowErrorMessage(errorCode);
+
+                string messageText = MultiThreadedDownloader.ErrorCodeToString(errorCode);
+                if (!string.IsNullOrEmpty(downloader.LastErrorMessage) && !string.IsNullOrWhiteSpace(downloader.LastErrorMessage))
+                {
+                    messageText += $"{Environment.NewLine}Текст ошибки: {downloader.LastErrorMessage}";
+                }
+                ShowErrorMessage(errorCode, messageText);
             }
 
             isDownloading = false;
@@ -330,7 +336,14 @@ namespace Multi_threaded_downloader
                         lblDownloadingProgress.Text = "Ошибка: Диск не готов!";
                         break;
                 }
-                ShowErrorMessage(errorCode);
+
+                string messageText = MultiThreadedDownloader.ErrorCodeToString(errorCode);
+                if (!string.IsNullOrEmpty(multiThreadedDownloader.LastErrorMessage) &&
+                    !string.IsNullOrWhiteSpace(multiThreadedDownloader.LastErrorMessage))
+                {
+                    messageText += $"{Environment.NewLine}Текст ошибки: {multiThreadedDownloader.LastErrorMessage}";
+                }
+                ShowErrorMessage(errorCode, messageText);
             }
 
             isDownloading = false;
@@ -356,12 +369,11 @@ namespace Multi_threaded_downloader
             return true;
         }
 
-        private void ShowErrorMessage(int errorCode)
+        private void ShowErrorMessage(int errorCode, string errorText)
         {
             string messageCaption = errorCode == FileDownloader.DOWNLOAD_ERROR_CANCELED_BY_USER ?
                 "Отменятор отменения отмены" : "Ошибка!";
-            string messageText = MultiThreadedDownloader.ErrorCodeToString(errorCode);
-            MessageBox.Show(messageText, messageCaption, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(errorText, messageCaption, MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

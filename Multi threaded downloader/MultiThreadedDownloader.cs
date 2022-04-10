@@ -25,6 +25,7 @@ namespace Multi_threaded_downloader
         public long DownloadedBytes { get; private set; } = 0L;
         public int UpdateInterval { get; set; } = 10;
         public int LastErrorCode { get; private set; }
+        public string LastErrorMessage { get; private set; }
         public int ThreadCount { get; set; } = 2;
         public List<string> Chunks { get; private set; } = new List<string>();
         public NameValueCollection Headers = new NameValueCollection();
@@ -96,12 +97,13 @@ namespace Multi_threaded_downloader
             return streamTo.Length == size + streamFrom.Length;
         }
 
-        public static int GetUrlContentLength(string url, NameValueCollection headers, out long contentLength)
+        public static int GetUrlContentLength(string url, NameValueCollection headers, out long contentLength, out string errorText)
         {
             WebContent webContent = new WebContent();
             webContent.Headers = headers;
             int errorCode = webContent.GetResponseStream(url);
             contentLength = errorCode == 200 ? webContent.Length : -1L;
+            errorText = webContent.LastErrorMessage;
             webContent.Dispose();
             return errorCode;
         }
@@ -155,7 +157,7 @@ namespace Multi_threaded_downloader
             }
 
             Connecting?.Invoke(this, Url);
-            LastErrorCode = GetUrlContentLength(Url, Headers, out long contentLength);
+            LastErrorCode = GetUrlContentLength(Url, Headers, out long contentLength, out string errorText);
             int errorCode = LastErrorCode;
             Connected?.Invoke(this, Url, contentLength, ref errorCode);
             if (LastErrorCode != errorCode)
@@ -164,6 +166,7 @@ namespace Multi_threaded_downloader
             }
             if (LastErrorCode != 200)
             {
+                LastErrorMessage = errorText;
                 return LastErrorCode;
             }
             if (contentLength == 0)
@@ -248,9 +251,10 @@ namespace Multi_threaded_downloader
                 if (LastErrorCode != 200 && LastErrorCode != 206)
                 {
                     if (aborted)
-                    {
+                    { 
                         throw new OperationCanceledException();
                     }
+                    LastErrorMessage = downloader.LastErrorMessage;
                     throw new Exception($"Error code = {LastErrorCode}");
                 }
             }
@@ -263,11 +267,13 @@ namespace Multi_threaded_downloader
             catch (OperationCanceledException ex)
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
+                LastErrorMessage = ex.Message;
                 return DOWNLOAD_ERROR_CANCELED_BY_USER;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
+                LastErrorMessage = ex.Message;
                 return ex.HResult;
             }
 
