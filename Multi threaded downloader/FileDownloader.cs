@@ -85,9 +85,9 @@ namespace Multi_threaded_downloader
             return LastErrorCode;
         }
 
-        public int DownloadString(out string resString)
+        public int DownloadString(out string responseString)
         {
-            resString = null;
+            responseString = null;
 
             Stopped = false;
             _bytesTransfered = 0L;
@@ -116,7 +116,7 @@ namespace Multi_threaded_downloader
             LastErrorCode = ContentToStream(content, memoryStream);
             if (LastErrorCode == 200)
             {
-                resString = Encoding.UTF8.GetString(memoryStream.GetBuffer(), 0, (int)memoryStream.Length);
+                responseString = Encoding.UTF8.GetString(memoryStream.GetBuffer(), 0, (int)memoryStream.Length);
             }
             long size = content.Length;
             content.Dispose();
@@ -129,15 +129,13 @@ namespace Multi_threaded_downloader
 
         private int ContentToStream(WebContent content, Stream stream)
         {
-            byte[] buf = new byte[4096];
-            int bytesRead;
-            int errorCode = 200;
-            int iter = 0;
             try
             {
+                byte[] buf = new byte[4096];
+                int iter = 0;
                 do
                 {
-                    bytesRead = content.ContentData.Read(buf, 0, buf.Length);
+                    int bytesRead = content.ContentData.Read(buf, 0, buf.Length);
                     if (bytesRead <= 0)
                     {
                         break;
@@ -161,26 +159,25 @@ namespace Multi_threaded_downloader
                         }
                     }
                 }
-                while (bytesRead > 0);
+                while (true);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
                 LastErrorMessage = ex.Message;
-                errorCode = DOWNLOAD_ERROR_UNKNOWN;
+                return DOWNLOAD_ERROR_UNKNOWN;
             }
+            
             if (Stopped)
             {
-                errorCode = DOWNLOAD_ERROR_CANCELED_BY_USER;
+                return DOWNLOAD_ERROR_CANCELED_BY_USER;
             }
-            else if (errorCode == 200)
+            else if (content.Length >= 0L && _bytesTransfered != content.Length)
             {
-                if (content.Length >= 0L && _bytesTransfered != content.Length)
-                {
-                    errorCode = DOWNLOAD_ERROR_INCOMPLETE_DATA_READ;
-                }
+                return DOWNLOAD_ERROR_INCOMPLETE_DATA_READ;
             }
-            return errorCode;
+
+            return 200;
         }
 
         public void SetRange(long from, long to)
