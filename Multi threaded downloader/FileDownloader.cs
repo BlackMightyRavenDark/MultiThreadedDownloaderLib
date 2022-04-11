@@ -288,14 +288,15 @@ namespace Multi_threaded_downloader
             try
             {
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-                if (rangeTo > 0L)
-                {
-                    request.AddRange(rangeFrom, rangeTo);
-                }
 
                 if (Headers != null)
                 {
                     SetRequestHeaders(request, Headers);
+                }
+
+                if (rangeTo > 0L)
+                {
+                    request.AddRange(rangeFrom, rangeTo);
                 }
 
                 webResponse = (HttpWebResponse)request.GetResponse();
