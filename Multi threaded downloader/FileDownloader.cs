@@ -20,12 +20,11 @@ namespace Multi_threaded_downloader
         public string LastErrorMessage { get; private set; }
         public bool HasErrors => LastErrorCode != 200 && LastErrorCode != 206;
 
-        public const int DOWNLOAD_ERROR_UNKNOWN = -1;
-        public const int DOWNLOAD_ERROR_CANCELED_BY_USER = -2;
-        public const int DOWNLOAD_ERROR_INCOMPLETE_DATA_READ = -3;
-        public const int DOWNLOAD_ERROR_RANGE = -4;
-        public const int DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT = -5;
-        public const int DOWNLOAD_ERROR_INVALID_URL = -6;
+        public const int DOWNLOAD_ERROR_INVALID_URL = -2;
+        public const int DOWNLOAD_ERROR_CANCELED_BY_USER = -3;
+        public const int DOWNLOAD_ERROR_INCOMPLETE_DATA_READ = -4;
+        public const int DOWNLOAD_ERROR_RANGE = -5;
+        public const int DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT = -6;
         public const int DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE = -7;
         public const int DOWNLOAD_ERROR_DRIVE_NOT_READY = -8;
 
@@ -165,7 +164,7 @@ namespace Multi_threaded_downloader
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
                 LastErrorMessage = ex.Message;
-                return DOWNLOAD_ERROR_UNKNOWN;
+                return ex.HResult;
             }
             
             if (Stopped)
@@ -219,9 +218,6 @@ namespace Multi_threaded_downloader
 
                 case DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE:
                     return "Недостаточно места на диске!";
-
-                case DOWNLOAD_ERROR_UNKNOWN:
-                    return "Неизвестная ошибка!";
 
                 default:
                     return $"Код ошибки: {errorCode}";
