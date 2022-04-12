@@ -70,6 +70,10 @@ namespace Multi_threaded_downloader
 
         private void btnHeaders_Click(object sender, EventArgs e)
         {
+            btnHeaders.Enabled = false;
+            btnDownloadMultiThreaded.Enabled = false;
+            btnDownloadSingleThreaded.Enabled = false;
+
             FormHeadersEditor editor = new FormHeadersEditor(headerCollection);
             if (editor.ShowDialog() == DialogResult.OK)
             {
@@ -81,6 +85,10 @@ namespace Multi_threaded_downloader
                     headerCollection.Add(headerName, headerValue);
                 }
             }
+
+            btnDownloadMultiThreaded.Enabled = true;
+            btnDownloadSingleThreaded.Enabled = true;
+            btnHeaders.Enabled = true;
         }
 
         private void btnDownloadSingleThreaded_Click(object sender, EventArgs e)
@@ -91,17 +99,30 @@ namespace Multi_threaded_downloader
                 return;
             }
 
+            btnDownloadMultiThreaded.Enabled = false;
+            btnHeaders.Enabled = false;
+
+            if (string.IsNullOrEmpty(editUrl.Text) || string.IsNullOrWhiteSpace(editUrl.Text))
+            {
+                MessageBox.Show("Не указана ссылка!", "Ошибка!",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                btnDownloadMultiThreaded.Enabled = true;
+                btnHeaders.Enabled = true;
+                return;
+            }
+
             if (string.IsNullOrEmpty(editFileName.Text) || string.IsNullOrWhiteSpace(editFileName.Text))
             {
                 MessageBox.Show("Не указано имя файла!", "Ошибка!",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+                btnDownloadMultiThreaded.Enabled = true;
+                btnHeaders.Enabled = true;
                 return;
             }
 
             isDownloading = true;
 
             btnDownloadSingleThreaded.Text = "Stop";
-            btnDownloadMultiThreaded.Enabled = false;
             cbKeepDownloadedFileInMergingDirectory.Enabled = false;
             lblMergingProgress.Text = null;
 
@@ -117,12 +138,14 @@ namespace Multi_threaded_downloader
                 progressBar1.Value = 0;
                 progressBar1.Maximum = 100;
                 lblDownloadingProgress.Text = "Подключение...";
+                lblDownloadingProgress.Refresh();
             };
             downloader.Connected += (object s, string url, long contentLen, ref int errCode) =>
             {
                 if (errCode == 200 || errCode == 206)
                 {
                     lblDownloadingProgress.Text = "Подключено!";
+                    lblDownloadingProgress.Refresh();
                     if (contentLen > 0L)
                     {
                         char driveLetter = fn.Length > 2 && fn[1] == ':' && fn[2] == '\\' ? fn[0] : Application.ExecutablePath[0];
@@ -152,6 +175,7 @@ namespace Multi_threaded_downloader
                 progressBar1.Value = 0;
                 progressBar1.Maximum = 100;
                 lblDownloadingProgress.Text = $"Скачано: 0 из {max}";
+                lblDownloadingProgress.Refresh();
             };
             downloader.WorkProgress += (s, bytes, max) =>
             {
@@ -160,8 +184,8 @@ namespace Multi_threaded_downloader
                     double percent = 100.0 / max * bytes;
                     progressBar1.Value = (int)percent;
                     lblDownloadingProgress.Text = $"Скачано {bytes} из {max} ({string.Format("{0:F3}", percent)}%)";
+                    lblDownloadingProgress.Refresh();
                 }
-                Application.DoEvents();
             };
             downloader.WorkFinished += (s, bytes, max, errCode) =>
             {
@@ -215,6 +239,7 @@ namespace Multi_threaded_downloader
             btnDownloadSingleThreaded.Text = "Download single threaded";
             btnDownloadSingleThreaded.Enabled = true;
             btnDownloadMultiThreaded.Enabled = true;
+            btnHeaders.Enabled = true;
             cbKeepDownloadedFileInMergingDirectory.Enabled = true;
         }
 
@@ -232,6 +257,7 @@ namespace Multi_threaded_downloader
 
             btnDownloadMultiThreaded.Text = "Stop";
             btnDownloadSingleThreaded.Enabled = false;
+            btnHeaders.Enabled = false;
             cbKeepDownloadedFileInMergingDirectory.Enabled = false;
             numericUpDownThreadCount.Enabled = false;
             lblMergingProgress.Text = null;
@@ -240,12 +266,14 @@ namespace Multi_threaded_downloader
             multiThreadedDownloader.Connecting += (s, url) =>
             {
                 lblDownloadingProgress.Text = "Подключение...";
+                lblDownloadingProgress.Refresh();
             };
             multiThreadedDownloader.Connected += (object s, string url, long contentLen, ref int errCode) =>
             {
                 if (errCode == 200)
                 {
                     lblDownloadingProgress.Text = "Подключено!";
+                    lblDownloadingProgress.Refresh();
                     if (contentLen > 0L)
                     {
                         MultiThreadedDownloader mtd = s as MultiThreadedDownloader;
@@ -352,6 +380,7 @@ namespace Multi_threaded_downloader
             btnDownloadMultiThreaded.Text = "Download multi threaded";
             btnDownloadMultiThreaded.Enabled = true;
             btnDownloadSingleThreaded.Enabled = true;
+            btnHeaders.Enabled = true;
             numericUpDownThreadCount.Enabled = true;
             cbKeepDownloadedFileInMergingDirectory.Enabled = true;
         }
