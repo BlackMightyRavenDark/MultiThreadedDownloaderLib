@@ -20,6 +20,7 @@ namespace Multi_threaded_downloader
         public string LastErrorMessage { get; private set; }
         public bool HasErrors => LastErrorCode != 200 && LastErrorCode != 206;
 
+        public const int DOWNLOAD_ERROR_URL_NOT_DEFINED = -1;
         public const int DOWNLOAD_ERROR_INVALID_URL = -2;
         public const int DOWNLOAD_ERROR_CANCELED_BY_USER = -3;
         public const int DOWNLOAD_ERROR_INCOMPLETE_DATA_READ = -4;
@@ -27,6 +28,7 @@ namespace Multi_threaded_downloader
         public const int DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT = -6;
         public const int DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE = -7;
         public const int DOWNLOAD_ERROR_DRIVE_NOT_READY = -8;
+        public const int DOWNLOAD_ERROR_NULL_CONTENT = -9;
 
         public delegate void ConnectingDelegate(object sender, string url);
         public delegate void ConnectedDelegate(object sender, string url, long contentLength, ref int errorCode);
@@ -42,9 +44,13 @@ namespace Multi_threaded_downloader
         public CancelTestDelegate CancelTest;
 
         public int Download(Stream stream)
-        {          
-            Stopped = false;
+        {
+            if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
+            {
+                return DOWNLOAD_ERROR_URL_NOT_DEFINED;
+            }
 
+            Stopped = false;
             _bytesTransfered = 0L;
             StreamSize = stream.Length;
 
@@ -88,6 +94,11 @@ namespace Multi_threaded_downloader
         {
             responseString = null;
 
+            if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
+            {
+                return DOWNLOAD_ERROR_URL_NOT_DEFINED;
+            }
+
             Stopped = false;
             _bytesTransfered = 0L;
             StreamSize = 0L;
@@ -128,6 +139,11 @@ namespace Multi_threaded_downloader
 
         private int ContentToStream(WebContent content, Stream stream)
         {
+            if (content == null || content.ContentData == null)
+            {
+                return DOWNLOAD_ERROR_NULL_CONTENT;
+            }
+
             try
             {
                 byte[] buf = new byte[4096];
@@ -198,11 +214,14 @@ namespace Multi_threaded_downloader
                 case 404:
                     return "Файл по ссылке не найден!";
 
-                case DOWNLOAD_ERROR_CANCELED_BY_USER:
-                    return "Скачивание успешно отменено!";
-
                 case DOWNLOAD_ERROR_INVALID_URL:
                     return "Указана неправильная ссылка!";
+
+                case DOWNLOAD_ERROR_URL_NOT_DEFINED:
+                    return "Не указана ссылка!";
+
+                case DOWNLOAD_ERROR_CANCELED_BY_USER:
+                    return "Скачивание успешно отменено!";
 
                 case DOWNLOAD_ERROR_INCOMPLETE_DATA_READ:
                     return "Ошибка чтения данных!";
@@ -218,6 +237,9 @@ namespace Multi_threaded_downloader
 
                 case DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE:
                     return "Недостаточно места на диске!";
+
+                case DOWNLOAD_ERROR_NULL_CONTENT:
+                    return "Ошибка получения контента!";
 
                 default:
                     return $"Код ошибки: {errorCode}";
