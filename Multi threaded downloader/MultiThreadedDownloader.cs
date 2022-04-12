@@ -97,17 +97,6 @@ namespace Multi_threaded_downloader
             return streamTo.Length == size + streamFrom.Length;
         }
 
-        public static int GetUrlContentLength(string url, NameValueCollection headers, out long contentLength, out string errorText)
-        {
-            WebContent webContent = new WebContent();
-            webContent.Headers = headers;
-            int errorCode = webContent.GetResponseStream(url);
-            contentLength = errorCode == 200 ? webContent.Length : -1L;
-            errorText = webContent.LastErrorMessage;
-            webContent.Dispose();
-            return errorCode;
-        }
-
         private IEnumerable<Tuple<long, long>> Split(long contentLength, int chunkCount)
         {
             if (chunkCount <= 1 || contentLength <= MEGABYTE)
