@@ -184,8 +184,8 @@ namespace Multi_threaded_downloader
                     double percent = 100.0 / max * bytes;
                     progressBar1.Value = (int)percent;
                     lblDownloadingProgress.Text = $"Скачано {bytes} из {max} ({string.Format("{0:F3}", percent)}%)";
-                    lblDownloadingProgress.Refresh();
                 }
+                Application.DoEvents();
             };
             downloader.WorkFinished += (s, bytes, max, errCode) =>
             {
