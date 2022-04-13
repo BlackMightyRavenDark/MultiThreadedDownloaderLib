@@ -140,13 +140,13 @@ namespace Multi_threaded_downloader
                 lblDownloadingProgress.Text = "Подключение...";
                 lblDownloadingProgress.Refresh();
             };
-            downloader.Connected += (object s, string url, long contentLen, ref int errCode) =>
+            downloader.Connected += (object s, string url, long contentLength, ref int errCode) =>
             {
                 if (errCode == 200 || errCode == 206)
                 {
                     lblDownloadingProgress.Text = "Подключено!";
                     lblDownloadingProgress.Refresh();
-                    if (contentLen > 0L)
+                    if (contentLength > 0L)
                     {
                         char driveLetter = fn.Length > 2 && fn[1] == ':' && fn[2] == '\\' ? fn[0] : Application.ExecutablePath[0];
                         if (driveLetter != '\\')
@@ -157,7 +157,7 @@ namespace Multi_threaded_downloader
                                 errCode = FileDownloader.DOWNLOAD_ERROR_DRIVE_NOT_READY;
                                 return;
                             }
-                            long minimumFreeSpaceRequired = (long)(contentLen * 1.1);
+                            long minimumFreeSpaceRequired = (long)(contentLength * 1.1);
                             if (driveInfo.AvailableFreeSpace <= minimumFreeSpaceRequired)
                             {
                                 errCode = FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
@@ -170,30 +170,32 @@ namespace Multi_threaded_downloader
                     lblDownloadingProgress.Text = $"Ошибка {errCode}";
                 }
             };
-            downloader.WorkStarted += (s, max) =>
+            downloader.WorkStarted += (s, contentLength) =>
             {
                 progressBar1.Value = 0;
                 progressBar1.Maximum = 100;
-                lblDownloadingProgress.Text = $"Скачано: 0 из {max}";
+                lblDownloadingProgress.Text = $"Скачано: 0 из {contentLength}";
                 lblDownloadingProgress.Refresh();
             };
-            downloader.WorkProgress += (s, bytes, max) =>
+            downloader.WorkProgress += (s, bytesTransfered, contentLength) =>
             {
-                if (max > 0L)
+                if (contentLength > 0L)
                 {
-                    double percent = 100.0 / max * bytes;
+                    double percent = 100.0 / contentLength * bytesTransfered;
                     progressBar1.Value = (int)percent;
-                    lblDownloadingProgress.Text = $"Скачано {bytes} из {max} ({string.Format("{0:F3}", percent)}%)";
+                    string percentFormatted = string.Format("{0:F3}", percent);
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из {contentLength} ({percentFormatted}%)";
                 }
                 Application.DoEvents();
             };
-            downloader.WorkFinished += (s, bytes, max, errCode) =>
+            downloader.WorkFinished += (s, bytesTransfered, contentLength, errCode) =>
             {
-                if (max > 0L)
+                if (contentLength > 0L)
                 {
-                    double percent = 100.0 / max * bytes;
+                    double percent = 100.0 / contentLength * bytesTransfered;
                     progressBar1.Value = (int)percent;
-                    lblDownloadingProgress.Text = $"Скачано {bytes} из {max} ({string.Format("{0:F3}", percent)}%)";
+                    string percentFormatted = string.Format("{0:F3}", percent);
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из {contentLength} ({percentFormatted}%)";
                 }
             };
             downloader.CancelTest += (object s, ref bool stop) =>
@@ -268,19 +270,19 @@ namespace Multi_threaded_downloader
                 lblDownloadingProgress.Text = "Подключение...";
                 lblDownloadingProgress.Refresh();
             };
-            multiThreadedDownloader.Connected += (object s, string url, long contentLen, ref int errCode) =>
+            multiThreadedDownloader.Connected += (object s, string url, long contentLength, ref int errCode) =>
             {
                 if (errCode == 200)
                 {
                     lblDownloadingProgress.Text = "Подключено!";
                     lblDownloadingProgress.Refresh();
-                    if (contentLen > 0L)
+                    if (contentLength > 0L)
                     {
                         MultiThreadedDownloader mtd = s as MultiThreadedDownloader;
                         List<char> driveLetters = mtd.GetUsedDriveLetters();
                         if (driveLetters.Count > 0)
                         {
-                            long minimumFreeSpaceRequired = (long)(contentLen * 1.1);
+                            long minimumFreeSpaceRequired = (long)(contentLength * 1.1);
                             if (!IsEnoughDiskSpace(driveLetters, minimumFreeSpaceRequired))
                             {
                                 errCode = FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
@@ -293,27 +295,28 @@ namespace Multi_threaded_downloader
                     lblDownloadingProgress.Text = $"Ошибка {errCode}";
                 }
             };
-            multiThreadedDownloader.DownloadStarted += (s, max) =>
+            multiThreadedDownloader.DownloadStarted += (s, contentLength) =>
             {
                 progressBar1.Value = 0;
                 progressBar1.Maximum = 100;
-                lblDownloadingProgress.Text = $"Скачано: 0 из {max}";
+                lblDownloadingProgress.Text = $"Скачано: 0 из {contentLength}";
             };
-            multiThreadedDownloader.DownloadProgress += (s, bytes) =>
+            multiThreadedDownloader.DownloadProgress += (s, bytesTransfered) =>
             {
-                long max = (s as MultiThreadedDownloader).ContentLength;
-                if (max > 0L)
+                long contentLength = (s as MultiThreadedDownloader).ContentLength;
+                if (contentLength > 0L)
                 {
-                    double percent = 100.0 / max * bytes;
+                    double percent = 100.0 / contentLength * bytesTransfered;
                     progressBar1.Value = (int)percent;
-                    lblDownloadingProgress.Text = $"Скачано {bytes} из {max} ({string.Format("{0:F3}", percent)}%)";
+                    string percentFormatted = string.Format("{0:F3}", percent);
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из {contentLength} ({percentFormatted}%)";
                 }
             };
-            multiThreadedDownloader.DownloadFinished += (s, bytes, errCode, fileName) =>
+            multiThreadedDownloader.DownloadFinished += (s, bytesTransfered, errCode, fileName) =>
             {
                 if (errCode == 200)
                 {
-                    string t = $"Имя файла: {fileName}\nСкачано: {bytes} байт";
+                    string t = $"Имя файла: {fileName}\nСкачано: {bytesTransfered} байт";
                     MessageBox.Show(t, "Скачано!", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
