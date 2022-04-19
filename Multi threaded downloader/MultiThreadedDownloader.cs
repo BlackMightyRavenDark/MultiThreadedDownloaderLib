@@ -143,6 +143,21 @@ namespace Multi_threaded_downloader
                 return DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS;
             }
 
+            string dirName = Path.GetDirectoryName(OutputFileName);
+            if (string.IsNullOrEmpty(dirName) || string.IsNullOrWhiteSpace(dirName))
+            {
+                string selfDirPath = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]);
+                OutputFileName = $"{selfDirPath}\\{OutputFileName}";
+            }
+            if (string.IsNullOrEmpty(TempDirectory) || string.IsNullOrWhiteSpace(TempDirectory))
+            {
+                TempDirectory = Path.GetDirectoryName(OutputFileName);
+            }
+            if (string.IsNullOrEmpty(MergingDirectory) || string.IsNullOrWhiteSpace(MergingDirectory))
+            {
+                MergingDirectory = TempDirectory;
+            }
+
             List<char> driveLetters = GetUsedDriveLetters();
             if (driveLetters.Count > 0 && !driveLetters.Contains('\\') && !IsDrivesReady(driveLetters))
             {
@@ -182,11 +197,6 @@ namespace Multi_threaded_downloader
                 DownloadProgress?.Invoke(this, DownloadedBytes);
                 CancelTest?.Invoke(this, ref aborted);
             };
-
-            if (string.IsNullOrEmpty(TempDirectory) || string.IsNullOrWhiteSpace(TempDirectory))
-            {
-                TempDirectory = Path.GetDirectoryName(OutputFileName);
-            }
 
             if (ThreadCount <= 0)
             {
