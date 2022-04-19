@@ -132,12 +132,12 @@ namespace Multi_threaded_downloader
                 LastErrorCode = DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED;
                 return DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED;
             }
-            if (!IsTempDirectoryAvailable)
+            if (!string.IsNullOrEmpty(TempDirectory) && !string.IsNullOrWhiteSpace(TempDirectory) && !Directory.Exists(TempDirectory))
             {
                 LastErrorCode = DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS;
                 return DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS;
             }
-            if (!IsMergingDirectoryAvailable)
+            if (!string.IsNullOrEmpty(MergingDirectory) && !string.IsNullOrWhiteSpace(MergingDirectory) && !Directory.Exists(MergingDirectory))
             {
                 LastErrorCode = DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS;
                 return DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS;
