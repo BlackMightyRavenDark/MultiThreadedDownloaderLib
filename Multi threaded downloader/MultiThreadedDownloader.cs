@@ -30,6 +30,10 @@ namespace Multi_threaded_downloader
         public List<string> Chunks { get; private set; } = new List<string>();
         public NameValueCollection Headers = new NameValueCollection();
         private bool aborted = false;
+        public bool IsTempDirectoryAvailable => !string.IsNullOrEmpty(TempDirectory) &&
+                        !string.IsNullOrWhiteSpace(TempDirectory) && Directory.Exists(TempDirectory);
+        public bool IsMergingDirectoryAvailable => !string.IsNullOrEmpty(MergingDirectory) &&
+                    !string.IsNullOrWhiteSpace(MergingDirectory) && Directory.Exists(MergingDirectory);
 
         public const int MEGABYTE = 1048576; //1024 * 1024;
 
@@ -128,12 +132,12 @@ namespace Multi_threaded_downloader
                 LastErrorCode = DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED;
                 return DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED;
             }
-            if (!string.IsNullOrEmpty(TempDirectory) && !string.IsNullOrWhiteSpace(TempDirectory) && !Directory.Exists(TempDirectory))
+            if (!IsTempDirectoryAvailable)
             {
                 LastErrorCode = DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS;
                 return DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS;
             }
-            if (!string.IsNullOrEmpty(MergingDirectory) && !string.IsNullOrWhiteSpace(MergingDirectory) && !Directory.Exists(MergingDirectory))
+            if (!IsMergingDirectoryAvailable)
             {
                 LastErrorCode = DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS;
                 return DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS;
@@ -201,7 +205,7 @@ namespace Multi_threaded_downloader
                 {
                     string path = Path.GetFileName(OutputFileName);
                     chunkFileName = $"{path}.chunk_{taskId}.tmp";
-                    if (!string.IsNullOrEmpty(TempDirectory) && !string.IsNullOrWhiteSpace(TempDirectory))
+                    if (IsTempDirectoryAvailable)
                     {
                         chunkFileName = TempDirectory.EndsWith("\\") ?
                             TempDirectory + chunkFileName : $"{TempDirectory}\\{chunkFileName}";
@@ -306,21 +310,17 @@ namespace Multi_threaded_downloader
             {
                 string tmpFileName;
                 string fn = Path.GetFileName(OutputFileName);
-                if (!string.IsNullOrEmpty(MergingDirectory) &&
-                    !string.IsNullOrWhiteSpace(MergingDirectory) &&
-                    Directory.Exists(MergingDirectory))
+                if (IsMergingDirectoryAvailable)
                 {
                     tmpFileName = MergingDirectory.EndsWith("\\") ?
                         $"{MergingDirectory}{fn}.tmp" : $"{MergingDirectory}\\{fn}.tmp";
                 }
                 else
                 {
-                    bool isTmpDirAvailable = !string.IsNullOrEmpty(TempDirectory) &&
-                        !string.IsNullOrWhiteSpace(TempDirectory) &&
-                        Directory.Exists(TempDirectory);
-                    if (isTmpDirAvailable)
+                    if (IsTempDirectoryAvailable)
                     {
-                        tmpFileName = TempDirectory.EndsWith("\\") ? $"{TempDirectory}{fn}.tmp" : $"{TempDirectory}\\{fn}.tmp";
+                        tmpFileName = TempDirectory.EndsWith("\\") ?
+                            $"{TempDirectory}{fn}.tmp" : $"{TempDirectory}\\{fn}.tmp";
                     }
                     else
                     {
