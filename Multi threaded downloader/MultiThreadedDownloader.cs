@@ -305,17 +305,27 @@ namespace Multi_threaded_downloader
             int res = await Task.Run(() =>
             {
                 string tmpFileName;
+                string fn = Path.GetFileName(OutputFileName);
                 if (!string.IsNullOrEmpty(MergingDirectory) &&
                     !string.IsNullOrWhiteSpace(MergingDirectory) &&
                     Directory.Exists(MergingDirectory))
                 {
-                    string fn = Path.GetFileName(OutputFileName);
                     tmpFileName = MergingDirectory.EndsWith("\\") ?
                         $"{MergingDirectory}{fn}.tmp" : $"{MergingDirectory}\\{fn}.tmp";
                 }
                 else
                 {
-                    tmpFileName = $"{OutputFileName}.tmp";
+                    bool isTmpDirAvailable = !string.IsNullOrEmpty(TempDirectory) &&
+                        !string.IsNullOrWhiteSpace(TempDirectory) &&
+                        Directory.Exists(TempDirectory);
+                    if (isTmpDirAvailable)
+                    {
+                        tmpFileName = TempDirectory.EndsWith("\\") ? $"{TempDirectory}{fn}.tmp" : $"{TempDirectory}\\{fn}.tmp";
+                    }
+                    else
+                    {
+                        tmpFileName = $"{OutputFileName}.tmp";
+                    }
                 }
                 tmpFileName = GetNumberedFileName(tmpFileName);
 
@@ -382,7 +392,7 @@ namespace Multi_threaded_downloader
                 if (KeepDownloadedFileInMergingDirectory &&
                     !string.IsNullOrEmpty(MergingDirectory) && !string.IsNullOrWhiteSpace(MergingDirectory))
                 {
-                    string fn = Path.GetFileName(OutputFileName);
+                    fn = Path.GetFileName(OutputFileName);
                     OutputFileName = MergingDirectory.EndsWith("\\") ? MergingDirectory + fn : $"{MergingDirectory}\\{fn}";
                 }
                 OutputFileName = GetNumberedFileName(OutputFileName);
