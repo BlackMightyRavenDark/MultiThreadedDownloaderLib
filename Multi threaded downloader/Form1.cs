@@ -319,11 +319,6 @@ namespace Multi_threaded_downloader
                     string t = $"Имя файла: {fileName}\nСкачано: {bytesTransfered} байт";
                     MessageBox.Show(t, "Скачано!", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
-                else
-                {
-                    MessageBox.Show($"Код ошибки: {errCode}", "Ошибка!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
             };
             multiThreadedDownloader.MergingStarted += (s, chunkCount) =>
             {
