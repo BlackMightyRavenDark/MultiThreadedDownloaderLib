@@ -2,7 +2,7 @@
 using System.Collections.Specialized;
 using System.Windows.Forms;
 
-namespace Multi_threaded_downloader
+namespace GUI_test
 {
     public partial class FormHeadersEditor : Form
     {

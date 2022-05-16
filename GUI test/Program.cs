@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 
-namespace Multi_threaded_downloader
+namespace GUI_test
 {
     static class Program
     {

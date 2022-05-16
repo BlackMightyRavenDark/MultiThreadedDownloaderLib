@@ -1,5 +1,5 @@
 ﻿
-namespace Multi_threaded_downloader
+namespace GUI_test
 {
     partial class Form1
     {

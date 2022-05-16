@@ -4,8 +4,9 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Net;
 using System.Windows.Forms;
+using Multi_threaded_downloader;
 
-namespace Multi_threaded_downloader
+namespace GUI_test
 {
     public partial class Form1 : Form
     {
