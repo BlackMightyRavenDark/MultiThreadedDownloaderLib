@@ -28,6 +28,7 @@ namespace GUI_test
             headerCollection = new NameValueCollection();
             headerCollection.Add("User-Agent", "Mozilla/Firefoxxx 66.6");
             headerCollection.Add("Accept", "*/*");
+            headerCollection.Add("Range", "0-");
         }
 
         private void btnSelectFile_Click(object sender, EventArgs e)
@@ -210,7 +211,7 @@ namespace GUI_test
             int errorCode = downloader.Download(stream);
             stream.Dispose();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
-            if (errorCode == 200)
+            if (errorCode == 200 || errorCode == 206)
             {
                 string messageText = $"Скачано {downloader.StreamSize} байт";
                 MessageBox.Show(messageText, "Скачано!", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -273,7 +274,7 @@ namespace GUI_test
             };
             multiThreadedDownloader.Connected += (object s, string url, long contentLength, ref int errCode) =>
             {
-                if (errCode == 200)
+                if (errCode == 200 || errCode == 206)
                 {
                     lblDownloadingProgress.Text = "Подключено!";
                     lblDownloadingProgress.Refresh();
@@ -315,7 +316,7 @@ namespace GUI_test
             };
             multiThreadedDownloader.DownloadFinished += (s, bytesTransfered, errCode, fileName) =>
             {
-                if (errCode == 200)
+                if (errCode == 200 || errCode == 206)
                 {
                     string t = $"Имя файла: {fileName}\nСкачано: {bytesTransfered} байт";
                     MessageBox.Show(t, "Скачано!", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -335,7 +336,7 @@ namespace GUI_test
             };
             multiThreadedDownloader.MergingFinished += (s, errCode) =>
             {
-                lblMergingProgress.Text = errCode == 200 ? null : $"Ошибка объединения чанков! Код: {errCode}";
+                lblMergingProgress.Text = errCode == 200 || errCode == 206 ? null : $"Ошибка объединения чанков! Код: {errCode}";
             };
             multiThreadedDownloader.CancelTest += (object s, ref bool stop) =>
             {
@@ -351,7 +352,7 @@ namespace GUI_test
             multiThreadedDownloader.KeepDownloadedFileInMergingDirectory = cbKeepDownloadedFileInMergingDirectory.Checked;
             int errorCode = await multiThreadedDownloader.Download();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
-            if (errorCode != 200)
+            if (errorCode != 200 && errorCode != 206)
             {
                 switch (errorCode)
                 {

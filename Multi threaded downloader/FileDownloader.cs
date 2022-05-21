@@ -9,11 +9,12 @@ namespace Multi_threaded_downloader
     public sealed class FileDownloader
     {
         public string Url { get; set; }
-        public NameValueCollection Headers = new NameValueCollection();
+        public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
         public long StreamSize { get; private set; } = 0L;
         private long _bytesTransfered = 0L;
         private long _rangeFrom = 0L;
-        private long _rangeTo = 0L;
+        private long _rangeTo = -1L;
+        private NameValueCollection _headers = new NameValueCollection();
         public int ProgressUpdateInterval { get; set; } = 10;
         public bool Stopped { get; private set; } = false;
         public int LastErrorCode { get; private set; } = 200;
@@ -50,6 +51,11 @@ namespace Multi_threaded_downloader
                 return DOWNLOAD_ERROR_URL_NOT_DEFINED;
             }
 
+            if (!IsRangeValid())
+            {
+                return DOWNLOAD_ERROR_RANGE;
+            }
+
             Stopped = false;
             _bytesTransfered = 0L;
             StreamSize = stream.Length;
@@ -59,7 +65,7 @@ namespace Multi_threaded_downloader
             WebContent content = new WebContent();
             content.Headers = Headers;
 
-            LastErrorCode = content.GetResponseStream(Url, _rangeFrom, _rangeTo);
+            LastErrorCode = content.GetResponseStream(Url);
             int errorCode = LastErrorCode;
             Connected?.Invoke(this, Url, content.Length, ref errorCode);
             if (LastErrorCode != errorCode)
@@ -99,6 +105,11 @@ namespace Multi_threaded_downloader
                 return DOWNLOAD_ERROR_URL_NOT_DEFINED;
             }
 
+            if (!IsRangeValid())
+            {
+                return DOWNLOAD_ERROR_RANGE;
+            }
+
             Stopped = false;
             _bytesTransfered = 0L;
             StreamSize = 0L;
@@ -106,7 +117,7 @@ namespace Multi_threaded_downloader
             WebContent content = new WebContent();
             content.Headers = Headers;
 
-            LastErrorCode = content.GetResponseStream(Url, _rangeFrom, _rangeTo);
+            LastErrorCode = content.GetResponseStream(Url);
             if (HasErrors)
             {
                 LastErrorMessage = content.LastErrorMessage;
@@ -142,7 +153,7 @@ namespace Multi_threaded_downloader
         {
             WebContent webContent = new WebContent() { Headers = headers };
             int errorCode = webContent.GetResponseStream(url);
-            contentLength = errorCode == 200 ? webContent.Length : -1L;
+            contentLength = errorCode == 200 || errorCode == 206 ? webContent.Length : -1L;
             errorText = webContent.LastErrorMessage;
             webContent.Dispose();
             return errorCode;
@@ -206,10 +217,65 @@ namespace Multi_threaded_downloader
             return 200;
         }
 
-        public void SetRange(long from, long to)
+        public bool SetRange(long from, long to)
         {
+            if (from < 0L || (to >= 0L && from > to))
+            {
+                return false;
+            }
+            
             _rangeFrom = from;
             _rangeTo = to;
+ 
+            for (int i = 0; i < Headers.Count; ++i)
+            {
+                string headerName = Headers.GetKey(i);
+
+                if (!string.IsNullOrEmpty(headerName) && !string.IsNullOrWhiteSpace(headerName) &&
+                    headerName.ToLower().Equals("range"))
+                {
+                    Headers.Remove(headerName);
+                    break;
+                }
+            }
+
+            string rangeValue = _rangeTo >= 0L ? $"{_rangeFrom}-{_rangeTo}" : $"{_rangeFrom}-";
+            Headers.Add("Range", rangeValue);
+
+            return true;
+        }
+
+        private bool IsRangeValid()
+        {
+            return !(_rangeFrom < 0L || (_rangeTo >= 0L && _rangeFrom > _rangeTo));
+        }
+
+        private void SetHeaders(NameValueCollection headers)
+        {
+            _rangeFrom = 0L;
+            _rangeTo = -1L;
+            Headers.Clear();
+            if (headers != null)
+            {
+                for (int i = 0; i < headers.Count; ++i)
+                {
+                    string headerName = headers.GetKey(i);
+
+                    if (!string.IsNullOrEmpty(headerName) && !string.IsNullOrWhiteSpace(headerName))
+                    {
+                        string headerValue = headers.Get(i);
+
+                        if (!string.IsNullOrEmpty(headerValue) && headerName.ToLower().Equals("range"))
+                        {
+                            WebContent.GetRangeHeaderValues(headerValue, out _rangeFrom, out _rangeTo);
+                            SetRange(_rangeFrom, _rangeTo);
+                            continue;
+                        }
+
+                        Headers.Add(headerName, headerValue);
+                    }
+                }
+            }
         }
 
         public static string ErrorCodeToString(int errorCode)
@@ -284,13 +350,7 @@ namespace Multi_threaded_downloader
 
         public int GetResponseStream(string url)
         {
-            int errorCode = GetResponseStream(url, 0L, 0L);
-            return errorCode;
-        }
-
-        public int GetResponseStream(string url, long rangeFrom, long rangeTo)
-        {
-            int errorCode = GetResponseStream(url, rangeFrom, rangeTo, out Stream stream);
+            int errorCode = GetResponseStream(url, out Stream stream);
             if (errorCode == 200 || errorCode == 206)
             {
                 ContentData = stream;
@@ -304,13 +364,9 @@ namespace Multi_threaded_downloader
             return errorCode;
         }
 
-        public int GetResponseStream(string url, long rangeFrom, long rangeTo, out Stream stream)
+        public int GetResponseStream(string url, out Stream stream)
         {
             stream = null;
-            if (rangeTo > 0L && rangeFrom > rangeTo)
-            {
-                return FileDownloader.DOWNLOAD_ERROR_RANGE;
-            }
             try
             {
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
@@ -318,11 +374,6 @@ namespace Multi_threaded_downloader
                 if (Headers != null)
                 {
                     SetRequestHeaders(request, Headers);
-                }
-
-                if (rangeTo > 0L)
-                {
-                    request.AddRange(rangeFrom, rangeTo);
                 }
 
                 webResponse = (HttpWebResponse)request.GetResponse();
@@ -442,7 +493,17 @@ namespace Multi_threaded_downloader
                 }
                 else if (headerNameLowercased.Equals("range"))
                 {
-                    System.Diagnostics.Debug.WriteLine("The \"Range\" header is not supported yet.");
+                    if (GetRangeHeaderValues(headerValue, out long byteStart, out long byteEnd))
+                    {
+                        if (byteStart >= 0L && byteEnd >= 0L)
+                        {
+                            request.AddRange(byteStart, byteEnd);
+                        }
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("Can't parse \"Range\" header value!");
+                    }
                     continue;
                 }
                 else if (headerNameLowercased.Equals("if-modified-since"))
@@ -458,6 +519,49 @@ namespace Multi_threaded_downloader
 
                 request.Headers.Add(headerName, headerValue);
             }
+        }
+
+        public static bool GetRangeHeaderValues(string inputString, out long byteStart, out long byteEnd)
+        {
+            byteStart = 0L;
+            byteEnd = -1L;
+            if (string.IsNullOrEmpty(inputString) || inputString.Contains(" "))
+            {
+                return false;
+            }
+
+            if (inputString.IndexOf('-') <= 0)
+            {
+                return false;
+            }
+
+            string[] splitted = inputString.Split(new char[] { '-' }, 2);
+            if (splitted.Length < 2)
+            {
+                return false;
+            }
+
+            string byteStartString = splitted[0];
+            if (string.IsNullOrEmpty(byteStartString) || string.IsNullOrWhiteSpace(byteStartString) ||
+                !long.TryParse(byteStartString, out byteStart))
+            {
+                return false;
+            }
+
+            string byteEndString = splitted[1];
+            if (string.IsNullOrEmpty(byteEndString) || string.IsNullOrWhiteSpace(byteEndString))
+            {
+                //Not defined ByteEnd value.
+                //But it is already set to -1L.
+                //So just return TRUE.
+                return true;
+            }
+            else if (!long.TryParse(byteEndString, out byteEnd))
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

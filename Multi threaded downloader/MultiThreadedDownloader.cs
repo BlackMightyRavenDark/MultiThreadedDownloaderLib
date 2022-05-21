@@ -172,7 +172,7 @@ namespace Multi_threaded_downloader
             {
                 LastErrorCode = errorCode;
             }
-            if (LastErrorCode != 200)
+            if (LastErrorCode != 200 && LastErrorCode != 206)
             {
                 LastErrorMessage = errorText;
                 return LastErrorCode;
