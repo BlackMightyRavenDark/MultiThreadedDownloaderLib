@@ -165,7 +165,8 @@ namespace Multi_threaded_downloader
             }
 
             Connecting?.Invoke(this, Url);
-            LastErrorCode = GetUrlContentLength(Url, Headers, out long contentLength, out string errorText);
+            LastErrorCode = GetUrlContentLength(Url, out long contentLength, out string errorText);
+            ContentLength = contentLength;
             int errorCode = LastErrorCode;
             Connected?.Invoke(this, Url, contentLength, ref errorCode);
             if (LastErrorCode != errorCode)
@@ -183,7 +184,6 @@ namespace Multi_threaded_downloader
                 return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
             }
 
-            ContentLength = contentLength;
             DownloadStarted?.Invoke(this, contentLength);
 
             Dictionary<int, ProgressItem> threadProgressDict = new Dictionary<int, ProgressItem>();

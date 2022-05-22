@@ -148,15 +148,57 @@ namespace Multi_threaded_downloader
             return LastErrorCode;
         }
 
-        public static int GetUrlContentLength(string url, NameValueCollection headers,
-            out long contentLength, out string errorText)
+        public static int GetUrlContentLength(string url, out long contentLength, out string errorText)
         {
-            WebContent webContent = new WebContent() { Headers = headers };
-            int errorCode = webContent.GetResponseStream(url);
-            contentLength = errorCode == 200 || errorCode == 206 ? webContent.Length : -1L;
-            errorText = webContent.LastErrorMessage;
-            webContent.Dispose();
+            contentLength = -1L;
+            int errorCode = GetUrlResponseHeaders(url, out WebHeaderCollection headers, out errorText);
+            if (errorCode == 200)
+            {
+                for (int i = 0; i < headers.Count; ++i)
+                {
+                    string headerName = headers.GetKey(i);
+                    if (headerName.Equals("Content-Length"))
+                    {
+                        string headerValue = headers.Get(i);
+                        contentLength = long.Parse(headerValue);
+                        return errorCode;
+                    }
+                }
+            }
             return errorCode;
+        }
+
+        public static int GetUrlResponseHeaders(string url, out WebHeaderCollection headers, out string errorText)
+        {
+            headers = null;
+            errorText = null;
+            int res;
+            try
+            { 
+                HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
+                httpWebRequest.Method = "HEAD";
+                HttpWebResponse httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+                res = (int)httpResponse.StatusCode;
+                if (res == 200)
+                {
+                    headers = httpResponse.Headers;
+                }
+                return res;
+            }
+            catch (WebException ex)
+            {
+                if (ex.Status == WebExceptionStatus.ProtocolError)
+                {
+                    HttpWebResponse httpWebResponse = (HttpWebResponse)ex.Response;
+                    errorText = ex.Message;
+                    res = (int)httpWebResponse.StatusCode;
+                }
+                else
+                {
+                    res = 400;
+                }
+            }
+            return res;
         }
 
         private int ContentToStream(WebContent content, Stream stream)
