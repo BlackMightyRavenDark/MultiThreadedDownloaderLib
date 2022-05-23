@@ -22,6 +22,8 @@ namespace Multi_threaded_downloader
         public string MergingDirectory { get; set; } = null;
         public bool KeepDownloadedFileInMergingDirectory { get; set; } = false;
         public long ContentLength { get; private set; } = -1L;
+        public long RangeFrom { get; private set; } = 0L;
+        public long RangeTo { get; private set; } = -1L;
         public long DownloadedBytes { get; private set; } = 0L;
         public int UpdateInterval { get; set; } = 10;
         public int LastErrorCode { get; private set; }
@@ -412,6 +414,17 @@ namespace Multi_threaded_downloader
             });
 
             return res;
+        }
+
+        public bool SetRange(long rangeFrom, long rangeTo)
+        {
+            if (IsRangeValid(rangeFrom, rangeTo))
+            {
+                RangeFrom = rangeFrom;
+                RangeTo = rangeTo;
+                return true;
+            }
+            return false;
         }
 
         public List<char> GetUsedDriveLetters()

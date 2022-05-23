@@ -51,7 +51,7 @@ namespace Multi_threaded_downloader
                 return DOWNLOAD_ERROR_URL_NOT_DEFINED;
             }
 
-            if (!IsRangeValid())
+            if (!IsRangeValid(_rangeFrom, _rangeTo))
             {
                 return DOWNLOAD_ERROR_RANGE;
             }
@@ -65,7 +65,7 @@ namespace Multi_threaded_downloader
             WebContent content = new WebContent();
             content.Headers = Headers;
 
-            LastErrorCode = content.GetResponseStream(Url);
+            LastErrorCode = content.GetResponseStream(Url, _rangeFrom, _rangeTo);
             int errorCode = LastErrorCode;
             Connected?.Invoke(this, Url, content.Length, ref errorCode);
             if (LastErrorCode != errorCode)
@@ -105,7 +105,7 @@ namespace Multi_threaded_downloader
                 return DOWNLOAD_ERROR_URL_NOT_DEFINED;
             }
 
-            if (!IsRangeValid())
+            if (!IsRangeValid(_rangeFrom, _rangeTo))
             {
                 return DOWNLOAD_ERROR_RANGE;
             }
@@ -117,7 +117,7 @@ namespace Multi_threaded_downloader
             WebContent content = new WebContent();
             content.Headers = Headers;
 
-            LastErrorCode = content.GetResponseStream(Url);
+            LastErrorCode = content.GetResponseStream(Url, _rangeFrom, _rangeTo);
             if (HasErrors)
             {
                 LastErrorMessage = content.LastErrorMessage;
@@ -259,15 +259,15 @@ namespace Multi_threaded_downloader
             return 200;
         }
 
-        public bool SetRange(long from, long to)
+        public bool SetRange(long rangeFrom, long rangeTo)
         {
-            if (from < 0L || (to >= 0L && from > to))
+            if (!IsRangeValid(rangeFrom, rangeTo))
             {
                 return false;
             }
             
-            _rangeFrom = from;
-            _rangeTo = to;
+            _rangeFrom = rangeFrom;
+            _rangeTo = rangeTo;
  
             for (int i = 0; i < Headers.Count; ++i)
             {
@@ -287,9 +287,9 @@ namespace Multi_threaded_downloader
             return true;
         }
 
-        private bool IsRangeValid()
+        public static bool IsRangeValid(long rangeFrom, long rangeTo)
         {
-            return !(_rangeFrom < 0L || (_rangeTo >= 0L && _rangeFrom > _rangeTo));
+            return rangeFrom >= 0L && (rangeTo < 0L || rangeTo >= rangeFrom);
         }
 
         private void SetHeaders(NameValueCollection headers)
@@ -392,7 +392,13 @@ namespace Multi_threaded_downloader
 
         public int GetResponseStream(string url)
         {
-            int errorCode = GetResponseStream(url, out Stream stream);
+            int errorCode = GetResponseStream(url, 0L, 0L);
+            return errorCode;
+        }
+
+        public int GetResponseStream(string url, long rangeFrom, long rangeTo)
+        {
+            int errorCode = GetResponseStream(url, rangeFrom, rangeTo, out Stream stream);
             if (errorCode == 200 || errorCode == 206)
             {
                 ContentData = stream;
@@ -406,9 +412,13 @@ namespace Multi_threaded_downloader
             return errorCode;
         }
 
-        public int GetResponseStream(string url, out Stream stream)
+        public int GetResponseStream(string url, long rangeFrom, long rangeTo, out Stream stream)
         {
             stream = null;
+            if (!FileDownloader.IsRangeValid(rangeFrom, rangeTo))
+            {
+                return FileDownloader.DOWNLOAD_ERROR_RANGE;
+            }
             try
             {
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
@@ -417,6 +427,8 @@ namespace Multi_threaded_downloader
                 {
                     SetRequestHeaders(request, Headers);
                 }
+
+                AddRange(request, rangeFrom, rangeTo);
 
                 webResponse = (HttpWebResponse)request.GetResponse();
                 int statusCode = (int)webResponse.StatusCode;
@@ -535,17 +547,6 @@ namespace Multi_threaded_downloader
                 }
                 else if (headerNameLowercased.Equals("range"))
                 {
-                    if (GetRangeHeaderValues(headerValue, out long byteStart, out long byteEnd))
-                    {
-                        if (byteStart >= 0L && byteEnd >= 0L)
-                        {
-                            request.AddRange(byteStart, byteEnd);
-                        }
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine("Can't parse \"Range\" header value!");
-                    }
                     continue;
                 }
                 else if (headerNameLowercased.Equals("if-modified-since"))
@@ -563,6 +564,29 @@ namespace Multi_threaded_downloader
             }
         }
 
+        public static bool AddRange(HttpWebRequest request, long rangeFrom, long rangeTo)
+        {
+            if (FileDownloader.IsRangeValid(rangeFrom, rangeTo))
+            {
+                if (rangeFrom >= 0L && rangeTo < 0L)
+                {
+                    request.AddRange(rangeFrom);
+                    return true;
+                }
+                else if (rangeFrom < 0L && rangeTo >= 0L)
+                {
+                    request.AddRange(-rangeTo);
+                    return true;
+                }
+                else if (rangeFrom >= 0L && rangeTo >= 0L)
+                {
+                    request.AddRange(rangeFrom, rangeTo);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public static bool GetRangeHeaderValues(string inputString, out long byteStart, out long byteEnd)
         {
             byteStart = 0L;
@@ -577,8 +601,14 @@ namespace Multi_threaded_downloader
                 return false;
             }
 
+            int n = inputString.IndexOf("bytes=");
+            if (n >= 0)
+            {
+                inputString = inputString.Substring(n + 6);
+            }
+
             string[] splitted = inputString.Split(new char[] { '-' }, 2);
-            if (splitted.Length < 2)
+            if (splitted == null || splitted.Length < 2)
             {
                 return false;
             }
@@ -587,7 +617,7 @@ namespace Multi_threaded_downloader
             if (string.IsNullOrEmpty(byteStartString) || string.IsNullOrWhiteSpace(byteStartString) ||
                 !long.TryParse(byteStartString, out byteStart))
             {
-                return false;
+                byteStart = 0L;
             }
 
             string byteEndString = splitted[1];
