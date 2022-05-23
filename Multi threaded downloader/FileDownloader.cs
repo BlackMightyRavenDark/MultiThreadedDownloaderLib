@@ -591,12 +591,7 @@ namespace Multi_threaded_downloader
         {
             byteStart = 0L;
             byteEnd = -1L;
-            if (string.IsNullOrEmpty(inputString) || inputString.Contains(" "))
-            {
-                return false;
-            }
-
-            if (inputString.IndexOf('-') <= 0)
+            if (string.IsNullOrEmpty(inputString) || inputString.Contains(" ") || !inputString.Contains("-"))
             {
                 return false;
             }
