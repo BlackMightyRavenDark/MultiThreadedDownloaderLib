@@ -30,7 +30,8 @@ namespace Multi_threaded_downloader
         public string LastErrorMessage { get; private set; }
         public int ThreadCount { get; set; } = 2;
         public List<string> Chunks { get; private set; } = new List<string>();
-        public NameValueCollection Headers = new NameValueCollection();
+        public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
+        private NameValueCollection _headers = new NameValueCollection();
         private bool aborted = false;
         public bool IsTempDirectoryAvailable => !string.IsNullOrEmpty(TempDirectory) &&
                         !string.IsNullOrWhiteSpace(TempDirectory) && Directory.Exists(TempDirectory);
@@ -105,18 +106,33 @@ namespace Multi_threaded_downloader
 
         private IEnumerable<Tuple<long, long>> Split(long contentLength, int chunkCount)
         {
-            if (chunkCount <= 1 || contentLength <= MEGABYTE)
+            long contentLengthRanged = RangeTo >= 0L ? RangeTo - RangeFrom : contentLength - RangeFrom;
+            if (chunkCount <= 1 || contentLengthRanged <= MEGABYTE)
             {
-                yield return new Tuple<long, long>(0, contentLength - 1);
+                long byteTo = RangeTo >= 0L ? RangeTo : contentLengthRanged + RangeFrom - 1;
+                yield return new Tuple<long, long>(RangeFrom, byteTo);
                 yield break;
             }
-            long chunkSize = contentLength / chunkCount;
-            for (int i = 0; i < chunkCount; i++)
+
+            long chunkSize = contentLengthRanged / chunkCount;
+            long startPos = RangeFrom;
+            for (int i = 0; i < chunkCount; ++i)
             {
-                long startPos = chunkSize * i;
                 bool lastChunk = i == chunkCount - 1;
-                long endPos = lastChunk ? (contentLength - 1) : (startPos + chunkSize - 1);
+                long endPos;
+                if (lastChunk)
+                {
+                    endPos = RangeTo >= 0 ? RangeTo : contentLength - 1;
+                }
+                else
+                {
+                    endPos = startPos + chunkSize;
+                }
                 yield return new Tuple<long, long>(startPos, endPos);
+                if (!lastChunk)
+                {
+                    startPos += chunkSize + 1;
+                }
             }
         }
 
@@ -167,10 +183,10 @@ namespace Multi_threaded_downloader
             }
 
             Connecting?.Invoke(this, Url);
-            LastErrorCode = GetUrlContentLength(Url, out long contentLength, out string errorText);
-            ContentLength = contentLength;
+            LastErrorCode = GetUrlContentLength(Url, out long fullContentLength, out string errorText);
+            ContentLength = RangeTo >= 0L ? RangeTo - RangeFrom + 1 : fullContentLength - RangeFrom;
             int errorCode = LastErrorCode;
-            Connected?.Invoke(this, Url, contentLength, ref errorCode);
+            Connected?.Invoke(this, Url, ContentLength, ref errorCode);
             if (LastErrorCode != errorCode)
             {
                 LastErrorCode = errorCode;
@@ -180,13 +196,13 @@ namespace Multi_threaded_downloader
                 LastErrorMessage = errorText;
                 return LastErrorCode;
             }
-            if (contentLength == 0)
+            if (ContentLength == 0)
             {
                 LastErrorCode = DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
                 return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
             }
 
-            DownloadStarted?.Invoke(this, contentLength);
+            DownloadStarted?.Invoke(this, ContentLength);
 
             Dictionary<int, ProgressItem> threadProgressDict = new Dictionary<int, ProgressItem>();
             Progress<ProgressItem> progress = new Progress<ProgressItem>();
@@ -204,8 +220,8 @@ namespace Multi_threaded_downloader
             {
                 ThreadCount = 2;
             }
-            int chunkCount = contentLength > MEGABYTE ? ThreadCount : 1;
-            var tasks = Split(contentLength, chunkCount).Select((range, taskId) => Task.Run(() =>
+            int chunkCount = ContentLength > MEGABYTE ? ThreadCount : 1;
+            var tasks = Split(fullContentLength, chunkCount).Select((range, taskId) => Task.Run(() =>
             {
                 long chunkFirstByte = range.Item1;
                 long chunkLastByte = range.Item2;
@@ -414,6 +430,34 @@ namespace Multi_threaded_downloader
             });
 
             return res;
+        }
+
+        private void SetHeaders(NameValueCollection headers)
+        {
+            RangeFrom = 0L;
+            RangeTo = -1L;
+            Headers.Clear();
+            if (headers != null)
+            {
+                for (int i = 0; i < headers.Count; ++i)
+                {
+                    string headerName = headers.GetKey(i);
+
+                    if (!string.IsNullOrEmpty(headerName) && !string.IsNullOrWhiteSpace(headerName))
+                    {
+                        string headerValue = headers.Get(i);
+
+                        if (!string.IsNullOrEmpty(headerValue) && headerName.ToLower().Equals("range"))
+                        {
+                            WebContent.GetRangeHeaderValues(headerValue, out long rangeFrom, out long rangeTo);
+                            SetRange(rangeFrom, rangeTo);
+                            continue;
+                        }
+
+                        Headers.Add(headerName, headerValue);
+                    }
+                }
+            }
         }
 
         public bool SetRange(long rangeFrom, long rangeTo)
