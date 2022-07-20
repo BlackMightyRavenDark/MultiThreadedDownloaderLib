@@ -86,9 +86,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Multi threaded downloader\Multi threaded downloader.csproj">
-      <Project>{3851ce55-8a80-412b-adac-837f9e436375}</Project>
-      <Name>Multi threaded downloader</Name>
+    <ProjectReference Include="..\MultiThreadedDownloader\MultiThreadedDownloader.csproj">
+      <Project>{9c6ec63e-ea47-4025-84db-5b3a37415110}</Project>
+      <Name>MultiThreadedDownloader</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
