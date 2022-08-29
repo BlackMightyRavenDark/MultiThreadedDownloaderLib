@@ -49,12 +49,13 @@ namespace GUI_test
             this.lblMergingProgress = new System.Windows.Forms.Label();
             this.cbKeepDownloadedFileInMergingDirectory = new System.Windows.Forms.CheckBox();
             this.btnHeaders = new System.Windows.Forms.Button();
+            this.checkBoxUseRamForTempFiles = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownThreadCount)).BeginInit();
             this.SuspendLayout();
             // 
             // btnDownloadSingleThreaded
             // 
-            this.btnDownloadSingleThreaded.Location = new System.Drawing.Point(12, 116);
+            this.btnDownloadSingleThreaded.Location = new System.Drawing.Point(12, 138);
             this.btnDownloadSingleThreaded.Name = "btnDownloadSingleThreaded";
             this.btnDownloadSingleThreaded.Size = new System.Drawing.Size(138, 23);
             this.btnDownloadSingleThreaded.TabIndex = 0;
@@ -71,14 +72,14 @@ namespace GUI_test
             // 
             // progressBar1
             // 
-            this.progressBar1.Location = new System.Drawing.Point(12, 158);
+            this.progressBar1.Location = new System.Drawing.Point(12, 186);
             this.progressBar1.Name = "progressBar1";
             this.progressBar1.Size = new System.Drawing.Size(745, 23);
             this.progressBar1.TabIndex = 2;
             // 
             // btnDownloadMultiThreaded
             // 
-            this.btnDownloadMultiThreaded.Location = new System.Drawing.Point(156, 116);
+            this.btnDownloadMultiThreaded.Location = new System.Drawing.Point(156, 138);
             this.btnDownloadMultiThreaded.Name = "btnDownloadMultiThreaded";
             this.btnDownloadMultiThreaded.Size = new System.Drawing.Size(148, 23);
             this.btnDownloadMultiThreaded.TabIndex = 3;
@@ -89,7 +90,7 @@ namespace GUI_test
             // lblDownloadingProgress
             // 
             this.lblDownloadingProgress.AutoSize = true;
-            this.lblDownloadingProgress.Location = new System.Drawing.Point(9, 142);
+            this.lblDownloadingProgress.Location = new System.Drawing.Point(9, 170);
             this.lblDownloadingProgress.Name = "lblDownloadingProgress";
             this.lblDownloadingProgress.Size = new System.Drawing.Size(58, 13);
             this.lblDownloadingProgress.TabIndex = 4;
@@ -184,7 +185,7 @@ namespace GUI_test
             // 
             // numericUpDownThreadCount
             // 
-            this.numericUpDownThreadCount.Location = new System.Drawing.Point(363, 120);
+            this.numericUpDownThreadCount.Location = new System.Drawing.Point(363, 142);
             this.numericUpDownThreadCount.Maximum = new decimal(new int[] {
             25,
             0,
@@ -207,7 +208,7 @@ namespace GUI_test
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(310, 122);
+            this.label5.Location = new System.Drawing.Point(310, 144);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(47, 13);
             this.label5.TabIndex = 16;
@@ -216,7 +217,7 @@ namespace GUI_test
             // lblMergingProgress
             // 
             this.lblMergingProgress.AutoSize = true;
-            this.lblMergingProgress.Location = new System.Drawing.Point(73, 142);
+            this.lblMergingProgress.Location = new System.Drawing.Point(73, 170);
             this.lblMergingProgress.Name = "lblMergingProgress";
             this.lblMergingProgress.Size = new System.Drawing.Size(96, 13);
             this.lblMergingProgress.TabIndex = 17;
@@ -225,7 +226,7 @@ namespace GUI_test
             // cbKeepDownloadedFileInMergingDirectory
             // 
             this.cbKeepDownloadedFileInMergingDirectory.AutoSize = true;
-            this.cbKeepDownloadedFileInMergingDirectory.Location = new System.Drawing.Point(409, 122);
+            this.cbKeepDownloadedFileInMergingDirectory.Location = new System.Drawing.Point(409, 144);
             this.cbKeepDownloadedFileInMergingDirectory.Name = "cbKeepDownloadedFileInMergingDirectory";
             this.cbKeepDownloadedFileInMergingDirectory.Size = new System.Drawing.Size(215, 17);
             this.cbKeepDownloadedFileInMergingDirectory.TabIndex = 18;
@@ -235,7 +236,7 @@ namespace GUI_test
             // btnHeaders
             // 
             this.btnHeaders.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnHeaders.Location = new System.Drawing.Point(681, 116);
+            this.btnHeaders.Location = new System.Drawing.Point(681, 138);
             this.btnHeaders.Name = "btnHeaders";
             this.btnHeaders.Size = new System.Drawing.Size(75, 23);
             this.btnHeaders.TabIndex = 19;
@@ -243,11 +244,23 @@ namespace GUI_test
             this.btnHeaders.UseVisualStyleBackColor = true;
             this.btnHeaders.Click += new System.EventHandler(this.btnHeaders_Click);
             // 
+            // checkBoxUseRamForTempFiles
+            // 
+            this.checkBoxUseRamForTempFiles.AutoSize = true;
+            this.checkBoxUseRamForTempFiles.Location = new System.Drawing.Point(12, 115);
+            this.checkBoxUseRamForTempFiles.Name = "checkBoxUseRamForTempFiles";
+            this.checkBoxUseRamForTempFiles.Size = new System.Drawing.Size(650, 17);
+            this.checkBoxUseRamForTempFiles.TabIndex = 20;
+            this.checkBoxUseRamForTempFiles.Text = "Использовать оперативную память для хранения временных файлов (только многопоточн" +
+    "ый режим), Экспериментально!";
+            this.checkBoxUseRamForTempFiles.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(768, 194);
+            this.ClientSize = new System.Drawing.Size(768, 222);
+            this.Controls.Add(this.checkBoxUseRamForTempFiles);
             this.Controls.Add(this.btnHeaders);
             this.Controls.Add(this.cbKeepDownloadedFileInMergingDirectory);
             this.Controls.Add(this.lblMergingProgress);
@@ -301,5 +314,6 @@ namespace GUI_test
         private System.Windows.Forms.Label lblMergingProgress;
         private System.Windows.Forms.CheckBox cbKeepDownloadedFileInMergingDirectory;
         private System.Windows.Forms.Button btnHeaders;
+        private System.Windows.Forms.CheckBox checkBoxUseRamForTempFiles;
     }
 }

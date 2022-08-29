@@ -350,8 +350,13 @@ namespace GUI_test
             multiThreadedDownloader.TempDirectory = editTempPath.Text;
             multiThreadedDownloader.MergingDirectory = editMergingPath.Text;
             multiThreadedDownloader.KeepDownloadedFileInMergingDirectory = cbKeepDownloadedFileInMergingDirectory.Checked;
+            multiThreadedDownloader.UseRamForTempFiles = checkBoxUseRamForTempFiles.Checked;
             int errorCode = await multiThreadedDownloader.Download();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
+            if (multiThreadedDownloader.UseRamForTempFiles)
+            {
+                GC.Collect();
+            }
             if (errorCode != 200 && errorCode != 206)
             {
                 switch (errorCode)

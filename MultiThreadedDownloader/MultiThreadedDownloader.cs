@@ -25,18 +25,23 @@ namespace Multi_threaded_downloader
         public long RangeFrom { get; private set; } = 0L;
         public long RangeTo { get; private set; } = -1L;
         public long DownloadedBytes { get; private set; } = 0L;
+
+        /// <summary>
+        /// WARNING!!! Experimental feature!
+        /// Must be used very softly and carefully!
+        /// </summary>
+        public bool UseRamForTempFiles { get; set; } = false;
         public int UpdateInterval { get; set; } = 10;
         public int LastErrorCode { get; private set; }
         public string LastErrorMessage { get; private set; }
         public int ThreadCount { get; set; } = 2;
-        public List<string> Chunks { get; private set; } = new List<string>();
         public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
         private NameValueCollection _headers = new NameValueCollection();
         private bool aborted = false;
         public bool IsTempDirectoryAvailable => !string.IsNullOrEmpty(TempDirectory) &&
                         !string.IsNullOrWhiteSpace(TempDirectory) && Directory.Exists(TempDirectory);
         public bool IsMergingDirectoryAvailable => !string.IsNullOrEmpty(MergingDirectory) &&
-                    !string.IsNullOrWhiteSpace(MergingDirectory) && Directory.Exists(MergingDirectory);
+                  !string.IsNullOrWhiteSpace(MergingDirectory) && Directory.Exists(MergingDirectory);
 
         public const int MEGABYTE = 1048576; //1024 * 1024;
 
@@ -150,7 +155,8 @@ namespace Multi_threaded_downloader
                 LastErrorCode = DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED;
                 return DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED;
             }
-            if (!string.IsNullOrEmpty(TempDirectory) && !string.IsNullOrWhiteSpace(TempDirectory) && !Directory.Exists(TempDirectory))
+            if (!UseRamForTempFiles &&
+                !string.IsNullOrEmpty(TempDirectory) && !string.IsNullOrWhiteSpace(TempDirectory) && !Directory.Exists(TempDirectory))
             {
                 LastErrorCode = DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS;
                 return DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS;
@@ -196,7 +202,7 @@ namespace Multi_threaded_downloader
                 LastErrorMessage = errorText;
                 return LastErrorCode;
             }
-            if (ContentLength == 0)
+            if (ContentLength == 0L)
             {
                 LastErrorCode = DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
                 return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
@@ -228,23 +234,26 @@ namespace Multi_threaded_downloader
 
                 IProgress<ProgressItem> reporter = progress;
 
-                string chunkFileName;
-                if (chunkCount > 1)
+                string chunkFileName = null;
+                if (!UseRamForTempFiles)
                 {
-                    string path = Path.GetFileName(OutputFileName);
-                    chunkFileName = $"{path}.chunk_{taskId}.tmp";
-                    if (IsTempDirectoryAvailable)
+                    if (chunkCount > 1)
                     {
-                        chunkFileName = TempDirectory.EndsWith("\\") ?
-                            TempDirectory + chunkFileName : $"{TempDirectory}\\{chunkFileName}";
+                        string path = Path.GetFileName(OutputFileName);
+                        chunkFileName = $"{path}.chunk_{taskId}.tmp";
+                        if (IsTempDirectoryAvailable)
+                        {
+                            chunkFileName = TempDirectory.EndsWith("\\") ?
+                                TempDirectory + chunkFileName : $"{TempDirectory}\\{chunkFileName}";
+                        }
                     }
-                }
-                else
-                {
-                    chunkFileName = OutputFileName + ".tmp";
-                }
+                    else
+                    {
+                        chunkFileName = OutputFileName + ".tmp";
+                    }
 
-                chunkFileName = GetNumberedFileName(chunkFileName);
+                    chunkFileName = GetNumberedFileName(chunkFileName);
+                }
 
                 FileDownloader downloader = new FileDownloader();
                 downloader.ProgressUpdateInterval = UpdateInterval;
@@ -252,27 +261,56 @@ namespace Multi_threaded_downloader
                 downloader.Headers = Headers;
                 downloader.SetRange(chunkFirstByte, chunkLastByte);
 
+                Stream streamChunk = null;
+
                 downloader.WorkProgress += (object sender, long transfered, long contentLen) =>
                 {
-                    reporter.Report(new ProgressItem(chunkFileName, taskId, transfered, chunkLastByte));
+                    FileChunk fileChunk = new FileChunk(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
+                    ProgressItem progressItem = new ProgressItem(fileChunk, taskId, transfered, chunkLastByte);
+                    reporter.Report(progressItem);
                 };
                 downloader.WorkFinished += (object sender, long transfered, long contentLen, int errCode) =>
                 {
-                    reporter.Report(new ProgressItem(chunkFileName, taskId, transfered, chunkLastByte));
+                    FileChunk fileChunk = new FileChunk(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
+                    ProgressItem progressItem = new ProgressItem(fileChunk, taskId, transfered, chunkLastByte);
+                    reporter.Report(progressItem);
                 };
                 downloader.CancelTest += (object s, ref bool stop) =>
                 {
                     stop = aborted;
                 };
 
-                Stream stream = File.OpenWrite(chunkFileName);
-                LastErrorCode = downloader.Download(stream);
-                stream.Dispose();
+                try
+                {
+                    if (UseRamForTempFiles)
+                    {
+                        streamChunk = new MemoryStream();
+                    }
+                    else
+                    {
+                        streamChunk = File.OpenWrite(chunkFileName);
+                    }
+                    LastErrorCode = downloader.Download(streamChunk);
+                    if (!UseRamForTempFiles)
+                    {
+                        streamChunk.Dispose();
+                        streamChunk = null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (streamChunk != null)
+                    {
+                        streamChunk.Dispose();
+                    }
+                    LastErrorCode = ex.HResult;
+                    LastErrorMessage = ex.Message;
+                }
 
                 if (LastErrorCode != 200 && LastErrorCode != 206)
                 {
                     if (aborted)
-                    { 
+                    {
                         throw new OperationCanceledException();
                     }
                     LastErrorMessage = downloader.LastErrorMessage;
@@ -285,48 +323,63 @@ namespace Multi_threaded_downloader
             {
                 await Task.WhenAll(tasks);
             }
-            catch (OperationCanceledException ex)
-            {
-                System.Diagnostics.Debug.WriteLine(ex.Message);
-                LastErrorMessage = ex.Message;
-                return DOWNLOAD_ERROR_CANCELED_BY_USER;
-            }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
                 LastErrorMessage = ex.Message;
-                return ex.HResult;
+                if (UseRamForTempFiles)
+                {
+                    for (int i = 0; i < threadProgressDict.Count; ++i)
+                    {
+                        if (threadProgressDict[i].FileChunk != null)
+                        {
+                            threadProgressDict[i].FileChunk.Dispose();
+                            //TODO: Fix possible memory leaking
+                            GC.Collect();
+                        }
+                    }
+                }
+                int ret = (ex is OperationCanceledException) ? DOWNLOAD_ERROR_CANCELED_BY_USER : ex.HResult;
+                return ret;
             }
 
-            Chunks.Clear();
-            for (int i = 0; i < threadProgressDict.Count; i++)
+            List<FileChunk> chunks = new List<FileChunk>();
+            for (int i = 0; i < threadProgressDict.Count; ++i)
             {
-                Chunks.Add(threadProgressDict[i].FileName);
+                chunks.Add(threadProgressDict[i].FileChunk);
             }
-            if (Chunks.Count > 1)
+            if (UseRamForTempFiles || chunks.Count > 1)
             {
-                MergingStarted?.Invoke(this, Chunks.Count);
-                LastErrorCode = await MergeChunks();
+                MergingStarted?.Invoke(this, chunks.Count);
+                LastErrorCode = await MergeChunks(chunks);
                 MergingFinished?.Invoke(this, LastErrorCode);
+            }
+            else if (!UseRamForTempFiles && chunks.Count == 1)
+            {
+                string chunkFilePath = chunks[0].FilePath;
+                if (!string.IsNullOrEmpty(chunkFilePath) && !string.IsNullOrWhiteSpace(chunkFilePath) &&
+                    File.Exists(chunkFilePath))
+                {
+                    OutputFileName = GetNumberedFileName(OutputFileName);
+                    File.Move(chunkFilePath, OutputFileName);
+                    LastErrorCode = 200;
+                }
+                else
+                {
+                    LastErrorCode = 400;
+                }
             }
             else
             {
-                string chunkFileName = Chunks[0];
-                if (File.Exists(chunkFileName))
-                {
-                    OutputFileName = GetNumberedFileName(OutputFileName);
-                    File.Move(chunkFileName, OutputFileName);
-                }
-                LastErrorCode = 200;
+                LastErrorCode = 400;
             }
-            Chunks.Clear();
 
             DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
 
             return LastErrorCode;
         }
 
-        private async Task<int> MergeChunks()
+        private async Task<int> MergeChunks(IEnumerable<FileChunk> chunks)
         {
             Progress<int> progressMerging = new Progress<int>();
             progressMerging.ProgressChanged += (s, n) =>
@@ -369,29 +422,74 @@ namespace Multi_threaded_downloader
                     {
                         outputStream.Dispose();
                     }
+                    if (UseRamForTempFiles)
+                    {
+                        foreach (FileChunk fc in chunks)
+                        {
+                            fc.Dispose();
+                        }
+                        //TODO: Fix possible memory leaking
+                        GC.Collect();
+                    }
                     return DOWNLOAD_ERROR_CREATE_FILE;
                 }
 
                 IProgress<int> reporter = progressMerging;
                 try
                 {
-                    for (int i = 0; i < Chunks.Count; i++)
+                    int i = 0;
+                    foreach (FileChunk fileChunk in chunks)
                     {
-                        string chunkFileName = Chunks[i];
-                        if (!File.Exists(chunkFileName))
+                        string chunkFilePath = fileChunk.FilePath;
+                        bool fileExists = false;
+                        Stream tmpStream = fileChunk.Stream;
+                        bool isMemoryStream = tmpStream != null;
+                        if (!isMemoryStream)
                         {
-                            return DOWNLOAD_ERROR_MERGING_CHUNKS;
+                            fileExists = !string.IsNullOrEmpty(chunkFilePath) && !string.IsNullOrWhiteSpace(chunkFilePath) &&
+                                File.Exists(chunkFilePath);
+                            if (!fileExists)
+                            {
+                                return DOWNLOAD_ERROR_MERGING_CHUNKS;
+                            }
+                            tmpStream = File.OpenRead(chunkFilePath);
                         }
-                        Stream streamChunk = File.OpenRead(chunkFileName);
-                        bool appended = AppendStream(streamChunk, outputStream);
-                        streamChunk.Dispose();
+                        else
+                        {
+                            tmpStream.Position = 0;
+                        }
+                        bool appended = AppendStream(tmpStream, outputStream);
+                        fileChunk.Dispose();
+                        if (isMemoryStream)
+                        {
+                            //TODO: Fix possible memory leaking
+                            GC.Collect();
+                        }
+                        else
+                        {
+                            tmpStream.Dispose();
+                        }
+
                         if (!appended)
                         {
                             outputStream.Dispose();
+                            if (UseRamForTempFiles)
+                            {
+                                foreach (FileChunk fc in chunks)
+                                {
+                                    fc.Dispose();
+                                }
+                                //TODO: Fix possible memory leaking
+                                GC.Collect(); 
+                            }
                             return DOWNLOAD_ERROR_MERGING_CHUNKS;
                         }
 
-                        File.Delete(chunkFileName);
+                        if (!isMemoryStream && fileExists)
+                        {
+                            File.Delete(chunkFilePath);
+                        }
+
                         reporter.Report(i);
 
                         if (CancelTest != null)
@@ -402,18 +500,37 @@ namespace Multi_threaded_downloader
                                 break;
                             }
                         }
+                        ++i;
                     }
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine(ex.Message);
                     outputStream.Dispose();
+                    if (UseRamForTempFiles)
+                    {
+                        foreach (FileChunk fc in chunks)
+                        {
+                            fc.Dispose();
+                        }
+                        //TODO: Fix possible memory leaking
+                        GC.Collect();
+                    }
                     return DOWNLOAD_ERROR_MERGING_CHUNKS;
                 }
                 outputStream.Dispose();
 
                 if (aborted)
                 {
+                    if (UseRamForTempFiles)
+                    {
+                        foreach (FileChunk fc in chunks)
+                        {
+                            fc.Dispose();
+                        }
+                        //TODO: Fix possible memory leaking
+                        GC.Collect();
+                    }
                     return DOWNLOAD_ERROR_CANCELED_BY_USER;
                 }
 
@@ -536,16 +653,37 @@ namespace Multi_threaded_downloader
         }
     }
 
+    public sealed class FileChunk : IDisposable
+    {
+        public string FilePath { get; private set; }
+        public Stream Stream { get; private set; }
+
+        public FileChunk(string filePath, Stream stream)
+        {
+            FilePath = filePath;
+            Stream = stream;
+        }
+
+        public void Dispose()
+        {
+            if (Stream != null)
+            {
+                Stream.Dispose();
+                Stream = null;
+            }
+        }
+    }
+
     public sealed class ProgressItem
     {
-        public string FileName { get; set; }
+        public FileChunk FileChunk { get; }
         public int TaskId { get; }
         public long ProcessedBytes { get; }
         public long TotalBytes { get; }
 
-        public ProgressItem(string fileName, int taskId, long processedBytes, long totalBtyes)
+        public ProgressItem(FileChunk fileChunk, int taskId, long processedBytes, long totalBtyes)
         {
-            FileName = fileName;
+            FileChunk = fileChunk;
             TaskId = taskId;
             ProcessedBytes = processedBytes;
             TotalBytes = totalBtyes;
