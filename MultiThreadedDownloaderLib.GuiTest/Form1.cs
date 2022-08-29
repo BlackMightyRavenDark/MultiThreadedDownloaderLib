@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
-using System.Net;
 using System.Windows.Forms;
 
 namespace MultiThreadedDownloaderLib.GuiTest
@@ -20,7 +19,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            ServicePointManager.DefaultConnectionLimit = 100;
+            MultiThreadedDownloader.SetMaximumConnectionsLimit(100);
             lblDownloadingProgress.Text = null;
             lblMergingProgress.Text = null;
 
@@ -79,7 +78,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             if (editor.ShowDialog() == DialogResult.OK)
             {
                 headerCollection.Clear();
-                for (int i = 0; i < editor.Headers.Count; i++)
+                for (int i = 0; i < editor.Headers.Count; ++i)
                 {
                     string headerName = editor.Headers.GetKey(i);
                     string headerValue = editor.Headers.Get(i);

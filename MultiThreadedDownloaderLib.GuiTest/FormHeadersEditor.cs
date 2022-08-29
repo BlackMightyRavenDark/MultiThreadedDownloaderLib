@@ -15,7 +15,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             if (headers != null)
             {
                 string t = string.Empty;
-                for (int i = 0; i < headers.Count; i++)
+                for (int i = 0; i < headers.Count; ++i)
                 {
                     string headerName = headers.GetKey(i);
                     string headerValue = headers.Get(i);

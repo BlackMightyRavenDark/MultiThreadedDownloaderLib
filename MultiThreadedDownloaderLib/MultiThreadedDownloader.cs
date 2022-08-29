@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using static MultiThreadedDownloaderLib.FileDownloader;
 
@@ -586,6 +587,11 @@ namespace MultiThreadedDownloaderLib
                 return true;
             }
             return false;
+        }
+
+        public static void SetMaximumConnectionsLimit(int limit)
+        {
+            ServicePointManager.DefaultConnectionLimit = limit;
         }
 
         public List<char> GetUsedDriveLetters()
