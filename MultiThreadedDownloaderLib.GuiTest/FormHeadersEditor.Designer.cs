@@ -1,5 +1,5 @@
 ﻿
-namespace GUI_test
+namespace MultiThreadedDownloaderLib.GuiTest
 {
     partial class FormHeadersEditor
     {

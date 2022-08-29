@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{DEEA7C35-5299-4D18-9AB9-5ED79B05A97A}</ProjectGuid>
+    <ProjectGuid>{15230C96-74C7-4EDB-8A10-BFE4E4B0C76A}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>GUI_test</RootNamespace>
-    <AssemblyName>GUI test</AssemblyName>
+    <RootNamespace>MultiThreadedDownloaderLib.GuiTest</RootNamespace>
+    <AssemblyName>MultiThreadedDownloaderLib.GuiTest</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -35,15 +35,12 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
-    <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Form1.cs">
@@ -60,9 +57,6 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Form1.resx">
-      <DependentUpon>Form1.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="FormHeadersEditor.resx">
       <DependentUpon>FormHeadersEditor.cs</DependentUpon>
     </EmbeddedResource>
@@ -89,9 +83,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MultiThreadedDownloader\MultiThreadedDownloader.csproj">
-      <Project>{9c6ec63e-ea47-4025-84db-5b3a37415110}</Project>
-      <Name>MultiThreadedDownloader</Name>
+    <ProjectReference Include="..\MultiThreadedDownloaderLib\MultiThreadedDownloaderLib.csproj">
+      <Project>{e8f8e007-9636-4562-a8a9-94342b67025e}</Project>
+      <Name>MultiThreadedDownloaderLib</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

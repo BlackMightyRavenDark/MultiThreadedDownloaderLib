@@ -4,9 +4,9 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using static Multi_threaded_downloader.FileDownloader;
+using static MultiThreadedDownloaderLib.FileDownloader;
 
-namespace Multi_threaded_downloader
+namespace MultiThreadedDownloaderLib
 {
     public sealed class MultiThreadedDownloader
     {

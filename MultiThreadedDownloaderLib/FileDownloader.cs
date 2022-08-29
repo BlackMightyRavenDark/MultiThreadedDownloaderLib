@@ -4,7 +4,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 
-namespace Multi_threaded_downloader
+namespace MultiThreadedDownloaderLib
 {
     public sealed class FileDownloader
     {

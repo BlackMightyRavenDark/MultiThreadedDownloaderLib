@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // Общие сведения об этой сборке предоставляются следующим набором
 // набора атрибутов. Измените значения этих атрибутов для изменения сведений,
 // связанных со сборкой.
-[assembly: AssemblyTitle("GUI test")]
+[assembly: AssemblyTitle("MultiThreadedDownloaderLib.GuiTest")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("GUI test")]
+[assembly: AssemblyProduct("MultiThreadedDownloaderLib.GuiTest")]
 [assembly: AssemblyCopyright("Copyright ©  2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // Следующий GUID служит для идентификации библиотеки типов, если этот проект будет видимым для COM
-[assembly: Guid("deea7c35-5299-4d18-9ab9-5ed79b05a97a")]
+[assembly: Guid("15230c96-74c7-4edb-8a10-bfe4e4b0c76a")]
 
 // Сведения о версии сборки состоят из указанных ниже четырех значений:
 //
