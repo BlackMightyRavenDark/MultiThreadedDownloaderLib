@@ -186,6 +186,11 @@ namespace MultiThreadedDownloaderLib.GuiTest
                     string percentFormatted = string.Format("{0:F3}", percent);
                     lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из {contentLength} ({percentFormatted}%)";
                 }
+                else
+                {
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из <Неизвестно>";
+                }
+
                 Application.DoEvents();
             };
             downloader.WorkFinished += (s, bytesTransfered, contentLength, errCode) =>
@@ -196,6 +201,10 @@ namespace MultiThreadedDownloaderLib.GuiTest
                     progressBar1.Value = (int)percent;
                     string percentFormatted = string.Format("{0:F3}", percent);
                     lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из {contentLength} ({percentFormatted}%)";
+                }
+                else
+                {
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из <Неизвестно>";
                 }
             };
             downloader.CancelTest += (object s, ref bool stop) =>
@@ -299,7 +308,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
             {
                 progressBar1.Value = 0;
                 progressBar1.Maximum = 100;
-                lblDownloadingProgress.Text = $"Скачано: 0 из {contentLength}";
+                string contentLengthString = contentLength > 0L ? contentLength.ToString() : "<Неизвестно>";
+                lblDownloadingProgress.Text = $"Скачано 0 из {contentLengthString}";
             };
             multiThreadedDownloader.DownloadProgress += (s, bytesTransfered) =>
             {
@@ -310,6 +320,10 @@ namespace MultiThreadedDownloaderLib.GuiTest
                     progressBar1.Value = (int)percent;
                     string percentFormatted = string.Format("{0:F3}", percent);
                     lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из {contentLength} ({percentFormatted}%)";
+                }
+                else
+                {
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из <Неизвестно>";
                 }
             };
             multiThreadedDownloader.DownloadFinished += (s, bytesTransfered, errCode, fileName) =>
