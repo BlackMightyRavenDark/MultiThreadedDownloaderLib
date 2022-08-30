@@ -46,7 +46,7 @@
             this.numericUpDownThreadCount = new System.Windows.Forms.NumericUpDown();
             this.label5 = new System.Windows.Forms.Label();
             this.lblMergingProgress = new System.Windows.Forms.Label();
-            this.cbKeepDownloadedFileInMergingDirectory = new System.Windows.Forms.CheckBox();
+            this.cbKeepDownloadedFileInTempOrMergingDirectory = new System.Windows.Forms.CheckBox();
             this.btnHeaders = new System.Windows.Forms.Button();
             this.checkBoxUseRamForTempFiles = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownThreadCount)).BeginInit();
@@ -222,15 +222,15 @@
             this.lblMergingProgress.TabIndex = 17;
             this.lblMergingProgress.Text = "lblMergingProgress";
             // 
-            // cbKeepDownloadedFileInMergingDirectory
+            // cbKeepDownloadedFileInTempOrMergingDirectory
             // 
-            this.cbKeepDownloadedFileInMergingDirectory.AutoSize = true;
-            this.cbKeepDownloadedFileInMergingDirectory.Location = new System.Drawing.Point(409, 144);
-            this.cbKeepDownloadedFileInMergingDirectory.Name = "cbKeepDownloadedFileInMergingDirectory";
-            this.cbKeepDownloadedFileInMergingDirectory.Size = new System.Drawing.Size(215, 17);
-            this.cbKeepDownloadedFileInMergingDirectory.TabIndex = 18;
-            this.cbKeepDownloadedFileInMergingDirectory.Text = "Оставить файл в папке объединения";
-            this.cbKeepDownloadedFileInMergingDirectory.UseVisualStyleBackColor = true;
+            this.cbKeepDownloadedFileInTempOrMergingDirectory.AutoSize = true;
+            this.cbKeepDownloadedFileInTempOrMergingDirectory.Location = new System.Drawing.Point(409, 144);
+            this.cbKeepDownloadedFileInTempOrMergingDirectory.Name = "cbKeepDownloadedFileInTempOrMergingDirectory";
+            this.cbKeepDownloadedFileInTempOrMergingDirectory.Size = new System.Drawing.Size(210, 17);
+            this.cbKeepDownloadedFileInTempOrMergingDirectory.TabIndex = 18;
+            this.cbKeepDownloadedFileInTempOrMergingDirectory.Text = "Оставить файл во временной папке";
+            this.cbKeepDownloadedFileInTempOrMergingDirectory.UseVisualStyleBackColor = true;
             // 
             // btnHeaders
             // 
@@ -261,7 +261,7 @@
             this.ClientSize = new System.Drawing.Size(768, 222);
             this.Controls.Add(this.checkBoxUseRamForTempFiles);
             this.Controls.Add(this.btnHeaders);
-            this.Controls.Add(this.cbKeepDownloadedFileInMergingDirectory);
+            this.Controls.Add(this.cbKeepDownloadedFileInTempOrMergingDirectory);
             this.Controls.Add(this.lblMergingProgress);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.numericUpDownThreadCount);
@@ -311,7 +311,7 @@
         private System.Windows.Forms.NumericUpDown numericUpDownThreadCount;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label lblMergingProgress;
-        private System.Windows.Forms.CheckBox cbKeepDownloadedFileInMergingDirectory;
+        private System.Windows.Forms.CheckBox cbKeepDownloadedFileInTempOrMergingDirectory;
         private System.Windows.Forms.Button btnHeaders;
         private System.Windows.Forms.CheckBox checkBoxUseRamForTempFiles;
     }

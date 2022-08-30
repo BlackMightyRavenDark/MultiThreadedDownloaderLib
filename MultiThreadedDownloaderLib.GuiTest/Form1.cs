@@ -123,7 +123,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             isDownloading = true;
 
             btnDownloadSingleThreaded.Text = "Stop";
-            cbKeepDownloadedFileInMergingDirectory.Enabled = false;
+            cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = false;
             lblMergingProgress.Text = null;
 
             string fn = editFileName.Text;
@@ -251,7 +251,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             btnDownloadSingleThreaded.Enabled = true;
             btnDownloadMultiThreaded.Enabled = true;
             btnHeaders.Enabled = true;
-            cbKeepDownloadedFileInMergingDirectory.Enabled = true;
+            cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = true;
         }
 
         private async void btnDownloadMultiThreaded_Click(object sender, EventArgs e)
@@ -269,7 +269,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             btnDownloadMultiThreaded.Text = "Stop";
             btnDownloadSingleThreaded.Enabled = false;
             btnHeaders.Enabled = false;
-            cbKeepDownloadedFileInMergingDirectory.Enabled = false;
+            cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = false;
             numericUpDownThreadCount.Enabled = false;
             lblMergingProgress.Text = null;
 
@@ -361,7 +361,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             multiThreadedDownloader.OutputFileName = editFileName.Text;
             multiThreadedDownloader.TempDirectory = editTempPath.Text;
             multiThreadedDownloader.MergingDirectory = editMergingPath.Text;
-            multiThreadedDownloader.KeepDownloadedFileInMergingDirectory = cbKeepDownloadedFileInMergingDirectory.Checked;
+            multiThreadedDownloader.KeepDownloadedFileInTempOrMergingDirectory = cbKeepDownloadedFileInTempOrMergingDirectory.Checked;
             multiThreadedDownloader.UseRamForTempFiles = checkBoxUseRamForTempFiles.Checked;
             int errorCode = await multiThreadedDownloader.Download();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
@@ -399,7 +399,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             btnDownloadSingleThreaded.Enabled = true;
             btnHeaders.Enabled = true;
             numericUpDownThreadCount.Enabled = true;
-            cbKeepDownloadedFileInMergingDirectory.Enabled = true;
+            cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = true;
         }
 
         private bool IsEnoughDiskSpace(IEnumerable<char> driveLetters, long contentLength)

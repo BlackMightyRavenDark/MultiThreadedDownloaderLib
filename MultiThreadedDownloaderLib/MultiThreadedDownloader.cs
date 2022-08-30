@@ -21,7 +21,7 @@ namespace MultiThreadedDownloaderLib
 
         public string TempDirectory { get; set; } = null;
         public string MergingDirectory { get; set; } = null;
-        public bool KeepDownloadedFileInMergingDirectory { get; set; } = false;
+        public bool KeepDownloadedFileInTempOrMergingDirectory { get; set; } = false;
 
         /// <summary>
         /// Enables or disables some temporary files location logic.
@@ -353,7 +353,11 @@ namespace MultiThreadedDownloaderLib
                 if (!string.IsNullOrEmpty(chunkFilePath) && !string.IsNullOrWhiteSpace(chunkFilePath) &&
                     File.Exists(chunkFilePath))
                 {
-                    OutputFileName = GetNumberedFileName(OutputFileName);
+                    string destinationDirPath = Path.GetDirectoryName(
+                        KeepDownloadedFileInTempOrMergingDirectory ? chunkFilePath : OutputFileName);
+                    string destinationFileName = Path.GetFileName(OutputFileName);
+                    string destinationFilePath = Path.Combine(destinationDirPath, destinationFileName);
+                    OutputFileName = GetNumberedFileName(destinationFilePath);
                     File.Move(chunkFilePath, OutputFileName);
                     LastErrorCode = 200;
                 }
@@ -508,7 +512,7 @@ namespace MultiThreadedDownloaderLib
                     return DOWNLOAD_ERROR_CANCELED_BY_USER;
                 }
 
-                if (KeepDownloadedFileInMergingDirectory &&
+                if (KeepDownloadedFileInTempOrMergingDirectory &&
                     !string.IsNullOrEmpty(MergingDirectory) && !string.IsNullOrWhiteSpace(MergingDirectory))
                 {
                     string fn = Path.GetFileName(OutputFileName);
