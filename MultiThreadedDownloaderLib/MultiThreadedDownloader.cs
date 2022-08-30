@@ -22,6 +22,13 @@ namespace MultiThreadedDownloaderLib
         public string TempDirectory { get; set; } = null;
         public string MergingDirectory { get; set; } = null;
         public bool KeepDownloadedFileInMergingDirectory { get; set; } = false;
+
+        /// <summary>
+        /// Enables or disables some temporary files location logic.
+        /// Disable it, if you want to set directories manually.
+        /// </summary>
+        public bool LogicEnabled { get; set; } = false;
+
         public long ContentLength { get; private set; } = -1L;
         public long RangeFrom { get; private set; } = 0L;
         public long RangeTo { get; private set; } = -1L;
@@ -523,8 +530,8 @@ namespace MultiThreadedDownloaderLib
                 string chunkFileName;
                 if (chunkCount > 1)
                 {
-                    string path = Path.GetFileName(OutputFileName);
-                    chunkFileName = $"{path}.chunk_{taskId}.tmp";
+                    string fn = Path.GetFileName(OutputFileName);
+                    chunkFileName = $"{fn}.chunk_{taskId}.tmp";
                     if (IsTempDirectoryAvailable)
                     {
                         chunkFileName = TempDirectory.EndsWith("\\") ?
@@ -533,9 +540,21 @@ namespace MultiThreadedDownloaderLib
                 }
                 else
                 {
-                    chunkFileName = OutputFileName + ".tmp";
+                    if (LogicEnabled)
+                    {
+                        chunkFileName = OutputFileName + ".tmp";
+                    }
+                    else if (IsTempDirectoryAvailable)
+                    {
+                        string fn = Path.GetFileName(OutputFileName);
+                        chunkFileName = TempDirectory.EndsWith("\\") ?
+                            $"{TempDirectory}{fn}.chunk_{taskId}.tmp" : $"{TempDirectory}\\{fn}.chunk_{taskId}.tmp";
+                    }
+                    else
+                    {
+                        chunkFileName = OutputFileName + ".tmp";
+                    }
                 }
-
                 return chunkFileName;
             }
             return null;
