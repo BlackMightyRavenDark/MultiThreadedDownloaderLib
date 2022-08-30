@@ -145,7 +145,7 @@ namespace MultiThreadedDownloaderLib
         public async Task<int> Download()
         {
             aborted = false;
-            DownloadedBytes = 0;
+            DownloadedBytes = 0L;
             if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
             {
                 LastErrorCode = DOWNLOAD_ERROR_NO_URL_SPECIFIED;
@@ -235,24 +235,9 @@ namespace MultiThreadedDownloaderLib
 
                 IProgress<ProgressItem> reporter = progress;
 
-                string chunkFileName = null;
-                if (!UseRamForTempFiles)
+                string chunkFileName = GetTempChunkFilePath(chunkCount, taskId);
+                if (!string.IsNullOrEmpty(chunkFileName))
                 {
-                    if (chunkCount > 1)
-                    {
-                        string path = Path.GetFileName(OutputFileName);
-                        chunkFileName = $"{path}.chunk_{taskId}.tmp";
-                        if (IsTempDirectoryAvailable)
-                        {
-                            chunkFileName = TempDirectory.EndsWith("\\") ?
-                                TempDirectory + chunkFileName : $"{TempDirectory}\\{chunkFileName}";
-                        }
-                    }
-                    else
-                    {
-                        chunkFileName = OutputFileName + ".tmp";
-                    }
-
                     chunkFileName = GetNumberedFileName(chunkFileName);
                 }
 
@@ -390,26 +375,7 @@ namespace MultiThreadedDownloaderLib
 
             int res = await Task.Run(() =>
             {
-                string tmpFileName;
-                string fn = Path.GetFileName(OutputFileName);
-                if (IsMergingDirectoryAvailable)
-                {
-                    tmpFileName = MergingDirectory.EndsWith("\\") ?
-                        $"{MergingDirectory}{fn}.tmp" : $"{MergingDirectory}\\{fn}.tmp";
-                }
-                else
-                {
-                    if (IsTempDirectoryAvailable)
-                    {
-                        tmpFileName = TempDirectory.EndsWith("\\") ?
-                            $"{TempDirectory}{fn}.tmp" : $"{TempDirectory}\\{fn}.tmp";
-                    }
-                    else
-                    {
-                        tmpFileName = $"{OutputFileName}.tmp";
-                    }
-                }
-                tmpFileName = GetNumberedFileName(tmpFileName);
+                string tmpFileName = GetNumberedFileName(GetTempMergingFilePath());
 
                 Stream outputStream = null;
                 try
@@ -538,7 +504,7 @@ namespace MultiThreadedDownloaderLib
                 if (KeepDownloadedFileInMergingDirectory &&
                     !string.IsNullOrEmpty(MergingDirectory) && !string.IsNullOrWhiteSpace(MergingDirectory))
                 {
-                    fn = Path.GetFileName(OutputFileName);
+                    string fn = Path.GetFileName(OutputFileName);
                     OutputFileName = MergingDirectory.EndsWith("\\") ? MergingDirectory + fn : $"{MergingDirectory}\\{fn}";
                 }
                 OutputFileName = GetNumberedFileName(OutputFileName);
@@ -548,6 +514,52 @@ namespace MultiThreadedDownloaderLib
             });
 
             return res;
+        }
+
+        private string GetTempChunkFilePath(int chunkCount, int taskId)
+        {
+            if (!UseRamForTempFiles)
+            {
+                string chunkFileName;
+                if (chunkCount > 1)
+                {
+                    string path = Path.GetFileName(OutputFileName);
+                    chunkFileName = $"{path}.chunk_{taskId}.tmp";
+                    if (IsTempDirectoryAvailable)
+                    {
+                        chunkFileName = TempDirectory.EndsWith("\\") ?
+                            TempDirectory + chunkFileName : $"{TempDirectory}\\{chunkFileName}";
+                    }
+                }
+                else
+                {
+                    chunkFileName = OutputFileName + ".tmp";
+                }
+
+                return chunkFileName;
+            }
+            return null;
+        }
+
+        private string GetTempMergingFilePath()
+        {
+            string fn = Path.GetFileName(OutputFileName);
+            string tempFilePath;
+            if (IsMergingDirectoryAvailable)
+            {
+                tempFilePath = MergingDirectory.EndsWith("\\") ?
+                    $"{MergingDirectory}{fn}.tmp" : $"{MergingDirectory}\\{fn}.tmp";
+            }
+            else if (IsTempDirectoryAvailable)
+            {
+                tempFilePath = TempDirectory.EndsWith("\\") ?
+                    $"{TempDirectory}{fn}.tmp" : $"{TempDirectory}\\{fn}.tmp";
+            }
+            else
+            {
+                tempFilePath = $"{OutputFileName}.tmp";
+            }
+            return tempFilePath;
         }
 
         private void SetHeaders(NameValueCollection headers)
