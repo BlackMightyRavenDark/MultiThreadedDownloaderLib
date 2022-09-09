@@ -59,9 +59,10 @@ namespace MultiThreadedDownloaderLib
         public const int DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED = -203;
         public const int DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS = -204;
         public const int DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS = -205;
-
+        public const int DOWNLOAD_ERROR_CUSTOM = -206;
+        
         public delegate void ConnectingDelegate(object sender, string url);
-        public delegate void ConnectedDelegate(object sender, string url, long contentLength, ref int errorCode);
+        public delegate void ConnectedDelegate(object sender, string url, long contentLength, ref int errorCode, ref string errorMessage);
         public delegate void DownloadStartedDelegate(object sender, long contentLenth);
         public delegate void DownloadProgressDelegate(object sender, long bytesTransfered);
         public delegate void DownloadFinishedDelegate(object sender, long bytesTransfered, int errorCode, string fileName);
@@ -200,7 +201,7 @@ namespace MultiThreadedDownloaderLib
             LastErrorCode = GetUrlContentLength(Url, out long fullContentLength, out string errorText);
             ContentLength = RangeTo >= 0L ? RangeTo - RangeFrom + 1 : fullContentLength - RangeFrom;
             int errorCode = LastErrorCode;
-            Connected?.Invoke(this, Url, ContentLength, ref errorCode);
+            Connected?.Invoke(this, Url, ContentLength, ref errorCode, ref errorText);
             if (LastErrorCode != errorCode)
             {
                 LastErrorCode = errorCode;
@@ -687,6 +688,9 @@ namespace MultiThreadedDownloaderLib
 
                 case DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS:
                     return "Не найдена папка для объединения чанков!";
+
+                case DOWNLOAD_ERROR_CUSTOM:
+                    return null;
 
                 default:
                     return FileDownloader.ErrorCodeToString(errorCode);

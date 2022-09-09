@@ -279,7 +279,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
                 lblDownloadingProgress.Text = "Подключение...";
                 lblDownloadingProgress.Refresh();
             };
-            multiThreadedDownloader.Connected += (object s, string url, long contentLength, ref int errCode) =>
+            multiThreadedDownloader.Connected += (object s, string url, long contentLength, ref int errCode, ref string errorMessage) =>
             {
                 if (errCode == 200 || errCode == 206)
                 {
@@ -287,15 +287,22 @@ namespace MultiThreadedDownloaderLib.GuiTest
                     lblDownloadingProgress.Refresh();
                     if (contentLength > 0L)
                     {
+                        long minimumFreeSpaceRequired = (long)(contentLength * 1.1);
+
                         MultiThreadedDownloader mtd = s as MultiThreadedDownloader;
                         List<char> driveLetters = mtd.GetUsedDriveLetters();
-                        if (driveLetters.Count > 0)
+                        if (driveLetters.Count > 0 && !IsEnoughDiskSpace(driveLetters, minimumFreeSpaceRequired))
                         {
-                            long minimumFreeSpaceRequired = (long)(contentLength * 1.1);
-                            if (!IsEnoughDiskSpace(driveLetters, minimumFreeSpaceRequired))
-                            {
-                                errCode = FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
-                            }
+                            errCode = FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
+                            return;
+                        }
+
+                        if (mtd.UseRamForTempFiles && MemoryWatcher.Update() &&
+                            MemoryWatcher.RamFree < (ulong)minimumFreeSpaceRequired)
+                        {
+                            errorMessage = "Недостаточно памяти!";
+                            errCode = MultiThreadedDownloader.DOWNLOAD_ERROR_CUSTOM;
+                            return;
                         }
                     }
                 }
@@ -379,6 +386,13 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
                     case FileDownloader.DOWNLOAD_ERROR_DRIVE_NOT_READY:
                         lblDownloadingProgress.Text = "Ошибка: Диск не готов!";
+                        break;
+
+                    case MultiThreadedDownloader.DOWNLOAD_ERROR_CUSTOM:
+                        lblDownloadingProgress.Text =
+                            string.IsNullOrEmpty(multiThreadedDownloader.LastErrorMessage)
+                            || string.IsNullOrWhiteSpace(multiThreadedDownloader.LastErrorMessage) ?
+                            "Ошибка!" : $"Ошибка: {multiThreadedDownloader.LastErrorMessage}";
                         break;
                 }
 
