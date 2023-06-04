@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MultiThreadedDownloaderLib"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiThreadedDownloaderLib.GuiTest", "MultiThreadedDownloaderLib.GuiTest\MultiThreadedDownloaderLib.GuiTest.csproj", "{15230C96-74C7-4EDB-8A10-BFE4E4B0C76A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiThreadedDownloaderLib.RequestsTest", "MultiThreadedDownloaderLib.RequestsTest\MultiThreadedDownloaderLib.RequestsTest.csproj", "{AC297D65-EF67-46CE-8235-58B1F437D7CF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{15230C96-74C7-4EDB-8A10-BFE4E4B0C76A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{15230C96-74C7-4EDB-8A10-BFE4E4B0C76A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{15230C96-74C7-4EDB-8A10-BFE4E4B0C76A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC297D65-EF67-46CE-8235-58B1F437D7CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC297D65-EF67-46CE-8235-58B1F437D7CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC297D65-EF67-46CE-8235-58B1F437D7CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC297D65-EF67-46CE-8235-58B1F437D7CF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
