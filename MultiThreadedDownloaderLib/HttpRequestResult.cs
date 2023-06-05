@@ -65,6 +65,7 @@ namespace MultiThreadedDownloaderLib
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
+                ErrorMessage = ex.Message;
                 return ex.HResult;
             }
 
