@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using System.IO;
 using System.Net;
-using System.Text;
 
 namespace MultiThreadedDownloaderLib
 {
@@ -10,12 +8,11 @@ namespace MultiThreadedDownloaderLib
     {
         public string Url { get; set; }
         public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
+        public long DownloadedInLastSession { get; private set; } = 0L;
         public long StreamSize { get; private set; } = 0L;
-        private long _bytesTransfered = 0L;
         private long _rangeFrom = 0L;
         private long _rangeTo = -1L;
         private NameValueCollection _headers = new NameValueCollection();
-        public int ProgressUpdateInterval { get; set; } = 10;
         public bool Stopped { get; private set; } = false;
         public int LastErrorCode { get; private set; } = 200;
         public string LastErrorMessage { get; private set; }
@@ -44,7 +41,7 @@ namespace MultiThreadedDownloaderLib
         public WorkFinishedDelegate WorkFinished;
         public CancelTestDelegate CancelTest;
 
-        public int Download(Stream stream)
+        public int Download(Stream stream, int bufferSize = 4096)
         {
             if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
             {
@@ -57,46 +54,46 @@ namespace MultiThreadedDownloaderLib
             }
 
             Stopped = false;
-            _bytesTransfered = 0L;
+            DownloadedInLastSession = 0L;
             StreamSize = stream.Length;
 
             Connecting?.Invoke(this, Url);
 
-            WebContent content = new WebContent();
-            content.Headers = Headers;
-
-            LastErrorCode = content.GetResponseStream(Url, _rangeFrom, _rangeTo);
+            HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, null, Headers);
+            LastErrorCode = requestResult.ErrorCode;
             int errorCode = LastErrorCode;
-            Connected?.Invoke(this, Url, content.Length, ref errorCode);
+            Connected?.Invoke(this, Url, requestResult.ContentLength, ref errorCode);
             if (LastErrorCode != errorCode)
             {
                 LastErrorCode = errorCode;
             }
             if (HasErrors)
             {
-                LastErrorMessage = content.LastErrorMessage;
-                content.Dispose();
+                LastErrorMessage = requestResult.ErrorMessage;
+                requestResult.Dispose();
                 return LastErrorCode;
             }
 
-            if (content.Length == 0L)
+            if (requestResult.ContentLength == 0L)
             {
-                content.Dispose();
+                requestResult.Dispose();
                 return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
             }
 
-            WorkStarted?.Invoke(this, content.Length);
+            WorkStarted?.Invoke(this, requestResult.ContentLength);
 
-            LastErrorCode = ContentToStream(content, stream);
-            long size = content.Length;
-            content.Dispose();
+            LastErrorCode = requestResult.ContentToStream(stream, bufferSize, this, out long transfered);
+            DownloadedInLastSession = transfered;
+            StreamSize = stream.Length;
+            long size = requestResult.ContentLength;
+            requestResult.Dispose();
 
-            WorkFinished?.Invoke(this, _bytesTransfered, size, LastErrorCode);
+            WorkFinished?.Invoke(this, DownloadedInLastSession, size, LastErrorCode);
 
             return LastErrorCode;
         }
 
-        public int DownloadString(out string responseString)
+        public int DownloadString(out string responseString, int bufferSize = 4096)
         {
             responseString = null;
 
@@ -111,46 +108,37 @@ namespace MultiThreadedDownloaderLib
             }
 
             Stopped = false;
-            _bytesTransfered = 0L;
+            DownloadedInLastSession = 0L;
             StreamSize = 0L;
 
-            WebContent content = new WebContent();
-            content.Headers = Headers;
-
-            LastErrorCode = content.GetResponseStream(Url, _rangeFrom, _rangeTo);
+            HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, null, Headers);
+            LastErrorCode = requestResult.ErrorCode;
             if (HasErrors)
             {
-                LastErrorMessage = content.LastErrorMessage;
-                content.Dispose();
+                LastErrorMessage = requestResult.ErrorMessage;
+                requestResult.Dispose();
                 return LastErrorCode;
             }
 
-            if (content.Length == 0L)
+            if (requestResult.ContentLength == 0L)
             {
-                content.Dispose();
+                requestResult.Dispose();
                 return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
             }
 
-            WorkStarted?.Invoke(this, content.Length);
+            WorkStarted?.Invoke(this, requestResult.ContentLength);
 
-            MemoryStream memoryStream = new MemoryStream();
-            LastErrorCode = ContentToStream(content, memoryStream);
-            if (LastErrorCode == 200)
-            {
-                responseString = Encoding.UTF8.GetString(memoryStream.GetBuffer(), 0, (int)memoryStream.Length);
-            }
-            long size = content.Length;
-            content.Dispose();
-            memoryStream.Dispose();
+            LastErrorCode = requestResult.ContentToString(out responseString, bufferSize, out long transfered);
+            long size = requestResult.ContentLength;
+            requestResult.Dispose();
 
-            WorkFinished?.Invoke(this, _bytesTransfered, size, LastErrorCode);
+            WorkFinished?.Invoke(this, transfered, size, LastErrorCode);
 
             return LastErrorCode;
         }
 
         public static int GetUrlContentLength(string url, out long contentLength, out string errorText)
         {
-            contentLength = -1L;
             int errorCode = GetUrlResponseHeaders(url, out WebHeaderCollection headers, out errorText);
             if (errorCode == 200)
             {
@@ -160,103 +148,43 @@ namespace MultiThreadedDownloaderLib
                     if (headerName.Equals("Content-Length"))
                     {
                         string headerValue = headers.Get(i);
-                        contentLength = long.Parse(headerValue);
-                        return errorCode;
+                        if (!long.TryParse(headerValue, out contentLength))
+                        {
+                            contentLength = -1L;
+                            return 204;
+                        }
+                        return 200;
                     }
                 }
             }
+
+            contentLength = -1L;
             return errorCode;
         }
 
         public static int GetUrlResponseHeaders(string url, out WebHeaderCollection headers, out string errorText)
         {
+            HttpRequestResult requestResult = HttpRequestSender.Send("GET", url, null, null);
+            if (requestResult.ErrorCode == 200)
+            {
+                headers = new WebHeaderCollection();
+                for (int i = 0; i < requestResult.HttpWebResponse.Headers.Count; ++i)
+                {
+                    string name = requestResult.HttpWebResponse.Headers.GetKey(i);
+                    string value = requestResult.HttpWebResponse.Headers.Get(i);
+                    headers.Add(name, value);
+                }
+
+                requestResult.Dispose();
+                errorText = null;
+                return 200;
+            }
+
             headers = null;
-            errorText = null;
-            int res;
-            try
-            { 
-                HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
-                httpWebRequest.Method = "HEAD";
-                HttpWebResponse httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-                res = (int)httpResponse.StatusCode;
-                if (res == 200)
-                {
-                    headers = httpResponse.Headers;
-                }
-                return res;
-            }
-            catch (WebException ex)
-            {
-                if (ex.Status == WebExceptionStatus.ProtocolError)
-                {
-                    HttpWebResponse httpWebResponse = (HttpWebResponse)ex.Response;
-                    errorText = ex.Message;
-                    res = (int)httpWebResponse.StatusCode;
-                }
-                else
-                {
-                    res = 400;
-                }
-            }
-            return res;
-        }
-
-        private int ContentToStream(WebContent content, Stream stream)
-        {
-            if (content == null || content.ContentData == null)
-            {
-                return DOWNLOAD_ERROR_NULL_CONTENT;
-            }
-
-            try
-            {
-                byte[] buf = new byte[4096];
-                int iter = 0;
-                do
-                {
-                    int bytesRead = content.ContentData.Read(buf, 0, buf.Length);
-                    if (bytesRead <= 0)
-                    {
-                        break;
-                    }
-                    stream.Write(buf, 0, bytesRead);
-                    _bytesTransfered += bytesRead;
-                    StreamSize = stream.Length;
-                    if (WorkProgress != null && (ProgressUpdateInterval == 0 || iter++ >= ProgressUpdateInterval))
-                    {
-                        WorkProgress.Invoke(this, _bytesTransfered, content.Length);
-                        iter = 0;
-                    }
-                    if (CancelTest != null)
-                    {
-                        bool stop = false;
-                        CancelTest.Invoke(this, ref stop);
-                        Stopped = stop;
-                        if (Stopped)
-                        {
-                            break;
-                        }
-                    }
-                }
-                while (true);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine(ex.Message);
-                LastErrorMessage = ex.Message;
-                return ex.HResult;
-            }
-            
-            if (Stopped)
-            {
-                return DOWNLOAD_ERROR_CANCELED_BY_USER;
-            }
-            else if (content.Length >= 0L && _bytesTransfered != content.Length)
-            {
-                return DOWNLOAD_ERROR_INCOMPLETE_DATA_READ;
-            }
-
-            return 200;
+            errorText = requestResult.ErrorMessage;
+            int errorCode = requestResult.ErrorCode;
+            requestResult.Dispose();
+            return errorCode;
         }
 
         public bool SetRange(long rangeFrom, long rangeTo)

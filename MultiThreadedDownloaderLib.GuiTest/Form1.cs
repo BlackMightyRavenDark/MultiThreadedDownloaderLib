@@ -220,7 +220,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
             if (errorCode == 200 || errorCode == 206)
             {
-                string messageText = $"Скачано {downloader.StreamSize} байт";
+                string messageText = $"Скачано {downloader.DownloadedInLastSession} байт";
                 MessageBox.Show(messageText, "Скачано!", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
@@ -370,8 +370,11 @@ namespace MultiThreadedDownloaderLib.GuiTest
             multiThreadedDownloader.MergingDirectory = editMergingPath.Text;
             multiThreadedDownloader.KeepDownloadedFileInTempOrMergingDirectory = cbKeepDownloadedFileInTempOrMergingDirectory.Checked;
             multiThreadedDownloader.UseRamForTempFiles = checkBoxUseRamForTempFiles.Checked;
-            int errorCode = await multiThreadedDownloader.Download();
+
+            int bufferSize = 4096 * multiThreadedDownloader.ThreadCount;
+            int errorCode = await multiThreadedDownloader.Download(bufferSize);
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
+
             if (multiThreadedDownloader.UseRamForTempFiles)
             {
                 GC.Collect();

@@ -150,7 +150,7 @@ namespace MultiThreadedDownloaderLib
             }
         }
 
-        public async Task<int> Download()
+        public async Task<int> Download(int bufferSize = 4096)
         {
             aborted = false;
             DownloadedBytes = 0L;
@@ -199,7 +199,12 @@ namespace MultiThreadedDownloaderLib
 
             Connecting?.Invoke(this, Url);
             LastErrorCode = GetUrlContentLength(Url, out long fullContentLength, out string errorText);
-            ContentLength = RangeTo >= 0L ? RangeTo - RangeFrom + 1 : fullContentLength - RangeFrom;
+            ContentLength = fullContentLength == -1L ? -1L :
+                (RangeTo >= 0L ? RangeTo - RangeFrom + 1 : fullContentLength - RangeFrom);
+            if (ContentLength < -1L)
+            {
+                ContentLength = -1L;
+            }
             int errorCode = LastErrorCode;
             Connected?.Invoke(this, Url, ContentLength, ref errorCode, ref errorText);
             if (LastErrorCode != errorCode)
@@ -250,7 +255,6 @@ namespace MultiThreadedDownloaderLib
                 }
 
                 FileDownloader downloader = new FileDownloader();
-                downloader.ProgressUpdateInterval = UpdateInterval;
                 downloader.Url = Url;
                 downloader.Headers = Headers;
                 downloader.SetRange(chunkFirstByte, chunkLastByte);
@@ -284,7 +288,7 @@ namespace MultiThreadedDownloaderLib
                     {
                         streamChunk = File.OpenWrite(chunkFileName);
                     }
-                    LastErrorCode = downloader.Download(streamChunk);
+                    LastErrorCode = downloader.Download(streamChunk, bufferSize);
                     if (!UseRamForTempFiles)
                     {
                         streamChunk.Dispose();
@@ -293,10 +297,7 @@ namespace MultiThreadedDownloaderLib
                 }
                 catch (Exception ex)
                 {
-                    if (streamChunk != null)
-                    {
-                        streamChunk.Dispose();
-                    }
+                    streamChunk?.Dispose();
                     LastErrorCode = ex.HResult;
                     LastErrorMessage = ex.Message;
                 }
@@ -397,10 +398,7 @@ namespace MultiThreadedDownloaderLib
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine(ex.Message);
-                    if (outputStream != null)
-                    {
-                        outputStream.Dispose();
-                    }
+                    outputStream?.Dispose();
                     if (UseRamForTempFiles)
                     {
                         foreach (FileChunk fc in chunks)
