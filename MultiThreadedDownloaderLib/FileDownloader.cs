@@ -62,7 +62,8 @@ namespace MultiThreadedDownloaderLib
             HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, null, Headers);
             LastErrorCode = requestResult.ErrorCode;
             int errorCode = LastErrorCode;
-            Connected?.Invoke(this, Url, requestResult.ContentLength, ref errorCode);
+            long size = requestResult.WebContent.Length;
+            Connected?.Invoke(this, Url, size, ref errorCode);
             if (LastErrorCode != errorCode)
             {
                 LastErrorCode = errorCode;
@@ -74,19 +75,30 @@ namespace MultiThreadedDownloaderLib
                 return LastErrorCode;
             }
 
-            if (requestResult.ContentLength == 0L)
+            if (requestResult.WebContent.Length == 0L)
             {
                 requestResult.Dispose();
                 return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
             }
 
-            WorkStarted?.Invoke(this, requestResult.ContentLength);
+            WorkStarted?.Invoke(this, size);
 
-            LastErrorCode = requestResult.ContentToStream(stream, bufferSize, this, out long transfered);
+            long transfered;
+            try
+            {
+                LastErrorCode = requestResult.WebContent.ContentToStream(
+                    stream, bufferSize, this, out transfered);
+            } catch (System.Exception ex)
+            {
+                LastErrorCode = ex.HResult;
+                LastErrorMessage = ex.Message;
+                requestResult.Dispose();
+                return LastErrorCode;
+            }
+
+            requestResult.Dispose();
             DownloadedInLastSession = transfered;
             StreamSize = stream.Length;
-            long size = requestResult.ContentLength;
-            requestResult.Dispose();
 
             WorkFinished?.Invoke(this, DownloadedInLastSession, size, LastErrorCode);
 
@@ -120,16 +132,18 @@ namespace MultiThreadedDownloaderLib
                 return LastErrorCode;
             }
 
-            if (requestResult.ContentLength == 0L)
+            long size = requestResult.WebContent.Length;
+
+            if (size == 0L)
             {
                 requestResult.Dispose();
                 return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
             }
 
-            WorkStarted?.Invoke(this, requestResult.ContentLength);
+            WorkStarted?.Invoke(this, size);
 
-            LastErrorCode = requestResult.ContentToString(out responseString, bufferSize, out long transfered);
-            long size = requestResult.ContentLength;
+            LastErrorCode = requestResult.WebContent.ContentToString(
+                out responseString, bufferSize, out long transfered);
             requestResult.Dispose();
 
             WorkFinished?.Invoke(this, transfered, size, LastErrorCode);
@@ -237,8 +251,15 @@ namespace MultiThreadedDownloaderLib
 
                         if (!string.IsNullOrEmpty(headerValue) && headerName.ToLower().Equals("range"))
                         {
-                            WebContent.GetRangeHeaderValues(headerValue, out _rangeFrom, out _rangeTo);
-                            SetRange(_rangeFrom, _rangeTo);
+                            if (HttpRequestSender.ParseRangeHeaderValue(headerValue, out _rangeFrom, out _rangeTo))
+                            {
+                                SetRange(_rangeFrom, _rangeTo);
+                            }
+                            else
+                            {
+                                _rangeFrom = 0L;
+                                _rangeTo = -1L;
+                                System.Diagnostics.Debug.WriteLine("Failed to parse the \"Range\" header!");                            }
                             continue;
                         }
 

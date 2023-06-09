@@ -35,11 +35,11 @@ namespace MultiThreadedDownloaderLib
                     httpWebRequest.ContentLength = 0L;
                 }
 
-                HttpWebResponse httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-                int resultErrorCode = (int)httpResponse.StatusCode;
-                Stream responseStream = resultErrorCode == 200 || resultErrorCode == 206 ? httpResponse.GetResponseStream() : null;
-                return new HttpRequestResult(resultErrorCode, httpResponse.StatusDescription,
-                    httpResponse, responseStream, httpResponse.ContentLength);
+                HttpWebResponse response = (HttpWebResponse)httpWebRequest.GetResponse();
+                int resultErrorCode = (int)response.StatusCode;
+                WebContent webContent = resultErrorCode == 200 || resultErrorCode == 206 ?
+                    new WebContent(response.GetResponseStream(), response.ContentLength) : null;
+                return new HttpRequestResult(resultErrorCode, response.StatusDescription, response, webContent);
             }
             catch (System.Exception ex)
             {
@@ -48,12 +48,13 @@ namespace MultiThreadedDownloaderLib
                 {
                     HttpWebResponse response = (ex as WebException).Response as HttpWebResponse;
                     errorCode = (int)response.StatusCode;
-                    return new HttpRequestResult(errorCode, response.StatusDescription, response, response.GetResponseStream(), -1L);
+                    WebContent webContent = new WebContent(response.GetResponseStream(), response.ContentLength);
+                    return new HttpRequestResult(errorCode, response.StatusDescription, response, webContent);
                 }
 
                 errorCode = ex.HResult;
                 string errorMessage = ex.Message;
-                return new HttpRequestResult(errorCode, errorMessage, null, null, -1L);
+                return new HttpRequestResult(errorCode, errorMessage, null, null);
             }
         }
 
@@ -136,7 +137,7 @@ namespace MultiThreadedDownloaderLib
             }
         }
 
-        private static bool ParseRangeHeaderValue(string headerValue, out long byteFrom, out long byteTo)
+        public static bool ParseRangeHeaderValue(string headerValue, out long byteFrom, out long byteTo)
         {
             string[] splitted = headerValue.Split('-');
             if (splitted.Length == 2)
