@@ -151,17 +151,19 @@ namespace MultiThreadedDownloaderLib
             return LastErrorCode;
         }
 
-        public static int GetUrlContentLength(string url, out long contentLength, out string errorText)
+        public static int GetUrlContentLength(string url, NameValueCollection headers,
+            out long contentLength, out string errorText)
         {
-            int errorCode = GetUrlResponseHeaders(url, out WebHeaderCollection headers, out errorText);
+            int errorCode = GetUrlResponseHeaders(url, headers,
+                out WebHeaderCollection responseHeaders, out errorText);
             if (errorCode == 200)
             {
-                for (int i = 0; i < headers.Count; ++i)
+                for (int i = 0; i < responseHeaders.Count; ++i)
                 {
-                    string headerName = headers.GetKey(i);
+                    string headerName = responseHeaders.GetKey(i);
                     if (headerName.Equals("Content-Length"))
                     {
-                        string headerValue = headers.Get(i);
+                        string headerValue = responseHeaders.Get(i);
                         if (!long.TryParse(headerValue, out contentLength))
                         {
                             contentLength = -1L;
@@ -176,17 +178,18 @@ namespace MultiThreadedDownloaderLib
             return errorCode;
         }
 
-        public static int GetUrlResponseHeaders(string url, out WebHeaderCollection headers, out string errorText)
+        public static int GetUrlResponseHeaders(string url, NameValueCollection inHeaders,
+            out WebHeaderCollection outHeaders, out string errorText)
         {
-            HttpRequestResult requestResult = HttpRequestSender.Send("GET", url, null, null);
+            HttpRequestResult requestResult = HttpRequestSender.Send("GET", url, null, inHeaders);
             if (requestResult.ErrorCode == 200)
             {
-                headers = new WebHeaderCollection();
+                outHeaders = new WebHeaderCollection();
                 for (int i = 0; i < requestResult.HttpWebResponse.Headers.Count; ++i)
                 {
                     string name = requestResult.HttpWebResponse.Headers.GetKey(i);
                     string value = requestResult.HttpWebResponse.Headers.Get(i);
-                    headers.Add(name, value);
+                    outHeaders.Add(name, value);
                 }
 
                 requestResult.Dispose();
@@ -194,7 +197,7 @@ namespace MultiThreadedDownloaderLib
                 return 200;
             }
 
-            headers = null;
+            outHeaders = null;
             errorText = requestResult.ErrorMessage;
             int errorCode = requestResult.ErrorCode;
             requestResult.Dispose();
@@ -259,7 +262,8 @@ namespace MultiThreadedDownloaderLib
                             {
                                 _rangeFrom = 0L;
                                 _rangeTo = -1L;
-                                System.Diagnostics.Debug.WriteLine("Failed to parse the \"Range\" header!");                            }
+                                System.Diagnostics.Debug.WriteLine("Failed to parse the \"Range\" header!");
+                            }
                             continue;
                         }
 

@@ -198,7 +198,7 @@ namespace MultiThreadedDownloaderLib
             }
 
             Connecting?.Invoke(this, Url);
-            LastErrorCode = GetUrlContentLength(Url, out long fullContentLength, out string errorText);
+            LastErrorCode = GetUrlContentLength(Url, Headers, out long fullContentLength, out string errorText);
             ContentLength = fullContentLength == -1L ? -1L :
                 (RangeTo >= 0L ? RangeTo - RangeFrom + 1 : fullContentLength - RangeFrom);
             if (ContentLength < -1L)

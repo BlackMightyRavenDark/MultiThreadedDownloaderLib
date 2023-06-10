@@ -118,7 +118,14 @@ namespace MultiThreadedDownloaderLib
                 {
                     if (ParseRangeHeaderValue(headerValue, out long byteFrom, out long byteTo))
                     {
-                        request.AddRange(byteFrom, byteTo);
+                        if (byteFrom >= 0L && byteTo >= 0L && byteTo >= byteFrom)
+                        {
+                            request.AddRange(byteFrom, byteTo);
+                        }
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("Invalid \"Range\" header value! The header will not bind!");
                     }
                     continue;
                 }
@@ -142,22 +149,47 @@ namespace MultiThreadedDownloaderLib
             string[] splitted = headerValue.Split('-');
             if (splitted.Length == 2)
             {
-                if (!long.TryParse(splitted[0], out byteFrom))
+                bool str0Empty = string.IsNullOrEmpty(splitted[0]) || string.IsNullOrWhiteSpace(splitted[0]);
+                bool str1Empty = string.IsNullOrEmpty(splitted[1]) || string.IsNullOrWhiteSpace(splitted[1]);
+                if (str0Empty && str1Empty)
                 {
+                    byteFrom = 0L;
                     byteTo = -1L;
                     return false;
                 }
 
-                if (!long.TryParse(splitted[1], out byteTo))
+                if (!str0Empty)
                 {
-                    byteFrom = -1L;
-                    return false;
+                    if (!long.TryParse(splitted[0], out byteFrom))
+                    {
+                        byteFrom = 0L;
+                        byteTo = -1L;
+                        return false;
+                    }
+                }
+                else
+                {
+                    byteFrom = 0L;
                 }
 
-                return byteTo >= byteFrom && byteTo != -1L;
+                if (!str1Empty)
+                {
+                    if (!long.TryParse(splitted[1], out byteTo))
+                    {
+                        byteFrom = 0L;
+                        byteTo = -1L;
+                        return false;
+                    }
+                }
+                else
+                {
+                    byteTo = -1L;
+                }
+
+                return true;
             }
 
-            byteFrom = -1L;
+            byteFrom = 0L;
             byteTo = -1L;
             return false;
         }
