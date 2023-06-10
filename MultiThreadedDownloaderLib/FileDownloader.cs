@@ -13,7 +13,7 @@ namespace MultiThreadedDownloaderLib
         private long _rangeFrom = 0L;
         private long _rangeTo = -1L;
         private NameValueCollection _headers = new NameValueCollection();
-        public bool Stopped { get; private set; } = false;
+        public bool IsActive { get; private set; } = false;
         public int LastErrorCode { get; private set; } = 200;
         public string LastErrorMessage { get; private set; }
         public bool HasErrors => LastErrorCode != 200 && LastErrorCode != 206;
@@ -43,17 +43,20 @@ namespace MultiThreadedDownloaderLib
 
         public int Download(Stream stream, int bufferSize = 4096)
         {
+            IsActive = true;
+
             if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
             {
+                IsActive = false;
                 return DOWNLOAD_ERROR_URL_NOT_DEFINED;
             }
 
             if (!IsRangeValid(_rangeFrom, _rangeTo))
             {
+                IsActive = false;
                 return DOWNLOAD_ERROR_RANGE;
             }
 
-            Stopped = false;
             DownloadedInLastSession = 0L;
             StreamSize = stream.Length;
 
@@ -65,12 +68,14 @@ namespace MultiThreadedDownloaderLib
             if (HasErrors)
             {
                 requestResult.Dispose();
+                IsActive = false;
                 return LastErrorCode;
             }
             else if (requestResult.WebContent == null)
             {
                 requestResult.Dispose();
                 LastErrorCode = DOWNLOAD_ERROR_NULL_CONTENT;
+                IsActive = false;
                 return LastErrorCode;
             }
 
@@ -84,12 +89,14 @@ namespace MultiThreadedDownloaderLib
             if (HasErrors)
             {
                 requestResult.Dispose();
+                IsActive = false;
                 return LastErrorCode;
             }
 
             if (requestResult.WebContent.Length == 0L)
             {
                 requestResult.Dispose();
+                IsActive = false;
                 return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
             }
 
@@ -105,6 +112,7 @@ namespace MultiThreadedDownloaderLib
                 LastErrorCode = ex.HResult;
                 LastErrorMessage = ex.Message;
                 requestResult.Dispose();
+                IsActive = false;
                 return LastErrorCode;
             }
 
@@ -114,24 +122,27 @@ namespace MultiThreadedDownloaderLib
 
             WorkFinished?.Invoke(this, DownloadedInLastSession, size, LastErrorCode);
 
+            IsActive = false;
             return LastErrorCode;
         }
 
         public int DownloadString(out string responseString, int bufferSize = 4096)
         {
+            IsActive = true;
             responseString = null;
 
             if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
             {
+                IsActive = false;
                 return DOWNLOAD_ERROR_URL_NOT_DEFINED;
             }
 
             if (!IsRangeValid(_rangeFrom, _rangeTo))
             {
+                IsActive = false;
                 return DOWNLOAD_ERROR_RANGE;
             }
 
-            Stopped = false;
             DownloadedInLastSession = 0L;
             StreamSize = 0L;
 
@@ -141,12 +152,14 @@ namespace MultiThreadedDownloaderLib
             if (HasErrors)
             {
                 requestResult.Dispose();
+                IsActive = false;
                 return LastErrorCode;
             }
             else if (requestResult.WebContent == null)
             {
                 requestResult.Dispose();
                 LastErrorCode = DOWNLOAD_ERROR_NULL_CONTENT;
+                IsActive = false;
                 return LastErrorCode;
             }
 
@@ -154,6 +167,7 @@ namespace MultiThreadedDownloaderLib
             if (size == 0L)
             {
                 requestResult.Dispose();
+                IsActive = false;
                 return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
             }
 
@@ -165,6 +179,7 @@ namespace MultiThreadedDownloaderLib
 
             WorkFinished?.Invoke(this, transfered, size, LastErrorCode);
 
+            IsActive = false;
             return LastErrorCode;
         }
 
