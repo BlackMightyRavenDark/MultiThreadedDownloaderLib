@@ -61,6 +61,19 @@ namespace MultiThreadedDownloaderLib
 
             HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, null, Headers);
             LastErrorCode = requestResult.ErrorCode;
+            LastErrorMessage = requestResult.ErrorMessage;
+            if (HasErrors)
+            {
+                requestResult.Dispose();
+                return LastErrorCode;
+            }
+            else if (requestResult.WebContent == null)
+            {
+                requestResult.Dispose();
+                LastErrorCode = DOWNLOAD_ERROR_NULL_CONTENT;
+                return LastErrorCode;
+            }
+
             int errorCode = LastErrorCode;
             long size = requestResult.WebContent.Length;
             Connected?.Invoke(this, Url, size, ref errorCode);
@@ -70,7 +83,6 @@ namespace MultiThreadedDownloaderLib
             }
             if (HasErrors)
             {
-                LastErrorMessage = requestResult.ErrorMessage;
                 requestResult.Dispose();
                 return LastErrorCode;
             }
@@ -125,15 +137,20 @@ namespace MultiThreadedDownloaderLib
 
             HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, null, Headers);
             LastErrorCode = requestResult.ErrorCode;
+            LastErrorMessage = requestResult.ErrorMessage;
             if (HasErrors)
             {
-                LastErrorMessage = requestResult.ErrorMessage;
                 requestResult.Dispose();
+                return LastErrorCode;
+            }
+            else if (requestResult.WebContent == null)
+            {
+                requestResult.Dispose();
+                LastErrorCode = DOWNLOAD_ERROR_NULL_CONTENT;
                 return LastErrorCode;
             }
 
             long size = requestResult.WebContent.Length;
-
             if (size == 0L)
             {
                 requestResult.Dispose();
