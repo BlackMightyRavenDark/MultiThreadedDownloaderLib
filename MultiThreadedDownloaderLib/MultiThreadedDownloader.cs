@@ -150,7 +150,14 @@ namespace MultiThreadedDownloaderLib
             }
         }
 
-        public async Task<int> Download(int bufferSize = 4096)
+        /// <summary>
+        /// Execute the downloading task.
+        /// </summary>
+        /// <param name="bufferSize">
+        /// Buffer size per thread.
+        /// Warning! Do not use numbers smaller than 8192!
+        /// Leave zero for auto select.</param>
+        public async Task<int> Download(int bufferSize = 0)
         {
             aborted = false;
             DownloadedBytes = 0L;
@@ -239,6 +246,10 @@ namespace MultiThreadedDownloaderLib
             if (ThreadCount <= 0)
             {
                 ThreadCount = 2;
+            }
+            if (bufferSize == 0)
+            {
+                bufferSize = 4096 * ThreadCount * 10;
             }
             int chunkCount = ContentLength > MEGABYTE ? ThreadCount : 1;
             var tasks = Split(fullContentLength, chunkCount).Select((range, taskId) => Task.Run(() =>

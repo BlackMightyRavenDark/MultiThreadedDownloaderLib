@@ -371,8 +371,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             multiThreadedDownloader.KeepDownloadedFileInTempOrMergingDirectory = cbKeepDownloadedFileInTempOrMergingDirectory.Checked;
             multiThreadedDownloader.UseRamForTempFiles = checkBoxUseRamForTempFiles.Checked;
 
-            int bufferSize = 4096 * multiThreadedDownloader.ThreadCount;
-            int errorCode = await multiThreadedDownloader.Download(bufferSize);
+            int errorCode = await multiThreadedDownloader.Download();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
 
             if (multiThreadedDownloader.UseRamForTempFiles)
