@@ -1,6 +1,7 @@
 ﻿using System.Collections.Specialized;
 using System.IO;
 using System.Net;
+using System.Text;
 
 namespace MultiThreadedDownloaderLib
 {
@@ -131,67 +132,28 @@ namespace MultiThreadedDownloaderLib
             return LastErrorCode;
         }
 
+        public int DownloadString(out string responseString, Encoding encoding, int bufferSize = 4096)
+        {
+            try
+            {
+                using (MemoryStream mem = new MemoryStream())
+                {
+                    int errorCode = Download(mem, bufferSize);
+                    responseString = errorCode == 200 || errorCode == 206 ?
+                        encoding.GetString(mem.ToArray()) : null;
+                    return errorCode;
+                }
+            } catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.Message);
+                responseString = ex.Message;
+                return ex.HResult;
+            }
+        }
+
         public int DownloadString(out string responseString, int bufferSize = 4096)
         {
-            IsActive = true;
-            responseString = null;
-
-            if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
-            {
-                IsActive = false;
-                return DOWNLOAD_ERROR_URL_NOT_DEFINED;
-            }
-
-            if (!IsRangeValid(_rangeFrom, _rangeTo))
-            {
-                IsActive = false;
-                return DOWNLOAD_ERROR_RANGE;
-            }
-
-            DownloadedInLastSession = 0L;
-            StreamSize = 0L;
-
-            HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, null, Headers);
-            LastErrorCode = requestResult.ErrorCode;
-            LastErrorMessage = requestResult.ErrorMessage;
-            if (HasErrors)
-            {
-                requestResult.Dispose();
-                IsActive = false;
-                return LastErrorCode;
-            }
-            else if (requestResult.WebContent == null)
-            {
-                requestResult.Dispose();
-                LastErrorCode = DOWNLOAD_ERROR_NULL_CONTENT;
-                IsActive = false;
-                return LastErrorCode;
-            }
-
-            long size = requestResult.WebContent.Length;
-            if (size == 0L)
-            {
-                requestResult.Dispose();
-                IsActive = false;
-                return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
-            }
-
-            WorkStarted?.Invoke(this, size);
-
-            long transfered = 0L;
-            LastErrorCode = requestResult.WebContent.ContentToString(
-                out responseString, bufferSize, (long bytes, ref bool canceled) =>
-                {
-                    transfered = bytes;
-                    WorkProgress?.Invoke(this, transfered, size);
-                    CancelTest?.Invoke(this, ref canceled);
-                });
-            requestResult.Dispose();
-
-            WorkFinished?.Invoke(this, transfered, size, LastErrorCode);
-
-            IsActive = false;
-            return LastErrorCode;
+            return DownloadString(out responseString, Encoding.UTF8, bufferSize);
         }
 
         public static int GetUrlContentLength(string url, NameValueCollection headers,
