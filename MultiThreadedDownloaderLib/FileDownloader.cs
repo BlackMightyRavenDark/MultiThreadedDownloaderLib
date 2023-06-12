@@ -102,11 +102,16 @@ namespace MultiThreadedDownloaderLib
 
             WorkStarted?.Invoke(this, size);
 
-            long transfered;
+            long transfered = 0L;
             try
             {
                 LastErrorCode = requestResult.WebContent.ContentToStream(
-                    stream, bufferSize, this, out transfered);
+                    stream, bufferSize, (long bytes, ref bool cancel) =>
+                    {
+                        transfered = bytes;
+                        WorkProgress?.Invoke(this, transfered, size);
+                        CancelTest?.Invoke(this, ref cancel);
+                    });
             } catch (System.Exception ex)
             {
                 LastErrorCode = ex.HResult;
@@ -173,8 +178,14 @@ namespace MultiThreadedDownloaderLib
 
             WorkStarted?.Invoke(this, size);
 
+            long transfered = 0L;
             LastErrorCode = requestResult.WebContent.ContentToString(
-                out responseString, bufferSize, out long transfered);
+                out responseString, bufferSize, (long bytes, ref bool canceled) =>
+                {
+                    transfered = bytes;
+                    WorkProgress?.Invoke(this, transfered, size);
+                    CancelTest?.Invoke(this, ref canceled);
+                });
             requestResult.Dispose();
 
             WorkFinished?.Invoke(this, transfered, size, LastErrorCode);

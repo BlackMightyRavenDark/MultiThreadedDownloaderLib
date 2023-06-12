@@ -9,6 +9,8 @@ namespace MultiThreadedDownloaderLib
         public Stream Data { get; private set; }
         public long Length { get; private set; }
 
+        public delegate void ProgressDelegate(long byteCount, ref bool canceled);
+
         public WebContent(Stream dataStream, long length)
         {
             Data = dataStream;
@@ -26,10 +28,8 @@ namespace MultiThreadedDownloaderLib
             Length = -1L;
         }
 
-        public int ContentToStream(Stream stream, int bufferSize,
-            FileDownloader downloaderObject, out long bytesTransfered)
+        public int ContentToStream(Stream stream, int bufferSize, ProgressDelegate progress)
         {
-            bytesTransfered = 0L;
             if (Data == null)
             {
                 return FileDownloader.DOWNLOAD_ERROR_NULL_CONTENT;
@@ -37,6 +37,7 @@ namespace MultiThreadedDownloaderLib
 
             bool stopped = false;
             byte[] buf = new byte[bufferSize];
+            long bytesTransfered = 0L;
             do
             {
                 int bytesRead = Data.Read(buf, 0, buf.Length);
@@ -45,12 +46,11 @@ namespace MultiThreadedDownloaderLib
                     break;
                 }
                 stream.Write(buf, 0, bytesRead);
-                bytesTransfered += bytesRead;
 
-                if (downloaderObject != null)
+                if (progress != null)
                 {
-                    downloaderObject.WorkProgress?.Invoke(downloaderObject, bytesTransfered, Length);
-                    downloaderObject.CancelTest?.Invoke(downloaderObject, ref stopped);
+                    bytesTransfered += bytesRead;
+                    progress.Invoke(bytesTransfered, ref stopped);
                     if (stopped)
                     {
                         break;
@@ -71,13 +71,13 @@ namespace MultiThreadedDownloaderLib
             return 200;
         }
 
-        public int ContentToString(out string resultString, int bufferSize, out long bytesTransfered)
+        public int ContentToString(out string resultString, int bufferSize, ProgressDelegate progress)
         {
             try
             {
                 using (MemoryStream stream = new MemoryStream())
                 {
-                    int errorCode = ContentToStream(stream, bufferSize, null, out bytesTransfered);
+                    int errorCode = ContentToStream(stream, bufferSize, progress);
                     resultString = errorCode == 200 || errorCode == 206 ?
                         Encoding.UTF8.GetString(stream.ToArray()) : null;
                     return errorCode;
@@ -87,14 +87,13 @@ namespace MultiThreadedDownloaderLib
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
                 resultString = ex.Message;
-                bytesTransfered = 0L;
                 return ex.HResult;
             }
         }
 
         public int ContentToString(out string resultString, int bufferSize = 4096)
         {
-            return ContentToString(out resultString, bufferSize, out _);
+            return ContentToString(out resultString, bufferSize, null);
         }
     }
 }
