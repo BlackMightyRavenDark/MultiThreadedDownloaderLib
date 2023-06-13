@@ -46,10 +46,10 @@ namespace MultiThreadedDownloaderLib
                     break;
                 }
                 stream.Write(buf, 0, bytesRead);
+                bytesTransfered += bytesRead;
 
                 if (progress != null)
                 {
-                    bytesTransfered += bytesRead;
                     progress.Invoke(bytesTransfered, ref stopped);
                     if (stopped)
                     {
