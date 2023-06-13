@@ -29,6 +29,7 @@ namespace MultiThreadedDownloaderLib
         /// </summary>
         public bool LogicEnabled { get; set; } = false;
 
+        public double UpdateIntervalMilliseconds { get; set; } = 100.0;
         public long ContentLength { get; private set; } = -1L;
         public long RangeFrom { get; private set; } = 0L;
         public long RangeTo { get; private set; } = -1L;
@@ -39,7 +40,6 @@ namespace MultiThreadedDownloaderLib
         /// Must be used very softly and carefully!
         /// </summary>
         public bool UseRamForTempFiles { get; set; } = false;
-        public int UpdateInterval { get; set; } = 10;
         public int LastErrorCode { get; private set; }
         public string LastErrorMessage { get; private set; }
         public int ThreadCount { get; set; } = 2;
@@ -249,7 +249,7 @@ namespace MultiThreadedDownloaderLib
             }
             if (bufferSize == 0)
             {
-                bufferSize = 4096 * ThreadCount * 10;
+                bufferSize = 8192;
             }
             int chunkCount = ContentLength > MEGABYTE ? ThreadCount : 1;
             var tasks = Split(fullContentLength, chunkCount).Select((range, taskId) => Task.Run(() =>
@@ -271,12 +271,18 @@ namespace MultiThreadedDownloaderLib
                 downloader.SetRange(chunkFirstByte, chunkLastByte);
 
                 Stream streamChunk = null;
+                DateTime lastTime = DateTime.Now;
 
                 downloader.WorkProgress += (object sender, long transfered, long contentLen) =>
                 {
-                    FileChunk fileChunk = new FileChunk(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
-                    ProgressItem progressItem = new ProgressItem(fileChunk, taskId, transfered, chunkLastByte);
-                    reporter.Report(progressItem);
+                    TimeSpan deltaTime = DateTime.Now - lastTime;
+                    if (deltaTime.TotalMilliseconds >= UpdateIntervalMilliseconds)
+                    {
+                        lastTime = DateTime.Now;
+                        FileChunk fileChunk = new FileChunk(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
+                        ProgressItem progressItem = new ProgressItem(fileChunk, taskId, transfered, chunkLastByte);
+                        reporter.Report(progressItem);
+                    }
                 };
                 downloader.WorkFinished += (object sender, long transfered, long contentLen, int errCode) =>
                 {

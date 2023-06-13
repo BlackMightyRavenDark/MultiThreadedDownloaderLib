@@ -100,6 +100,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             }
 
             btnDownloadMultiThreaded.Enabled = false;
+            numericUpDownUpdateInterval.Enabled = false;
             btnHeaders.Enabled = false;
 
             if (string.IsNullOrEmpty(editUrl.Text) || string.IsNullOrWhiteSpace(editUrl.Text))
@@ -108,6 +109,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 btnDownloadMultiThreaded.Enabled = true;
                 btnHeaders.Enabled = true;
+                numericUpDownUpdateInterval.Enabled = true;
                 return;
             }
 
@@ -117,6 +119,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 btnDownloadMultiThreaded.Enabled = true;
                 btnHeaders.Enabled = true;
+                numericUpDownUpdateInterval.Enabled = true;
                 return;
             }
 
@@ -214,6 +217,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
             downloader.Url = editUrl.Text;
             downloader.Headers = headerCollection;
+            downloader.UpdateIntervalMilliseconds = (double)numericUpDownUpdateInterval.Value;
+
             Stream stream = File.OpenWrite(fn);
             int errorCode = downloader.Download(stream);
             stream.Dispose();
@@ -252,6 +257,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             btnDownloadMultiThreaded.Enabled = true;
             btnHeaders.Enabled = true;
             cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = true;
+            numericUpDownUpdateInterval.Enabled = true;
         }
 
         private async void btnDownloadMultiThreaded_Click(object sender, EventArgs e)
@@ -271,6 +277,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             btnHeaders.Enabled = false;
             cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = false;
             numericUpDownThreadCount.Enabled = false;
+            numericUpDownUpdateInterval.Enabled = false;
             lblMergingProgress.Text = null;
 
             MultiThreadedDownloader multiThreadedDownloader = new MultiThreadedDownloader();
@@ -370,6 +377,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             multiThreadedDownloader.MergingDirectory = editMergingPath.Text;
             multiThreadedDownloader.KeepDownloadedFileInTempOrMergingDirectory = cbKeepDownloadedFileInTempOrMergingDirectory.Checked;
             multiThreadedDownloader.UseRamForTempFiles = checkBoxUseRamForTempFiles.Checked;
+            multiThreadedDownloader.UpdateIntervalMilliseconds = (double)numericUpDownUpdateInterval.Value;
 
             int errorCode = await multiThreadedDownloader.Download();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
@@ -415,6 +423,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             btnDownloadSingleThreaded.Enabled = true;
             btnHeaders.Enabled = true;
             numericUpDownThreadCount.Enabled = true;
+            numericUpDownUpdateInterval.Enabled = true;
             cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = true;
         }
 

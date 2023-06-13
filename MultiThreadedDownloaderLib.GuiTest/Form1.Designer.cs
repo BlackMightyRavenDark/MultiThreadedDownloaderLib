@@ -49,12 +49,15 @@
             this.cbKeepDownloadedFileInTempOrMergingDirectory = new System.Windows.Forms.CheckBox();
             this.btnHeaders = new System.Windows.Forms.Button();
             this.checkBoxUseRamForTempFiles = new System.Windows.Forms.CheckBox();
+            this.label6 = new System.Windows.Forms.Label();
+            this.numericUpDownUpdateInterval = new System.Windows.Forms.NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownThreadCount)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownUpdateInterval)).BeginInit();
             this.SuspendLayout();
             // 
             // btnDownloadSingleThreaded
             // 
-            this.btnDownloadSingleThreaded.Location = new System.Drawing.Point(12, 138);
+            this.btnDownloadSingleThreaded.Location = new System.Drawing.Point(12, 186);
             this.btnDownloadSingleThreaded.Name = "btnDownloadSingleThreaded";
             this.btnDownloadSingleThreaded.Size = new System.Drawing.Size(138, 23);
             this.btnDownloadSingleThreaded.TabIndex = 0;
@@ -71,14 +74,14 @@
             // 
             // progressBar1
             // 
-            this.progressBar1.Location = new System.Drawing.Point(12, 186);
+            this.progressBar1.Location = new System.Drawing.Point(12, 234);
             this.progressBar1.Name = "progressBar1";
             this.progressBar1.Size = new System.Drawing.Size(745, 23);
             this.progressBar1.TabIndex = 2;
             // 
             // btnDownloadMultiThreaded
             // 
-            this.btnDownloadMultiThreaded.Location = new System.Drawing.Point(156, 138);
+            this.btnDownloadMultiThreaded.Location = new System.Drawing.Point(156, 186);
             this.btnDownloadMultiThreaded.Name = "btnDownloadMultiThreaded";
             this.btnDownloadMultiThreaded.Size = new System.Drawing.Size(148, 23);
             this.btnDownloadMultiThreaded.TabIndex = 3;
@@ -89,7 +92,7 @@
             // lblDownloadingProgress
             // 
             this.lblDownloadingProgress.AutoSize = true;
-            this.lblDownloadingProgress.Location = new System.Drawing.Point(9, 170);
+            this.lblDownloadingProgress.Location = new System.Drawing.Point(9, 218);
             this.lblDownloadingProgress.Name = "lblDownloadingProgress";
             this.lblDownloadingProgress.Size = new System.Drawing.Size(58, 13);
             this.lblDownloadingProgress.TabIndex = 4;
@@ -184,7 +187,7 @@
             // 
             // numericUpDownThreadCount
             // 
-            this.numericUpDownThreadCount.Location = new System.Drawing.Point(363, 142);
+            this.numericUpDownThreadCount.Location = new System.Drawing.Point(128, 160);
             this.numericUpDownThreadCount.Maximum = new decimal(new int[] {
             25,
             0,
@@ -207,16 +210,16 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(310, 144);
+            this.label5.Location = new System.Drawing.Point(9, 162);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(47, 13);
+            this.label5.Size = new System.Drawing.Size(113, 13);
             this.label5.TabIndex = 16;
-            this.label5.Text = "Потоки:";
+            this.label5.Text = "Количество потоков:";
             // 
             // lblMergingProgress
             // 
             this.lblMergingProgress.AutoSize = true;
-            this.lblMergingProgress.Location = new System.Drawing.Point(73, 170);
+            this.lblMergingProgress.Location = new System.Drawing.Point(73, 218);
             this.lblMergingProgress.Name = "lblMergingProgress";
             this.lblMergingProgress.Size = new System.Drawing.Size(96, 13);
             this.lblMergingProgress.TabIndex = 17;
@@ -225,7 +228,7 @@
             // cbKeepDownloadedFileInTempOrMergingDirectory
             // 
             this.cbKeepDownloadedFileInTempOrMergingDirectory.AutoSize = true;
-            this.cbKeepDownloadedFileInTempOrMergingDirectory.Location = new System.Drawing.Point(409, 144);
+            this.cbKeepDownloadedFileInTempOrMergingDirectory.Location = new System.Drawing.Point(12, 115);
             this.cbKeepDownloadedFileInTempOrMergingDirectory.Name = "cbKeepDownloadedFileInTempOrMergingDirectory";
             this.cbKeepDownloadedFileInTempOrMergingDirectory.Size = new System.Drawing.Size(210, 17);
             this.cbKeepDownloadedFileInTempOrMergingDirectory.TabIndex = 18;
@@ -235,7 +238,7 @@
             // btnHeaders
             // 
             this.btnHeaders.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnHeaders.Location = new System.Drawing.Point(681, 138);
+            this.btnHeaders.Location = new System.Drawing.Point(681, 115);
             this.btnHeaders.Name = "btnHeaders";
             this.btnHeaders.Size = new System.Drawing.Size(75, 23);
             this.btnHeaders.TabIndex = 19;
@@ -246,7 +249,7 @@
             // checkBoxUseRamForTempFiles
             // 
             this.checkBoxUseRamForTempFiles.AutoSize = true;
-            this.checkBoxUseRamForTempFiles.Location = new System.Drawing.Point(12, 115);
+            this.checkBoxUseRamForTempFiles.Location = new System.Drawing.Point(12, 138);
             this.checkBoxUseRamForTempFiles.Name = "checkBoxUseRamForTempFiles";
             this.checkBoxUseRamForTempFiles.Size = new System.Drawing.Size(650, 17);
             this.checkBoxUseRamForTempFiles.TabIndex = 20;
@@ -254,11 +257,49 @@
     "ый режим), Экспериментально!";
             this.checkBoxUseRamForTempFiles.UseVisualStyleBackColor = true;
             // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(183, 162);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(137, 13);
+            this.label6.TabIndex = 21;
+            this.label6.Text = "Частота обновления (ms):";
+            // 
+            // numericUpDownUpdateInterval
+            // 
+            this.numericUpDownUpdateInterval.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.numericUpDownUpdateInterval.Location = new System.Drawing.Point(326, 160);
+            this.numericUpDownUpdateInterval.Maximum = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            this.numericUpDownUpdateInterval.Minimum = new decimal(new int[] {
+            50,
+            0,
+            0,
+            0});
+            this.numericUpDownUpdateInterval.Name = "numericUpDownUpdateInterval";
+            this.numericUpDownUpdateInterval.Size = new System.Drawing.Size(54, 20);
+            this.numericUpDownUpdateInterval.TabIndex = 23;
+            this.numericUpDownUpdateInterval.Value = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(768, 222);
+            this.ClientSize = new System.Drawing.Size(768, 268);
+            this.Controls.Add(this.numericUpDownUpdateInterval);
+            this.Controls.Add(this.label6);
             this.Controls.Add(this.checkBoxUseRamForTempFiles);
             this.Controls.Add(this.btnHeaders);
             this.Controls.Add(this.cbKeepDownloadedFileInTempOrMergingDirectory);
@@ -286,6 +327,7 @@
             this.Text = "Multi threaded downloader";
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownThreadCount)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownUpdateInterval)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -314,5 +356,7 @@
         private System.Windows.Forms.CheckBox cbKeepDownloadedFileInTempOrMergingDirectory;
         private System.Windows.Forms.Button btnHeaders;
         private System.Windows.Forms.CheckBox checkBoxUseRamForTempFiles;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.NumericUpDown numericUpDownUpdateInterval;
     }
 }

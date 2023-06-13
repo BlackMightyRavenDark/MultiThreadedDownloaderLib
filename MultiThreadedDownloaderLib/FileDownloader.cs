@@ -1,4 +1,5 @@
-﻿using System.Collections.Specialized;
+﻿using System;
+using System.Collections.Specialized;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -9,6 +10,7 @@ namespace MultiThreadedDownloaderLib
     {
         public string Url { get; set; }
         public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
+        public double UpdateIntervalMilliseconds { get; set; } = 100.0;
         public long DownloadedInLastSession { get; private set; } = 0L;
         public long StreamSize { get; private set; } = 0L;
         private long _rangeFrom = 0L;
@@ -106,14 +108,20 @@ namespace MultiThreadedDownloaderLib
             long transfered = 0L;
             try
             {
+                DateTime lastTime = DateTime.Now;
                 LastErrorCode = requestResult.WebContent.ContentToStream(
                     stream, bufferSize, (long bytes, ref bool cancel) =>
                     {
                         transfered = bytes;
-                        WorkProgress?.Invoke(this, transfered, size);
-                        CancelTest?.Invoke(this, ref cancel);
+                        TimeSpan deltaTime = DateTime.Now - lastTime;
+                        if (deltaTime.TotalMilliseconds >= UpdateIntervalMilliseconds)
+                        {
+                            lastTime = DateTime.Now;
+                            WorkProgress?.Invoke(this, transfered, size);
+                            CancelTest?.Invoke(this, ref cancel);
+                        }
                     });
-            } catch (System.Exception ex)
+            } catch (Exception ex)
             {
                 LastErrorCode = ex.HResult;
                 LastErrorMessage = ex.Message;
@@ -143,7 +151,7 @@ namespace MultiThreadedDownloaderLib
                         encoding.GetString(mem.ToArray()) : null;
                     return errorCode;
                 }
-            } catch (System.Exception ex)
+            } catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
                 responseString = ex.Message;
