@@ -21,7 +21,7 @@ namespace MultiThreadedDownloaderLib
         {
             if (Data != null)
             {
-                Data.Dispose();
+                Data.Close();
                 Data = null;
             }
 

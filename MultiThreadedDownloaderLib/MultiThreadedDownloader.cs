@@ -308,13 +308,13 @@ namespace MultiThreadedDownloaderLib
                     LastErrorCode = downloader.Download(streamChunk, bufferSize);
                     if (!UseRamForTempFiles)
                     {
-                        streamChunk.Dispose();
+                        streamChunk.Close();
                         streamChunk = null;
                     }
                 }
                 catch (Exception ex)
                 {
-                    streamChunk?.Dispose();
+                    streamChunk?.Close();
                     LastErrorCode = ex.HResult;
                     LastErrorMessage = ex.Message;
                 }
@@ -415,7 +415,7 @@ namespace MultiThreadedDownloaderLib
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine(ex.Message);
-                    outputStream?.Dispose();
+                    outputStream?.Close();
                     if (UseRamForTempFiles)
                     {
                         foreach (FileChunk fc in chunks)
@@ -461,12 +461,12 @@ namespace MultiThreadedDownloaderLib
                         }
                         else
                         {
-                            tmpStream.Dispose();
+                            tmpStream.Close();
                         }
 
                         if (!appended)
                         {
-                            outputStream.Dispose();
+                            outputStream.Close();
                             if (UseRamForTempFiles)
                             {
                                 foreach (FileChunk fc in chunks)
@@ -500,7 +500,7 @@ namespace MultiThreadedDownloaderLib
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine(ex.Message);
-                    outputStream.Dispose();
+                    outputStream.Close();
                     if (UseRamForTempFiles)
                     {
                         foreach (FileChunk fc in chunks)
@@ -512,7 +512,7 @@ namespace MultiThreadedDownloaderLib
                     }
                     return DOWNLOAD_ERROR_MERGING_CHUNKS;
                 }
-                outputStream.Dispose();
+                outputStream.Close();
 
                 if (aborted)
                 {
@@ -728,7 +728,7 @@ namespace MultiThreadedDownloaderLib
         {
             if (Stream != null)
             {
-                Stream.Dispose();
+                Stream.Close();
                 Stream = null;
             }
         }

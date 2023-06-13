@@ -221,7 +221,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
             Stream stream = File.OpenWrite(fn);
             int errorCode = downloader.Download(stream);
-            stream.Dispose();
+            stream.Close();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
             if (errorCode == 200 || errorCode == 206)
             {
