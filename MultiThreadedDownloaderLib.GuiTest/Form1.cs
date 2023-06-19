@@ -9,8 +9,9 @@ namespace MultiThreadedDownloaderLib.GuiTest
     public partial class Form1 : Form
     {
         private bool isDownloading = false;
-        private bool needCancel = false;
         private NameValueCollection headerCollection;
+        private FileDownloader singleThreadedDownloader;
+        private MultiThreadedDownloader multiThreadedDownloader;
 
         public Form1()
         {
@@ -95,7 +96,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
         {
             if (isDownloading)
             {
-                needCancel = true;
+                singleThreadedDownloader?.Stop();
                 return;
             }
 
@@ -135,15 +136,15 @@ namespace MultiThreadedDownloaderLib.GuiTest
                 File.Delete(fn);
             }
 
-            FileDownloader downloader = new FileDownloader();
-            downloader.Connecting += (s, url) =>
+            singleThreadedDownloader = new FileDownloader();
+            singleThreadedDownloader.Connecting += (s, url) =>
             {
                 progressBar1.Value = 0;
                 progressBar1.Maximum = 100;
                 lblDownloadingProgress.Text = "Подключение...";
                 lblDownloadingProgress.Refresh();
             };
-            downloader.Connected += (object s, string url, long contentLength, ref int errCode) =>
+            singleThreadedDownloader.Connected += (object s, string url, long contentLength, ref int errCode) =>
             {
                 if (errCode == 200 || errCode == 206)
                 {
@@ -173,14 +174,14 @@ namespace MultiThreadedDownloaderLib.GuiTest
                     lblDownloadingProgress.Text = $"Ошибка {errCode}";
                 }
             };
-            downloader.WorkStarted += (s, contentLength) =>
+            singleThreadedDownloader.WorkStarted += (s, contentLength) =>
             {
                 progressBar1.Value = 0;
                 progressBar1.Maximum = 100;
                 lblDownloadingProgress.Text = $"Скачано: 0 из {contentLength}";
                 lblDownloadingProgress.Refresh();
             };
-            downloader.WorkProgress += (s, bytesTransfered, contentLength) =>
+            singleThreadedDownloader.WorkProgress += (s, bytesTransfered, contentLength) =>
             {
                 if (contentLength > 0L)
                 {
@@ -196,7 +197,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
                 Application.DoEvents();
             };
-            downloader.WorkFinished += (s, bytesTransfered, contentLength, errCode) =>
+            singleThreadedDownloader.WorkFinished += (s, bytesTransfered, contentLength, errCode) =>
             {
                 if (contentLength > 0L)
                 {
@@ -210,22 +211,18 @@ namespace MultiThreadedDownloaderLib.GuiTest
                     lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из <Неизвестно>";
                 }
             };
-            downloader.CancelTest += (object s, ref bool stop) =>
-            {
-                stop = needCancel;
-            };
 
-            downloader.Url = editUrl.Text;
-            downloader.Headers = headerCollection;
-            downloader.UpdateIntervalMilliseconds = (double)numericUpDownUpdateInterval.Value;
+            singleThreadedDownloader.Url = editUrl.Text;
+            singleThreadedDownloader.Headers = headerCollection;
+            singleThreadedDownloader.UpdateIntervalMilliseconds = (double)numericUpDownUpdateInterval.Value;
 
             Stream stream = File.OpenWrite(fn);
-            int errorCode = downloader.Download(stream);
+            int errorCode = singleThreadedDownloader.Download(stream);
             stream.Close();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
             if (errorCode == 200 || errorCode == 206)
             {
-                string messageText = $"Скачано {downloader.DownloadedInLastSession} байт";
+                string messageText = $"Скачано {singleThreadedDownloader.DownloadedInLastSession} байт";
                 MessageBox.Show(messageText, "Скачано!", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
@@ -242,15 +239,15 @@ namespace MultiThreadedDownloaderLib.GuiTest
                 }
 
                 string messageText = MultiThreadedDownloader.ErrorCodeToString(errorCode);
-                if (!string.IsNullOrEmpty(downloader.LastErrorMessage) && !string.IsNullOrWhiteSpace(downloader.LastErrorMessage))
+                if (!string.IsNullOrEmpty(singleThreadedDownloader.LastErrorMessage) && !string.IsNullOrWhiteSpace(singleThreadedDownloader.LastErrorMessage))
                 {
-                    messageText += $"{Environment.NewLine}Текст ошибки: {downloader.LastErrorMessage}";
+                    messageText += $"{Environment.NewLine}Текст ошибки: {singleThreadedDownloader.LastErrorMessage}";
                 }
                 ShowErrorMessage(errorCode, messageText);
             }
 
             isDownloading = false;
-            needCancel = false;
+            singleThreadedDownloader = null;
 
             btnDownloadSingleThreaded.Text = "Download single threaded";
             btnDownloadSingleThreaded.Enabled = true;
@@ -264,9 +261,9 @@ namespace MultiThreadedDownloaderLib.GuiTest
         {
             if (isDownloading)
             {
-                needCancel = true;
                 btnDownloadMultiThreaded.Text = "Stopping...";
                 btnDownloadMultiThreaded.Enabled = false;
+                multiThreadedDownloader?.Stop();
                 return;
             }
 
@@ -280,7 +277,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             numericUpDownUpdateInterval.Enabled = false;
             lblMergingProgress.Text = null;
 
-            MultiThreadedDownloader multiThreadedDownloader = new MultiThreadedDownloader();
+            multiThreadedDownloader = new MultiThreadedDownloader();
             multiThreadedDownloader.Connecting += (s, url) =>
             {
                 lblDownloadingProgress.Text = "Подключение...";
@@ -364,10 +361,6 @@ namespace MultiThreadedDownloaderLib.GuiTest
             {
                 lblMergingProgress.Text = errCode == 200 || errCode == 206 ? null : $"Ошибка объединения чанков! Код: {errCode}";
             };
-            multiThreadedDownloader.CancelTest += (object s, ref bool stop) =>
-            {
-                stop = needCancel;
-            };
 
             multiThreadedDownloader.Headers = headerCollection;
             multiThreadedDownloader.ThreadCount = (int)numericUpDownThreadCount.Value;
@@ -416,7 +409,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             }
 
             isDownloading = false;
-            needCancel = false;
+            multiThreadedDownloader = null;
 
             btnDownloadMultiThreaded.Text = "Download multi threaded";
             btnDownloadMultiThreaded.Enabled = true;

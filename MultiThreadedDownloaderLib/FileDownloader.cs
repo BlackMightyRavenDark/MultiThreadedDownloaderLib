@@ -3,10 +3,11 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Threading;
 
 namespace MultiThreadedDownloaderLib
 {
-    public sealed class FileDownloader
+    public sealed class FileDownloader : IDisposable
     {
         public string Url { get; set; }
         public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
@@ -16,6 +17,7 @@ namespace MultiThreadedDownloaderLib
         private long _rangeFrom = 0L;
         private long _rangeTo = -1L;
         private NameValueCollection _headers = new NameValueCollection();
+        private CancellationTokenSource _cancellationTokenSource;
         public bool IsActive { get; private set; } = false;
         public int LastErrorCode { get; private set; } = 200;
         public string LastErrorMessage { get; private set; }
@@ -36,15 +38,24 @@ namespace MultiThreadedDownloaderLib
         public delegate void WorkStartedDelegate(object sender, long contentLength);
         public delegate void WorkProgressDelegate(object sender, long bytesTransfered, long contentLength);
         public delegate void WorkFinishedDelegate(object sender, long bytesTransfered, long contentLength, int errorCode);
-        public delegate void CancelTestDelegate(object sender, ref bool stop);
         public ConnectingDelegate Connecting;
         public ConnectedDelegate Connected;
         public WorkStartedDelegate WorkStarted;
         public WorkProgressDelegate WorkProgress;
         public WorkFinishedDelegate WorkFinished;
-        public CancelTestDelegate CancelTest;
 
-        public int Download(Stream stream, int bufferSize = 4096)
+        public void Dispose()
+        {
+            if (_cancellationTokenSource != null)
+            {
+                Stop();
+                _cancellationTokenSource.Dispose();
+                _cancellationTokenSource = null;
+            }
+        }
+
+        public int Download(Stream stream, int bufferSize,
+            CancellationTokenSource cancellationTokenSource = null)
         {
             IsActive = true;
 
@@ -106,11 +117,13 @@ namespace MultiThreadedDownloaderLib
             WorkStarted?.Invoke(this, size);
 
             long transfered = 0L;
+            DateTime lastTime = DateTime.Now;
             try
             {
-                DateTime lastTime = DateTime.Now;
+                _cancellationTokenSource = cancellationTokenSource != null ?
+                    cancellationTokenSource : new CancellationTokenSource();
                 LastErrorCode = requestResult.WebContent.ContentToStream(
-                    stream, bufferSize, (long bytes, ref bool cancel) =>
+                    stream, bufferSize, (long bytes) =>
                     {
                         transfered = bytes;
                         TimeSpan deltaTime = DateTime.Now - lastTime;
@@ -118,9 +131,8 @@ namespace MultiThreadedDownloaderLib
                         {
                             lastTime = DateTime.Now;
                             WorkProgress?.Invoke(this, transfered, size);
-                            CancelTest?.Invoke(this, ref cancel);
                         }
-                    });
+                    }, _cancellationTokenSource.Token);
             } catch (Exception ex)
             {
                 LastErrorCode = ex.HResult;
@@ -138,6 +150,11 @@ namespace MultiThreadedDownloaderLib
 
             IsActive = false;
             return LastErrorCode;
+        }
+
+        public int Download(Stream stream, int bufferSize = 4096)
+        {
+            return Download(stream, bufferSize, null);
         }
 
         public int DownloadString(out string responseString, Encoding encoding, int bufferSize = 4096)
@@ -162,6 +179,14 @@ namespace MultiThreadedDownloaderLib
         public int DownloadString(out string responseString, int bufferSize = 4096)
         {
             return DownloadString(out responseString, Encoding.UTF8, bufferSize);
+        }
+
+        public void Stop()
+        {
+            if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
+            {
+                _cancellationTokenSource.Cancel();
+            }
         }
 
         public static int GetUrlContentLength(string url, NameValueCollection headers,

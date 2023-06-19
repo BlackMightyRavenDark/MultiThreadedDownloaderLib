@@ -4,12 +4,13 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using static MultiThreadedDownloaderLib.FileDownloader;
 
 namespace MultiThreadedDownloaderLib
 {
-    public sealed class MultiThreadedDownloader
+    public sealed class MultiThreadedDownloader : IDisposable
     {
         public string Url { get; set; } = null;
 
@@ -45,7 +46,8 @@ namespace MultiThreadedDownloaderLib
         public int ThreadCount { get; set; } = 2;
         public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
         private NameValueCollection _headers = new NameValueCollection();
-        private bool aborted = false;
+        private CancellationTokenSource _cancellationTokenSource;
+        private bool _isCanceled = false;
         public bool IsTempDirectoryAvailable => !string.IsNullOrEmpty(TempDirectory) &&
                         !string.IsNullOrWhiteSpace(TempDirectory) && Directory.Exists(TempDirectory);
         public bool IsMergingDirectoryAvailable => !string.IsNullOrEmpty(MergingDirectory) &&
@@ -66,7 +68,6 @@ namespace MultiThreadedDownloaderLib
         public delegate void DownloadStartedDelegate(object sender, long contentLenth);
         public delegate void DownloadProgressDelegate(object sender, long bytesTransfered);
         public delegate void DownloadFinishedDelegate(object sender, long bytesTransfered, int errorCode, string fileName);
-        public delegate void CancelTestDelegate(object sender, ref bool cancel);
         public delegate void MergingStartedDelegate(object sender, int chunkCount);
         public delegate void MergingProgressDelegate(object sender, int chunkId);
         public delegate void MergingFinishedDelegate(object sender, int errorCode);
@@ -76,10 +77,19 @@ namespace MultiThreadedDownloaderLib
         public DownloadStartedDelegate DownloadStarted;
         public DownloadProgressDelegate DownloadProgress;
         public DownloadFinishedDelegate DownloadFinished;
-        public CancelTestDelegate CancelTest;
         public MergingStartedDelegate MergingStarted;
         public MergingProgressDelegate MergingProgress;
         public MergingFinishedDelegate MergingFinished;
+
+        public void Dispose()
+        {
+            if (_cancellationTokenSource != null)
+            {
+                Stop();
+                _cancellationTokenSource.Dispose();
+                _cancellationTokenSource = null;
+            }
+        }
 
         public static string GetNumberedFileName(string filePath)
         {
@@ -159,7 +169,7 @@ namespace MultiThreadedDownloaderLib
         /// Leave zero for auto select.</param>
         public async Task<int> Download(int bufferSize = 0)
         {
-            aborted = false;
+            _isCanceled = false;
             DownloadedBytes = 0L;
             if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
             {
@@ -229,6 +239,8 @@ namespace MultiThreadedDownloaderLib
                 return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
             }
 
+            _cancellationTokenSource = new CancellationTokenSource();
+
             DownloadStarted?.Invoke(this, ContentLength);
 
             Dictionary<int, ProgressItem> threadProgressDict = new Dictionary<int, ProgressItem>();
@@ -240,7 +252,6 @@ namespace MultiThreadedDownloaderLib
                 DownloadedBytes = threadProgressDict.Values.Select(it => it.ProcessedBytes).Sum();
 
                 DownloadProgress?.Invoke(this, DownloadedBytes);
-                CancelTest?.Invoke(this, ref aborted);
             };
 
             if (ThreadCount <= 0)
@@ -290,10 +301,6 @@ namespace MultiThreadedDownloaderLib
                     ProgressItem progressItem = new ProgressItem(fileChunk, taskId, transfered, chunkLastByte);
                     reporter.Report(progressItem);
                 };
-                downloader.CancelTest += (object s, ref bool stop) =>
-                {
-                    stop = aborted;
-                };
 
                 try
                 {
@@ -305,7 +312,7 @@ namespace MultiThreadedDownloaderLib
                     {
                         streamChunk = File.OpenWrite(chunkFileName);
                     }
-                    LastErrorCode = downloader.Download(streamChunk, bufferSize);
+                    LastErrorCode = downloader.Download(streamChunk, bufferSize, _cancellationTokenSource);
                     if (!UseRamForTempFiles)
                     {
                         streamChunk.Close();
@@ -321,12 +328,11 @@ namespace MultiThreadedDownloaderLib
 
                 if (LastErrorCode != 200 && LastErrorCode != 206)
                 {
-                    if (aborted)
+                    if (_isCanceled)
                     {
-                        throw new OperationCanceledException();
+                        LastErrorCode = DOWNLOAD_ERROR_CANCELED_BY_USER;
                     }
                     LastErrorMessage = downloader.LastErrorMessage;
-                    throw new Exception($"Error code = {LastErrorCode}");
                 }
             }
             ));
@@ -353,6 +359,41 @@ namespace MultiThreadedDownloaderLib
                 }
                 int ret = (ex is OperationCanceledException) ? DOWNLOAD_ERROR_CANCELED_BY_USER : ex.HResult;
                 return ret;
+            }
+
+            if (LastErrorCode != 200 && LastErrorCode != 206)
+            {
+                if (UseRamForTempFiles)
+                {
+                    for (int i = 0; i < threadProgressDict.Count; ++i)
+                    {
+                        if (threadProgressDict[i].FileChunk != null)
+                        {
+                            threadProgressDict[i].FileChunk.Dispose();
+                            //TODO: Fix possible memory leaking
+                            GC.Collect();
+                        }
+                    }
+                }
+                return LastErrorCode;
+            }
+            else if (_isCanceled)
+            {
+                if (UseRamForTempFiles)
+                {
+                    for (int i = 0; i < threadProgressDict.Count; ++i)
+                    {
+                        if (threadProgressDict[i].FileChunk != null)
+                        {
+                            threadProgressDict[i].FileChunk.Dispose();
+                            //TODO: Fix possible memory leaking
+                            GC.Collect();
+                        }
+                    }
+                }
+                LastErrorCode = DOWNLOAD_ERROR_CANCELED_BY_USER;
+                LastErrorMessage = null;
+                return LastErrorCode;
             }
 
             List<FileChunk> chunks = new List<FileChunk>();
@@ -393,6 +434,15 @@ namespace MultiThreadedDownloaderLib
             DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
 
             return LastErrorCode;
+        }
+
+        public void Stop()
+        {
+            if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
+            {
+                _cancellationTokenSource.Cancel();
+                _isCanceled = true;
+            }
         }
 
         private async Task<int> MergeChunks(IEnumerable<FileChunk> chunks)
@@ -486,14 +536,11 @@ namespace MultiThreadedDownloaderLib
 
                         reporter.Report(i);
 
-                        if (CancelTest != null)
+                        if (_isCanceled)
                         {
-                            CancelTest.Invoke(this, ref aborted);
-                            if (aborted)
-                            {
-                                break;
-                            }
+                            break;
                         }
+
                         ++i;
                     }
                 }
@@ -514,7 +561,7 @@ namespace MultiThreadedDownloaderLib
                 }
                 outputStream.Close();
 
-                if (aborted)
+                if (_isCanceled)
                 {
                     if (UseRamForTempFiles)
                     {
