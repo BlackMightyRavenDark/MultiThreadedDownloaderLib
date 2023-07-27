@@ -175,7 +175,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
                     default:
                         if (singleThreadedDownloader.HasErrorMessage)
                         {
-                            lblDownloadingProgress.Text = singleThreadedDownloader.LastErrorMessage;
+                            lblDownloadingProgress.Text =
+                                $"Ошибка: {singleThreadedDownloader.LastErrorMessage} (Код: {errorCode})";
                         }
                         break;
                 }
@@ -256,7 +257,10 @@ namespace MultiThreadedDownloaderLib.GuiTest
                 }
                 else
                 {
-                    lblDownloadingProgress.Text = $"Ошибка {errCode}";
+                    lblDownloadingProgress.Text =
+                        multiThreadedDownloader.HasErrorMessage ?
+                        $"Ошибка: {multiThreadedDownloader.LastErrorMessage} (Код: {errCode})" :
+                        $"Код ошибки: {errCode}";
                 }
             };
             multiThreadedDownloader.DownloadStarted += (s, contentLength) =>
@@ -336,9 +340,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
                         break;
 
                     case MultiThreadedDownloader.DOWNLOAD_ERROR_CUSTOM:
-                        lblDownloadingProgress.Text =
-                            string.IsNullOrEmpty(multiThreadedDownloader.LastErrorMessage)
-                            || string.IsNullOrWhiteSpace(multiThreadedDownloader.LastErrorMessage) ?
+                        lblDownloadingProgress.Text = multiThreadedDownloader.HasErrorMessage ?
                             "Ошибка!" : $"Ошибка: {multiThreadedDownloader.LastErrorMessage}";
                         break;
                 }
@@ -346,7 +348,12 @@ namespace MultiThreadedDownloaderLib.GuiTest
                 string messageText = MultiThreadedDownloader.ErrorCodeToString(errorCode);
                 if (multiThreadedDownloader.HasErrorMessage)
                 {
+                    lblDownloadingProgress.Text = $"Ошибка: {multiThreadedDownloader.LastErrorMessage} (Код: {errorCode})";
                     messageText += $"{Environment.NewLine}Текст ошибки: {multiThreadedDownloader.LastErrorMessage}";
+                }
+                else
+                {
+                    lblDownloadingProgress.Text = $"Код ошибки: {errorCode}";
                 }
                 ShowErrorMessage(errorCode, messageText);
             }
