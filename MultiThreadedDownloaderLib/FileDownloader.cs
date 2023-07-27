@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MultiThreadedDownloaderLib
 {
@@ -34,7 +35,7 @@ namespace MultiThreadedDownloaderLib
         public const int DOWNLOAD_ERROR_NULL_CONTENT = -9;
 
         public delegate void ConnectingDelegate(object sender, string url);
-        public delegate void ConnectedDelegate(object sender, string url, long contentLength, ref int errorCode);
+        public delegate int ConnectedDelegate(object sender, string url, long contentLength, int errorCode);
         public delegate void WorkStartedDelegate(object sender, long contentLength);
         public delegate void WorkProgressDelegate(object sender, long bytesTransfered, long contentLength);
         public delegate void WorkFinishedDelegate(object sender, long bytesTransfered, long contentLength, int errorCode);
@@ -93,13 +94,12 @@ namespace MultiThreadedDownloaderLib
                 return LastErrorCode;
             }
 
-            int errorCode = LastErrorCode;
             long size = requestResult.WebContent.Length;
-            Connected?.Invoke(this, Url, size, ref errorCode);
-            if (LastErrorCode != errorCode)
+            if (Connected != null)
             {
-                LastErrorCode = errorCode;
+                LastErrorCode = Connected.Invoke(this, Url, size, LastErrorCode);
             }
+
             if (HasErrors)
             {
                 requestResult.Dispose();
@@ -152,9 +152,20 @@ namespace MultiThreadedDownloaderLib
             return LastErrorCode;
         }
 
+        public async Task<int> DownloadAsync(Stream stream, int bufferSize,
+            CancellationTokenSource cancellationTokenSource = null)
+        {
+            return await Task.Run(() => Download(stream, bufferSize, cancellationTokenSource));
+        }
+
         public int Download(Stream stream, int bufferSize = 4096)
         {
             return Download(stream, bufferSize, null);
+        }
+
+        public async Task<int> DownloadAsync(Stream stream, int bufferSize = 4096)
+        {
+            return await Task.Run(() => Download(stream, bufferSize));
         }
 
         public int DownloadString(out string responseString, Encoding encoding, int bufferSize = 4096)

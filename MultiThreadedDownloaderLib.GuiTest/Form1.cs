@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Windows.Forms;
+using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace MultiThreadedDownloaderLib.GuiTest
 {
@@ -92,7 +93,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             btnHeaders.Enabled = true;
         }
 
-        private void btnDownloadSingleThreaded_Click(object sender, EventArgs e)
+        private async void btnDownloadSingleThreaded_Click(object sender, EventArgs e)
         {
             if (isDownloading)
             {
@@ -128,6 +129,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
             btnDownloadSingleThreaded.Text = "Stop";
             cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = false;
+            editFileName.Enabled = false;
+            btnSelectFile.Enabled = false;
             lblMergingProgress.Text = null;
 
             string fn = editFileName.Text;
@@ -137,87 +140,18 @@ namespace MultiThreadedDownloaderLib.GuiTest
             }
 
             singleThreadedDownloader = new FileDownloader();
-            singleThreadedDownloader.Connecting += (s, url) =>
-            {
-                progressBar1.Value = 0;
-                progressBar1.Maximum = 100;
-                lblDownloadingProgress.Text = "Подключение...";
-                lblDownloadingProgress.Refresh();
-            };
-            singleThreadedDownloader.Connected += (object s, string url, long contentLength, ref int errCode) =>
-            {
-                if (errCode == 200 || errCode == 206)
-                {
-                    lblDownloadingProgress.Text = "Подключено!";
-                    lblDownloadingProgress.Refresh();
-                    if (contentLength > 0L)
-                    {
-                        char driveLetter = fn.Length > 2 && fn[1] == ':' && fn[2] == '\\' ? fn[0] : Application.ExecutablePath[0];
-                        if (driveLetter != '\\')
-                        {
-                            DriveInfo driveInfo = new DriveInfo(driveLetter.ToString());
-                            if (!driveInfo.IsReady)
-                            {
-                                errCode = FileDownloader.DOWNLOAD_ERROR_DRIVE_NOT_READY;
-                                return;
-                            }
-                            long minimumFreeSpaceRequired = (long)(contentLength * 1.1);
-                            if (driveInfo.AvailableFreeSpace <= minimumFreeSpaceRequired)
-                            {
-                                errCode = FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    lblDownloadingProgress.Text = $"Ошибка {errCode}";
-                }
-            };
-            singleThreadedDownloader.WorkStarted += (s, contentLength) =>
-            {
-                progressBar1.Value = 0;
-                progressBar1.Maximum = 100;
-                lblDownloadingProgress.Text = $"Скачано: 0 из {contentLength}";
-                lblDownloadingProgress.Refresh();
-            };
-            singleThreadedDownloader.WorkProgress += (s, bytesTransfered, contentLength) =>
-            {
-                if (contentLength > 0L)
-                {
-                    double percent = 100.0 / contentLength * bytesTransfered;
-                    progressBar1.Value = (int)percent;
-                    string percentFormatted = string.Format("{0:F3}", percent);
-                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из {contentLength} ({percentFormatted}%)";
-                }
-                else
-                {
-                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из <Неизвестно>";
-                }
-
-                Application.DoEvents();
-            };
-            singleThreadedDownloader.WorkFinished += (s, bytesTransfered, contentLength, errCode) =>
-            {
-                if (contentLength > 0L)
-                {
-                    double percent = 100.0 / contentLength * bytesTransfered;
-                    progressBar1.Value = (int)percent;
-                    string percentFormatted = string.Format("{0:F3}", percent);
-                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из {contentLength} ({percentFormatted}%)";
-                }
-                else
-                {
-                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из <Неизвестно>";
-                }
-            };
+            singleThreadedDownloader.Connecting += OnConnecting;
+            singleThreadedDownloader.Connected += OnConnected;
+            singleThreadedDownloader.WorkStarted += OnWorkStarted;
+            singleThreadedDownloader.WorkProgress += OnWorkProgress;
+            singleThreadedDownloader.WorkFinished += OnWorkFinished;
 
             singleThreadedDownloader.Url = editUrl.Text;
             singleThreadedDownloader.Headers = headerCollection;
             singleThreadedDownloader.UpdateIntervalMilliseconds = (double)numericUpDownUpdateInterval.Value;
 
             Stream stream = File.OpenWrite(fn);
-            int errorCode = singleThreadedDownloader.Download(stream);
+            int errorCode = await singleThreadedDownloader.DownloadAsync(stream);
             stream.Close();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
             if (errorCode == 200 || errorCode == 206)
@@ -255,6 +189,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
             btnHeaders.Enabled = true;
             cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = true;
             numericUpDownUpdateInterval.Enabled = true;
+            editFileName.Enabled = true;
+            btnSelectFile.Enabled = true;
         }
 
         private async void btnDownloadMultiThreaded_Click(object sender, EventArgs e)
@@ -418,6 +354,121 @@ namespace MultiThreadedDownloaderLib.GuiTest
             numericUpDownThreadCount.Enabled = true;
             numericUpDownUpdateInterval.Enabled = true;
             cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = true;
+        }
+
+        public void OnConnecting(object sender, string url)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new MethodInvoker(() => OnConnecting(sender, url)));
+            }
+            else
+            {
+                progressBar1.Value = 0;
+                progressBar1.Maximum = 100;
+                lblDownloadingProgress.Text = "Подключение...";
+                lblDownloadingProgress.Refresh();
+
+            }
+        }    
+
+        private int OnConnected(object sender, string url, long contentLength, int errorCode)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new MethodInvoker(() => OnConnected(sender, url, contentLength, errorCode)));
+            }
+            else
+            {
+                if (errorCode == 200 || errorCode == 206)
+                {
+                    lblDownloadingProgress.Text = "Подключено!";
+                    lblDownloadingProgress.Refresh();
+                    if (contentLength > 0L)
+                    {
+                        string fn = editFileName.Text;
+                        char driveLetter = fn.Length > 2 && fn[1] == ':' && fn[2] == '\\' ? fn[0] : Application.ExecutablePath[0];
+                        if (driveLetter != '\\')
+                        {
+                            DriveInfo driveInfo = new DriveInfo(driveLetter.ToString());
+                            if (!driveInfo.IsReady)
+                            {
+                                return FileDownloader.DOWNLOAD_ERROR_DRIVE_NOT_READY;
+                            }
+                            long minimumFreeSpaceRequired = (long)(contentLength * 1.1);
+                            if (driveInfo.AvailableFreeSpace <= minimumFreeSpaceRequired)
+                            {
+                                return FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    lblDownloadingProgress.Text = $"Ошибка {errorCode}";
+                }
+            };
+
+            return errorCode;
+        }
+
+        public void OnWorkStarted(object sender, long contentLength)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new MethodInvoker(() => OnWorkStarted(sender, contentLength)));
+            }
+            else
+            {
+                progressBar1.Value = 0;
+                progressBar1.Maximum = 100;
+                lblDownloadingProgress.Text = $"Скачано: 0 из {contentLength}";
+                lblDownloadingProgress.Refresh();
+            }
+        }
+
+        public void OnWorkProgress(object sender, long bytesTransfered, long contentLength)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new MethodInvoker(() => OnWorkProgress(sender, bytesTransfered, contentLength)));
+            }
+            else
+            {
+                if (contentLength > 0L)
+                {
+                    double percent = 100.0 / contentLength * bytesTransfered;
+                    progressBar1.Value = (int)percent;
+                    string percentFormatted = string.Format("{0:F3}", percent);
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из {contentLength} ({percentFormatted}%)";
+                }
+                else
+                {
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из <Неизвестно>";
+                }
+            }
+        }
+
+        public void OnWorkFinished(object sender, long bytesTransfered, long contentLength, int errorCode)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new MethodInvoker(() => OnWorkFinished(sender, bytesTransfered, contentLength, errorCode)));
+            }
+            else
+            {
+                if (contentLength > 0L)
+                {
+                    double percent = 100.0 / contentLength * bytesTransfered;
+                    progressBar1.Value = (int)percent;
+                    string percentFormatted = string.Format("{0:F3}", percent);
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из {contentLength} ({percentFormatted}%)";
+                }
+                else
+                {
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из <Неизвестно>";
+                }
+            }
         }
 
         private bool IsEnoughDiskSpace(IEnumerable<char> driveLetters, long contentLength)
