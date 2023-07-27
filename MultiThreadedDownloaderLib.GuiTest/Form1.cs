@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
+using System.Resources;
 using System.Windows.Forms;
 using static System.Runtime.CompilerServices.RuntimeHelpers;
 
@@ -170,10 +171,17 @@ namespace MultiThreadedDownloaderLib.GuiTest
                     case FileDownloader.DOWNLOAD_ERROR_DRIVE_NOT_READY:
                         lblDownloadingProgress.Text = "Ошибка: Диск не готов!";
                         break;
+
+                    default:
+                        if (singleThreadedDownloader.HasErrorMessage)
+                        {
+                            lblDownloadingProgress.Text = singleThreadedDownloader.LastErrorMessage;
+                        }
+                        break;
                 }
 
                 string messageText = MultiThreadedDownloader.ErrorCodeToString(errorCode);
-                if (!string.IsNullOrEmpty(singleThreadedDownloader.LastErrorMessage) && !string.IsNullOrWhiteSpace(singleThreadedDownloader.LastErrorMessage))
+                if (singleThreadedDownloader.HasErrorMessage)
                 {
                     messageText += $"{Environment.NewLine}Текст ошибки: {singleThreadedDownloader.LastErrorMessage}";
                 }
@@ -336,8 +344,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
                 }
 
                 string messageText = MultiThreadedDownloader.ErrorCodeToString(errorCode);
-                if (!string.IsNullOrEmpty(multiThreadedDownloader.LastErrorMessage) &&
-                    !string.IsNullOrWhiteSpace(multiThreadedDownloader.LastErrorMessage))
+                if (multiThreadedDownloader.HasErrorMessage)
                 {
                     messageText += $"{Environment.NewLine}Текст ошибки: {multiThreadedDownloader.LastErrorMessage}";
                 }

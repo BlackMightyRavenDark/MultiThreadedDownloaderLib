@@ -51,7 +51,10 @@ namespace MultiThreadedDownloaderLib
         public bool IsTempDirectoryAvailable => !string.IsNullOrEmpty(TempDirectory) &&
                         !string.IsNullOrWhiteSpace(TempDirectory) && Directory.Exists(TempDirectory);
         public bool IsMergingDirectoryAvailable => !string.IsNullOrEmpty(MergingDirectory) &&
-                  !string.IsNullOrWhiteSpace(MergingDirectory) && Directory.Exists(MergingDirectory);
+            !string.IsNullOrWhiteSpace(MergingDirectory) && Directory.Exists(MergingDirectory);
+        public bool HasErrorMessage => !string.IsNullOrEmpty(LastErrorMessage) &&
+            !string.IsNullOrWhiteSpace(LastErrorMessage) &&
+            !string.Equals(LastErrorMessage, "OK", StringComparison.OrdinalIgnoreCase);
 
         public const int MEGABYTE = 1048576; //1024 * 1024;
 

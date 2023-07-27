@@ -23,6 +23,9 @@ namespace MultiThreadedDownloaderLib
         public int LastErrorCode { get; private set; } = 200;
         public string LastErrorMessage { get; private set; }
         public bool HasErrors => LastErrorCode != 200 && LastErrorCode != 206;
+        public bool HasErrorMessage => !string.IsNullOrEmpty(LastErrorMessage) &&
+            !string.IsNullOrWhiteSpace(LastErrorMessage) &&
+            !string.Equals(LastErrorMessage, "OK", StringComparison.OrdinalIgnoreCase);
 
         public const int DOWNLOAD_ERROR_URL_NOT_DEFINED = -1;
         public const int DOWNLOAD_ERROR_INVALID_URL = -2;
@@ -330,7 +333,7 @@ namespace MultiThreadedDownloaderLib
                     return "Ошибка клиента!";
 
                 case 403:
-                    return "Файл по ссылке не доступен!";
+                    return "Файл по ссылке недоступен!";
 
                 case 404:
                     return "Файл по ссылке не найден!";
