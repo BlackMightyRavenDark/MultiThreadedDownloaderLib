@@ -51,13 +51,16 @@
             this.checkBoxUseRamForTempFiles = new System.Windows.Forms.CheckBox();
             this.label6 = new System.Windows.Forms.Label();
             this.numericUpDownUpdateInterval = new System.Windows.Forms.NumericUpDown();
+            this.label7 = new System.Windows.Forms.Label();
+            this.numericUpDownChunksMergingUpdateInterval = new System.Windows.Forms.NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownThreadCount)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownUpdateInterval)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownChunksMergingUpdateInterval)).BeginInit();
             this.SuspendLayout();
             // 
             // btnDownloadSingleThreaded
             // 
-            this.btnDownloadSingleThreaded.Location = new System.Drawing.Point(12, 186);
+            this.btnDownloadSingleThreaded.Location = new System.Drawing.Point(12, 238);
             this.btnDownloadSingleThreaded.Name = "btnDownloadSingleThreaded";
             this.btnDownloadSingleThreaded.Size = new System.Drawing.Size(138, 23);
             this.btnDownloadSingleThreaded.TabIndex = 0;
@@ -74,14 +77,14 @@
             // 
             // progressBar1
             // 
-            this.progressBar1.Location = new System.Drawing.Point(12, 234);
+            this.progressBar1.Location = new System.Drawing.Point(12, 288);
             this.progressBar1.Name = "progressBar1";
             this.progressBar1.Size = new System.Drawing.Size(745, 23);
             this.progressBar1.TabIndex = 2;
             // 
             // btnDownloadMultiThreaded
             // 
-            this.btnDownloadMultiThreaded.Location = new System.Drawing.Point(156, 186);
+            this.btnDownloadMultiThreaded.Location = new System.Drawing.Point(156, 238);
             this.btnDownloadMultiThreaded.Name = "btnDownloadMultiThreaded";
             this.btnDownloadMultiThreaded.Size = new System.Drawing.Size(148, 23);
             this.btnDownloadMultiThreaded.TabIndex = 3;
@@ -92,7 +95,7 @@
             // lblDownloadingProgress
             // 
             this.lblDownloadingProgress.AutoSize = true;
-            this.lblDownloadingProgress.Location = new System.Drawing.Point(9, 218);
+            this.lblDownloadingProgress.Location = new System.Drawing.Point(9, 272);
             this.lblDownloadingProgress.Name = "lblDownloadingProgress";
             this.lblDownloadingProgress.Size = new System.Drawing.Size(58, 13);
             this.lblDownloadingProgress.TabIndex = 4;
@@ -187,7 +190,7 @@
             // 
             // numericUpDownThreadCount
             // 
-            this.numericUpDownThreadCount.Location = new System.Drawing.Point(128, 160);
+            this.numericUpDownThreadCount.Location = new System.Drawing.Point(281, 160);
             this.numericUpDownThreadCount.Maximum = new decimal(new int[] {
             25,
             0,
@@ -199,7 +202,7 @@
             0,
             0});
             this.numericUpDownThreadCount.Name = "numericUpDownThreadCount";
-            this.numericUpDownThreadCount.Size = new System.Drawing.Size(40, 20);
+            this.numericUpDownThreadCount.Size = new System.Drawing.Size(54, 20);
             this.numericUpDownThreadCount.TabIndex = 15;
             this.numericUpDownThreadCount.Value = new decimal(new int[] {
             4,
@@ -219,7 +222,7 @@
             // lblMergingProgress
             // 
             this.lblMergingProgress.AutoSize = true;
-            this.lblMergingProgress.Location = new System.Drawing.Point(73, 218);
+            this.lblMergingProgress.Location = new System.Drawing.Point(73, 272);
             this.lblMergingProgress.Name = "lblMergingProgress";
             this.lblMergingProgress.Size = new System.Drawing.Size(96, 13);
             this.lblMergingProgress.TabIndex = 17;
@@ -260,11 +263,11 @@
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(183, 162);
+            this.label6.Location = new System.Drawing.Point(9, 186);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(137, 13);
+            this.label6.Size = new System.Drawing.Size(220, 13);
             this.label6.TabIndex = 21;
-            this.label6.Text = "Частота обновления (ms):";
+            this.label6.Text = "Частота обновления при скачивании (ms):";
             // 
             // numericUpDownUpdateInterval
             // 
@@ -273,7 +276,7 @@
             0,
             0,
             0});
-            this.numericUpDownUpdateInterval.Location = new System.Drawing.Point(326, 160);
+            this.numericUpDownUpdateInterval.Location = new System.Drawing.Point(281, 184);
             this.numericUpDownUpdateInterval.Maximum = new decimal(new int[] {
             2000,
             0,
@@ -293,11 +296,49 @@
             0,
             0});
             // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(9, 211);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(266, 13);
+            this.label7.TabIndex = 24;
+            this.label7.Text = "Частота обновления при объединении чанков (ms):";
+            // 
+            // numericUpDownChunksMergingUpdateInterval
+            // 
+            this.numericUpDownChunksMergingUpdateInterval.Increment = new decimal(new int[] {
+            50,
+            0,
+            0,
+            0});
+            this.numericUpDownChunksMergingUpdateInterval.Location = new System.Drawing.Point(281, 209);
+            this.numericUpDownChunksMergingUpdateInterval.Maximum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.numericUpDownChunksMergingUpdateInterval.Minimum = new decimal(new int[] {
+            50,
+            0,
+            0,
+            0});
+            this.numericUpDownChunksMergingUpdateInterval.Name = "numericUpDownChunksMergingUpdateInterval";
+            this.numericUpDownChunksMergingUpdateInterval.Size = new System.Drawing.Size(54, 20);
+            this.numericUpDownChunksMergingUpdateInterval.TabIndex = 25;
+            this.numericUpDownChunksMergingUpdateInterval.Value = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(768, 268);
+            this.ClientSize = new System.Drawing.Size(768, 322);
+            this.Controls.Add(this.numericUpDownChunksMergingUpdateInterval);
+            this.Controls.Add(this.label7);
             this.Controls.Add(this.numericUpDownUpdateInterval);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.checkBoxUseRamForTempFiles);
@@ -328,6 +369,7 @@
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownThreadCount)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownUpdateInterval)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownChunksMergingUpdateInterval)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -358,5 +400,7 @@
         private System.Windows.Forms.CheckBox checkBoxUseRamForTempFiles;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.NumericUpDown numericUpDownUpdateInterval;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.NumericUpDown numericUpDownChunksMergingUpdateInterval;
     }
 }

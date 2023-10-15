@@ -31,6 +31,7 @@ namespace MultiThreadedDownloaderLib
         public bool LogicEnabled { get; set; } = false;
 
         public double UpdateIntervalMilliseconds { get; set; } = 100.0;
+        public int ChunksMergingUpdateIntervalMilliseconds { get; set; } = 100;
         public long ContentLength { get; private set; } = -1L;
         public long RangeFrom { get; private set; } = 0L;
         public long RangeTo { get; private set; } = -1L;
@@ -72,8 +73,15 @@ namespace MultiThreadedDownloaderLib
         public delegate void DownloadProgressDelegate(object sender, long bytesTransfered);
         public delegate void DownloadFinishedDelegate(object sender, long bytesTransfered, int errorCode, string fileName);
         public delegate void MergingStartedDelegate(object sender, int chunkCount);
-        public delegate void MergingProgressDelegate(object sender, int chunkId);
+        public delegate void MergingProgressDelegate(object sender, int chunkId,
+            int chunkCount, long chunkPosition, long chunkSize);
         public delegate void MergingFinishedDelegate(object sender, int errorCode);
+        public delegate void StreamAppendingStartedDelegate(long sourcePosition, long sourceLength,
+            long destinationPosition, long destinationLength);
+        public delegate void StreamAppendingProgressDelegate(long sourcePosition, long sourceLength,
+            long destinationPosition, long destinationLength);
+        public delegate void StreamAppendingFinishedDelegate(long sourcePosition, long sourceLength,
+            long destinationPosition, long destinationLength);
 
         public ConnectingDelegate Connecting;
         public ConnectedDelegate Connected;
@@ -83,6 +91,7 @@ namespace MultiThreadedDownloaderLib
         public MergingStartedDelegate MergingStarted;
         public MergingProgressDelegate MergingProgress;
         public MergingFinishedDelegate MergingFinished;
+        public StreamAppendingProgressDelegate StreamAppendingProgress;
 
         public void Dispose()
         {
@@ -114,21 +123,61 @@ namespace MultiThreadedDownloaderLib
             return filePath;
         }
 
-        public static bool AppendStream(Stream streamFrom, Stream streamTo)
+        public static bool AppendStream(Stream streamFrom, Stream streamTo,
+            StreamAppendingStartedDelegate streamAppendingStarted,
+            StreamAppendingProgressDelegate streamAppendingProgress,
+            StreamAppendingFinishedDelegate streamAppendingFinished,
+            CancellationToken cancellationToken,
+            int updateIntervalMilliseconds = 100)
         {
+            streamAppendingStarted?.Invoke(streamFrom.Position, streamFrom.Length,
+                streamTo.Position, streamTo.Length);
+
             long size = streamTo.Length;
-            byte[] buf = new byte[4096];
+            byte[] buffer = new byte[4096];
+
+            int lastTime = Environment.TickCount;
             do
             {
-                int bytesRead = streamFrom.Read(buf, 0, buf.Length);
+                int bytesRead = streamFrom.Read(buffer, 0, buffer.Length);
                 if (bytesRead <= 0)
                 {
                     break;
                 }
-                streamTo.Write(buf, 0, bytesRead);
-            } while (true);
+                streamTo.Write(buffer, 0, bytesRead);
+
+                if (streamAppendingProgress != null)
+                {
+                    int currentTime = Environment.TickCount;
+                    if (currentTime - lastTime >= updateIntervalMilliseconds)
+                    {
+                        streamAppendingProgress.Invoke(
+                            streamFrom.Position, streamFrom.Length, streamTo.Position, streamTo.Length);
+                        lastTime = currentTime;
+                    }
+                }
+            } while (!cancellationToken.IsCancellationRequested);
+
+            streamAppendingFinished?.Invoke(streamFrom.Position, streamFrom.Length,
+                streamTo.Position, streamTo.Length);
 
             return streamTo.Length == size + streamFrom.Length;
+        }
+
+        public static bool AppendStream(Stream streamFrom, Stream streamTo,
+            StreamAppendingStartedDelegate streamAppendingStarted,
+            StreamAppendingProgressDelegate streamAppendingProgress,
+            StreamAppendingFinishedDelegate streamAppendingFinished,
+            int updateIntervalMilliseconds = 100)
+        {
+            return AppendStream(streamFrom, streamTo,
+                streamAppendingStarted, streamAppendingProgress, streamAppendingFinished,
+                default, updateIntervalMilliseconds);
+        }
+
+        public static bool AppendStream(Stream streamFrom, Stream streamTo)
+        {
+            return AppendStream(streamFrom, streamTo, null, null, null);
         }
 
         private IEnumerable<Tuple<long, long>> Split(long contentLength, int chunkCount)
@@ -450,10 +499,10 @@ namespace MultiThreadedDownloaderLib
 
         private async Task<int> MergeChunks(IEnumerable<FileChunk> chunks)
         {
-            Progress<int> progressMerging = new Progress<int>();
-            progressMerging.ProgressChanged += (s, n) =>
+            Progress<ChunkMergingProgressItem> progressMerging = new Progress<ChunkMergingProgressItem>();
+            progressMerging.ProgressChanged += (s, p) =>
             {
-                MergingProgress?.Invoke(this, n);
+                MergingProgress?.Invoke(this, p.ChunkId, p.TotalChunkCount, p.ChunkPosition, p.ChunkLength);
             };
 
             int res = await Task.Run(() =>
@@ -481,10 +530,11 @@ namespace MultiThreadedDownloaderLib
                     return DOWNLOAD_ERROR_CREATE_FILE;
                 }
 
-                IProgress<int> reporter = progressMerging;
+                IProgress<ChunkMergingProgressItem> reporter = progressMerging;
                 try
                 {
                     int i = 0;
+                    int chunkCount = chunks.Count();
                     foreach (FileChunk fileChunk in chunks)
                     {
                         string chunkFilePath = fileChunk.FilePath;
@@ -505,7 +555,17 @@ namespace MultiThreadedDownloaderLib
                         {
                             tmpStream.Position = 0;
                         }
-                        bool appended = AppendStream(tmpStream, outputStream);
+
+                        void func(long sourcePosition, long sourceLength, long destinationPosition, long destinationLength)
+                        {
+                            ChunkMergingProgressItem item = new ChunkMergingProgressItem(
+                                i, chunkCount, sourcePosition, sourceLength);
+                            reporter.Report(item);
+                        };
+                        bool appended = AppendStream(tmpStream, outputStream,
+                            func, func, func,
+                            _cancellationTokenSource.Token, ChunksMergingUpdateIntervalMilliseconds);
+
                         fileChunk.Dispose();
                         if (isMemoryStream)
                         {
@@ -529,15 +589,14 @@ namespace MultiThreadedDownloaderLib
                                 //TODO: Fix possible memory leaking
                                 GC.Collect(); 
                             }
-                            return DOWNLOAD_ERROR_MERGING_CHUNKS;
+                            return _cancellationTokenSource.IsCancellationRequested ?
+                                DOWNLOAD_ERROR_CANCELED_BY_USER : DOWNLOAD_ERROR_MERGING_CHUNKS;
                         }
 
                         if (!isMemoryStream && fileExists)
                         {
                             File.Delete(chunkFilePath);
                         }
-
-                        reporter.Report(i);
 
                         if (_isCanceled)
                         {
@@ -797,6 +856,22 @@ namespace MultiThreadedDownloaderLib
             TaskId = taskId;
             ProcessedBytes = processedBytes;
             TotalBytes = totalBtyes;
+        }
+    }
+
+    public sealed class ChunkMergingProgressItem
+    {
+        public int ChunkId { get; }
+        public int TotalChunkCount { get; }
+        public long ChunkPosition { get; }
+        public long ChunkLength { get; }
+
+        public ChunkMergingProgressItem(int chunkId, int totalChunkCount, long chunkPosition, long chunkLength)
+        {
+            ChunkId = chunkId;
+            TotalChunkCount = totalChunkCount;
+            ChunkPosition = chunkPosition;
+            ChunkLength = chunkLength;
         }
     }
 }

@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
-using System.Resources;
 using System.Windows.Forms;
-using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace MultiThreadedDownloaderLib.GuiTest
 {
@@ -220,6 +218,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = false;
             numericUpDownThreadCount.Enabled = false;
             numericUpDownUpdateInterval.Enabled = false;
+            numericUpDownChunksMergingUpdateInterval.Enabled = false;
             lblMergingProgress.Text = null;
 
             multiThreadedDownloader = new MultiThreadedDownloader();
@@ -300,10 +299,14 @@ namespace MultiThreadedDownloaderLib.GuiTest
                 lblMergingProgress.Left = lblDownloadingProgress.Left + lblDownloadingProgress.Width;
                 lblMergingProgress.Text = $"Объединение чанков: 0 / {chunkCount}";
             };
-            multiThreadedDownloader.MergingProgress += (s, chunkId) =>
+            multiThreadedDownloader.MergingProgress += (s, chunkId, chunkCount, chunkPosition, chunkSize) =>
             {
                 progressBar1.Value = chunkId + 1;
-                lblMergingProgress.Text = $"Объединение чанков: {chunkId + 1} / {progressBar1.Maximum}";
+
+                double percent = 100.0 / chunkSize * chunkPosition;
+                string percentFormatted = string.Format("{0:F3}", percent);
+                lblMergingProgress.Text = $"Объединение чанков: {chunkId + 1} / {chunkCount}, " +
+                    $"{chunkPosition} / {chunkSize} ({percentFormatted}%)";
             };
             multiThreadedDownloader.MergingFinished += (s, errCode) =>
             {
@@ -319,6 +322,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             multiThreadedDownloader.KeepDownloadedFileInTempOrMergingDirectory = cbKeepDownloadedFileInTempOrMergingDirectory.Checked;
             multiThreadedDownloader.UseRamForTempFiles = checkBoxUseRamForTempFiles.Checked;
             multiThreadedDownloader.UpdateIntervalMilliseconds = (double)numericUpDownUpdateInterval.Value;
+            multiThreadedDownloader.ChunksMergingUpdateIntervalMilliseconds = (int)numericUpDownChunksMergingUpdateInterval.Value;
 
             int errorCode = await multiThreadedDownloader.Download();
             System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
@@ -367,6 +371,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             btnHeaders.Enabled = true;
             numericUpDownThreadCount.Enabled = true;
             numericUpDownUpdateInterval.Enabled = true;
+            numericUpDownChunksMergingUpdateInterval.Enabled = true;
             cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = true;
         }
 
