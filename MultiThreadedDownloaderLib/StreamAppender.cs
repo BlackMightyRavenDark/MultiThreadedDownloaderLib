@@ -23,7 +23,9 @@ namespace MultiThreadedDownloaderLib
             streamAppendStarted?.Invoke(streamFrom.Position, streamFrom.Length,
                 streamTo.Position, streamTo.Length);
 
-            if (updateIntervalMilliseconds <= 0 || bufferSize <= 0)
+            if (updateIntervalMilliseconds <= 0 || bufferSize <= 0 ||
+                streamFrom == null || streamTo == null ||
+                streamFrom.Position != 0L || streamTo.Position != streamTo.Length)
             {
                 return false;
             }
