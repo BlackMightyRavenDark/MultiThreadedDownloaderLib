@@ -31,7 +31,7 @@ namespace MultiThreadedDownloaderLib
         /// </summary>
         public bool LogicEnabled { get; set; } = false;
 
-        public double UpdateIntervalMilliseconds { get; set; } = 100.0;
+        public int UpdateIntervalMilliseconds { get; set; } = 100;
         public int ChunksMergingUpdateIntervalMilliseconds { get; set; } = 100;
         public long ContentLength { get; private set; } = -1L;
         public long RangeFrom { get; private set; } = 0L;
@@ -51,7 +51,7 @@ namespace MultiThreadedDownloaderLib
         private CancellationTokenSource _cancellationTokenSource;
         private bool _isCanceled = false;
         public bool IsTempDirectoryAvailable => !string.IsNullOrEmpty(TempDirectory) &&
-                        !string.IsNullOrWhiteSpace(TempDirectory) && Directory.Exists(TempDirectory);
+            !string.IsNullOrWhiteSpace(TempDirectory) && Directory.Exists(TempDirectory);
         public bool IsMergingDirectoryAvailable => !string.IsNullOrEmpty(MergingDirectory) &&
             !string.IsNullOrWhiteSpace(MergingDirectory) && Directory.Exists(MergingDirectory);
         public bool HasErrorMessage => !string.IsNullOrEmpty(LastErrorMessage) &&
@@ -272,17 +272,18 @@ namespace MultiThreadedDownloaderLib
                 downloader.SetRange(chunkFirstByte, chunkLastByte);
 
                 Stream streamChunk = null;
-                DateTime lastTime = DateTime.Now;
+                int lastTime = Environment.TickCount;
 
                 downloader.WorkProgress += (object sender, long transfered, long contentLen) =>
                 {
-                    TimeSpan deltaTime = DateTime.Now - lastTime;
-                    if (deltaTime.TotalMilliseconds >= UpdateIntervalMilliseconds)
+                    int currentTime = Environment.TickCount;
+                    if (currentTime - lastTime >= UpdateIntervalMilliseconds)
                     {
-                        lastTime = DateTime.Now;
                         FileChunk fileChunk = new FileChunk(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
                         DownloadProgressItem progressItem = new DownloadProgressItem(fileChunk, taskId, transfered, chunkLastByte);
                         reporter.Report(progressItem);
+
+                        lastTime = currentTime;
                     }
                 };
                 downloader.WorkFinished += (object sender, long transfered, long contentLen, int errCode) =>
@@ -491,7 +492,7 @@ namespace MultiThreadedDownloaderLib
                         }
                         else
                         {
-                            tmpStream.Position = 0;
+                            tmpStream.Position = 0L;
                         }
 
                         void func(long sourcePosition, long sourceLength, long destinationPosition, long destinationLength)

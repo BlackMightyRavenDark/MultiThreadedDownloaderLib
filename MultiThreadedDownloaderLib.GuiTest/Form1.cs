@@ -321,7 +321,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
             multiThreadedDownloader.MergingDirectory = editMergingPath.Text;
             multiThreadedDownloader.KeepDownloadedFileInTempOrMergingDirectory = cbKeepDownloadedFileInTempOrMergingDirectory.Checked;
             multiThreadedDownloader.UseRamForTempFiles = checkBoxUseRamForTempFiles.Checked;
-            multiThreadedDownloader.UpdateIntervalMilliseconds = (double)numericUpDownUpdateInterval.Value;
+            multiThreadedDownloader.UpdateIntervalMilliseconds = (int)numericUpDownUpdateInterval.Value;
             multiThreadedDownloader.ChunksMergingUpdateIntervalMilliseconds = (int)numericUpDownChunksMergingUpdateInterval.Value;
 
             int errorCode = await multiThreadedDownloader.Download();

@@ -120,7 +120,7 @@ namespace MultiThreadedDownloaderLib
             WorkStarted?.Invoke(this, size);
 
             long transfered = 0L;
-            DateTime lastTime = DateTime.Now;
+            int lastTime = Environment.TickCount;
             try
             {
                 _cancellationTokenSource = cancellationTokenSource != null ?
@@ -133,11 +133,11 @@ namespace MultiThreadedDownloaderLib
                     stream, bufferSize, gZipped, (long bytes) =>
                     {
                         transfered = bytes;
-                        TimeSpan deltaTime = DateTime.Now - lastTime;
-                        if (deltaTime.TotalMilliseconds >= UpdateIntervalMilliseconds)
+                        int currentTime = Environment.TickCount;
+                        if (currentTime - lastTime >= UpdateIntervalMilliseconds)
                         {
-                            lastTime = DateTime.Now;
                             WorkProgress?.Invoke(this, transfered, size);
+                            lastTime = currentTime;
                         }
                     }, _cancellationTokenSource.Token);
             } catch (Exception ex)

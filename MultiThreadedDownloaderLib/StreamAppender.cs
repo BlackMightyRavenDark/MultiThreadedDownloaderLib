@@ -31,7 +31,7 @@ namespace MultiThreadedDownloaderLib
             long size = streamTo.Length;
             byte[] buffer = new byte[bufferSize];
 
-            int lastTime = Environment.TickCount;
+            int lastTime = streamAppendProgress != null ? Environment.TickCount : 0;
             do
             {
                 int bytesRead = streamFrom.Read(buffer, 0, buffer.Length);
