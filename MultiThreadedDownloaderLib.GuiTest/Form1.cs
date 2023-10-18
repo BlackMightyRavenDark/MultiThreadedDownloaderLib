@@ -292,14 +292,14 @@ namespace MultiThreadedDownloaderLib.GuiTest
                     MessageBox.Show(t, "Скачано!", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             };
-            multiThreadedDownloader.MergingStarted += (s, chunkCount) =>
+            multiThreadedDownloader.ChunkMergingStarted += (s, chunkCount) =>
             {
                 progressBar1.Value = 0;
                 progressBar1.Maximum = chunkCount;
                 lblMergingProgress.Left = lblDownloadingProgress.Left + lblDownloadingProgress.Width;
                 lblMergingProgress.Text = $"Объединение чанков: 0 / {chunkCount}";
             };
-            multiThreadedDownloader.MergingProgress += (s, chunkId, chunkCount, chunkPosition, chunkSize) =>
+            multiThreadedDownloader.ChunkMergingProgress += (s, chunkId, chunkCount, chunkPosition, chunkSize) =>
             {
                 progressBar1.Value = chunkId + 1;
 
@@ -308,7 +308,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
                 lblMergingProgress.Text = $"Объединение чанков: {chunkId + 1} / {chunkCount}, " +
                     $"{chunkPosition} / {chunkSize} ({percentFormatted}%)";
             };
-            multiThreadedDownloader.MergingFinished += (s, errCode) =>
+            multiThreadedDownloader.ChunkMergingFinished += (s, errCode) =>
             {
                 lblMergingProgress.Text = errCode == 200 || errCode == 206 ? null : $"Ошибка объединения чанков! Код: {errCode}";
             };

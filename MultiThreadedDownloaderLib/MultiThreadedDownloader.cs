@@ -73,20 +73,19 @@ namespace MultiThreadedDownloaderLib
         public delegate void DownloadStartedDelegate(object sender, long contentLenth);
         public delegate void DownloadProgressDelegate(object sender, long bytesTransfered);
         public delegate void DownloadFinishedDelegate(object sender, long bytesTransfered, int errorCode, string fileName);
-        public delegate void MergingStartedDelegate(object sender, int chunkCount);
-        public delegate void MergingProgressDelegate(object sender, int chunkId,
+        public delegate void ChunkMergingStartedDelegate(object sender, int chunkCount);
+        public delegate void ChunkMergingProgressDelegate(object sender, int chunkId,
             int chunkCount, long chunkPosition, long chunkSize);
-        public delegate void MergingFinishedDelegate(object sender, int errorCode);
+        public delegate void ChunkMergingFinishedDelegate(object sender, int errorCode);
 
         public ConnectingDelegate Connecting;
         public ConnectedDelegate Connected;
         public DownloadStartedDelegate DownloadStarted;
         public DownloadProgressDelegate DownloadProgress;
         public DownloadFinishedDelegate DownloadFinished;
-        public MergingStartedDelegate MergingStarted;
-        public MergingProgressDelegate MergingProgress;
-        public MergingFinishedDelegate MergingFinished;
-        public StreamAppendProgressDelegate StreamAppendProgress;
+        public ChunkMergingStartedDelegate ChunkMergingStarted;
+        public ChunkMergingProgressDelegate ChunkMergingProgress;
+        public ChunkMergingFinishedDelegate ChunkMergingFinished;
 
         public void Dispose()
         {
@@ -394,9 +393,9 @@ namespace MultiThreadedDownloaderLib
             }
             if (UseRamForTempFiles || chunks.Count > 1)
             {
-                MergingStarted?.Invoke(this, chunks.Count);
+                ChunkMergingStarted?.Invoke(this, chunks.Count);
                 LastErrorCode = await MergeChunks(chunks);
-                MergingFinished?.Invoke(this, LastErrorCode);
+                ChunkMergingFinished?.Invoke(this, LastErrorCode);
             }
             else if (!UseRamForTempFiles && chunks.Count == 1)
             {
@@ -441,7 +440,7 @@ namespace MultiThreadedDownloaderLib
             Progress<ChunkMergingProgressItem> progressMerging = new Progress<ChunkMergingProgressItem>();
             progressMerging.ProgressChanged += (s, p) =>
             {
-                MergingProgress?.Invoke(this, p.ChunkId, p.TotalChunkCount, p.ChunkPosition, p.ChunkLength);
+                ChunkMergingProgress?.Invoke(this, p.ChunkId, p.TotalChunkCount, p.ChunkPosition, p.ChunkLength);
             };
 
             int res = await Task.Run(() =>
