@@ -40,8 +40,8 @@ namespace MultiThreadedDownloaderLib
         public delegate void ConnectingDelegate(object sender, string url);
         public delegate int ConnectedDelegate(object sender, string url, long contentLength, int errorCode);
         public delegate void WorkStartedDelegate(object sender, long contentLength);
-        public delegate void WorkProgressDelegate(object sender, long bytesTransfered, long contentLength);
-        public delegate void WorkFinishedDelegate(object sender, long bytesTransfered, long contentLength, int errorCode);
+        public delegate void WorkProgressDelegate(object sender, long bytesTransferred, long contentLength);
+        public delegate void WorkFinishedDelegate(object sender, long bytesTransferred, long contentLength, int errorCode);
         public ConnectingDelegate Connecting;
         public ConnectedDelegate Connected;
         public WorkStartedDelegate WorkStarted;
@@ -119,7 +119,7 @@ namespace MultiThreadedDownloaderLib
 
             WorkStarted?.Invoke(this, size);
 
-            long transfered = 0L;
+            long transferred = 0L;
             int lastTime = Environment.TickCount;
             try
             {
@@ -132,11 +132,11 @@ namespace MultiThreadedDownloaderLib
                 LastErrorCode = requestResult.WebContent.ContentToStream(
                     stream, bufferSize, gZipped, (long bytes) =>
                     {
-                        transfered = bytes;
+                        transferred = bytes;
                         int currentTime = Environment.TickCount;
                         if (currentTime - lastTime >= UpdateIntervalMilliseconds)
                         {
-                            WorkProgress?.Invoke(this, transfered, size);
+                            WorkProgress?.Invoke(this, transferred, size);
                             lastTime = currentTime;
                         }
                     }, _cancellationTokenSource.Token);
@@ -150,7 +150,7 @@ namespace MultiThreadedDownloaderLib
             }
 
             requestResult.Dispose();
-            DownloadedInLastSession = transfered;
+            DownloadedInLastSession = transferred;
             StreamSize = stream.Length;
 
             WorkFinished?.Invoke(this, DownloadedInLastSession, size, LastErrorCode);

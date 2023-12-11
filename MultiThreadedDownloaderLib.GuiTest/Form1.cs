@@ -269,26 +269,26 @@ namespace MultiThreadedDownloaderLib.GuiTest
                 string contentLengthString = contentLength > 0L ? contentLength.ToString() : "<Неизвестно>";
                 lblDownloadingProgress.Text = $"Скачано 0 из {contentLengthString}";
             };
-            multiThreadedDownloader.DownloadProgress += (s, bytesTransfered) =>
+            multiThreadedDownloader.DownloadProgress += (s, bytesTransferred) =>
             {
                 long contentLength = (s as MultiThreadedDownloader).ContentLength;
                 if (contentLength > 0L)
                 {
-                    double percent = 100.0 / contentLength * bytesTransfered;
+                    double percent = 100.0 / contentLength * bytesTransferred;
                     progressBar1.Value = (int)percent;
                     string percentFormatted = string.Format("{0:F3}", percent);
-                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из {contentLength} ({percentFormatted}%)";
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%)";
                 }
                 else
                 {
-                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из <Неизвестно>";
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из <Неизвестно>";
                 }
             };
-            multiThreadedDownloader.DownloadFinished += (s, bytesTransfered, errCode, fileName) =>
+            multiThreadedDownloader.DownloadFinished += (s, bytesTransferred, errCode, fileName) =>
             {
                 if (errCode == 200 || errCode == 206)
                 {
-                    string t = $"Имя файла: {fileName}\nСкачано: {bytesTransfered} байт";
+                    string t = $"Имя файла: {fileName}\nСкачано: {bytesTransferred} байт";
                     MessageBox.Show(t, "Скачано!", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             };
@@ -446,46 +446,46 @@ namespace MultiThreadedDownloaderLib.GuiTest
             }
         }
 
-        public void OnWorkProgress(object sender, long bytesTransfered, long contentLength)
+        public void OnWorkProgress(object sender, long bytesTransferred, long contentLength)
         {
             if (InvokeRequired)
             {
-                Invoke(new MethodInvoker(() => OnWorkProgress(sender, bytesTransfered, contentLength)));
+                Invoke(new MethodInvoker(() => OnWorkProgress(sender, bytesTransferred, contentLength)));
             }
             else
             {
                 if (contentLength > 0L)
                 {
-                    double percent = 100.0 / contentLength * bytesTransfered;
+                    double percent = 100.0 / contentLength * bytesTransferred;
                     progressBar1.Value = (int)percent;
                     string percentFormatted = string.Format("{0:F3}", percent);
-                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из {contentLength} ({percentFormatted}%)";
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%)";
                 }
                 else
                 {
-                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из <Неизвестно>";
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из <Неизвестно>";
                 }
             }
         }
 
-        public void OnWorkFinished(object sender, long bytesTransfered, long contentLength, int errorCode)
+        public void OnWorkFinished(object sender, long bytesTransferred, long contentLength, int errorCode)
         {
             if (InvokeRequired)
             {
-                Invoke(new MethodInvoker(() => OnWorkFinished(sender, bytesTransfered, contentLength, errorCode)));
+                Invoke(new MethodInvoker(() => OnWorkFinished(sender, bytesTransferred, contentLength, errorCode)));
             }
             else
             {
                 if (contentLength > 0L)
                 {
-                    double percent = 100.0 / contentLength * bytesTransfered;
+                    double percent = 100.0 / contentLength * bytesTransferred;
                     progressBar1.Value = (int)percent;
                     string percentFormatted = string.Format("{0:F3}", percent);
-                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из {contentLength} ({percentFormatted}%)";
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%)";
                 }
                 else
                 {
-                    lblDownloadingProgress.Text = $"Скачано {bytesTransfered} из <Неизвестно>";
+                    lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из <Неизвестно>";
                 }
             }
         }

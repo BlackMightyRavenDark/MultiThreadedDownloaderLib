@@ -39,7 +39,7 @@ namespace MultiThreadedDownloaderLib
             }
 
             byte[] buf = new byte[bufferSize];
-            long bytesTransfered = 0L;
+            long bytesTransferred = 0L;
 
             Stream streamToRead = zipped ? new GZipStream(Data, CompressionMode.Decompress, true) : Data;
 
@@ -51,9 +51,9 @@ namespace MultiThreadedDownloaderLib
                     break;
                 }
                 stream.Write(buf, 0, bytesRead);
-                bytesTransfered += bytesRead;
+                bytesTransferred += bytesRead;
 
-                progress?.Invoke(bytesTransfered);
+                progress?.Invoke(bytesTransferred);
             }
             while (!cancellationToken.IsCancellationRequested);
 
@@ -63,7 +63,7 @@ namespace MultiThreadedDownloaderLib
             {
                 return FileDownloader.DOWNLOAD_ERROR_CANCELED_BY_USER;
             }
-            else if (!zipped && Length >= 0L && bytesTransfered != Length)
+            else if (!zipped && Length >= 0L && bytesTransferred != Length)
             {
                 return FileDownloader.DOWNLOAD_ERROR_INCOMPLETE_DATA_READ;
             }

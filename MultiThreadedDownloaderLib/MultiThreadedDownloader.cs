@@ -71,8 +71,8 @@ namespace MultiThreadedDownloaderLib
         public delegate void ConnectingDelegate(object sender, string url);
         public delegate void ConnectedDelegate(object sender, string url, long contentLength, ref int errorCode, ref string errorMessage);
         public delegate void DownloadStartedDelegate(object sender, long contentLenth);
-        public delegate void DownloadProgressDelegate(object sender, long bytesTransfered);
-        public delegate void DownloadFinishedDelegate(object sender, long bytesTransfered, int errorCode, string fileName);
+        public delegate void DownloadProgressDelegate(object sender, long bytesTransferred);
+        public delegate void DownloadFinishedDelegate(object sender, long bytesTransferred, int errorCode, string fileName);
         public delegate void ChunkMergingStartedDelegate(object sender, int chunkCount);
         public delegate void ChunkMergingProgressDelegate(object sender, int chunkId,
             int chunkCount, long chunkPosition, long chunkSize);
@@ -273,22 +273,22 @@ namespace MultiThreadedDownloaderLib
                 Stream streamChunk = null;
                 int lastTime = Environment.TickCount;
 
-                downloader.WorkProgress += (object sender, long transfered, long contentLen) =>
+                downloader.WorkProgress += (object sender, long transferred, long contentLen) =>
                 {
                     int currentTime = Environment.TickCount;
                     if (currentTime - lastTime >= UpdateIntervalMilliseconds)
                     {
                         FileChunk fileChunk = new FileChunk(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
-                        DownloadProgressItem progressItem = new DownloadProgressItem(fileChunk, taskId, transfered, chunkLastByte);
+                        DownloadProgressItem progressItem = new DownloadProgressItem(fileChunk, taskId, transferred, chunkLastByte);
                         reporter.Report(progressItem);
 
                         lastTime = currentTime;
                     }
                 };
-                downloader.WorkFinished += (object sender, long transfered, long contentLen, int errCode) =>
+                downloader.WorkFinished += (object sender, long transferred, long contentLen, int errCode) =>
                 {
                     FileChunk fileChunk = new FileChunk(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
-                    DownloadProgressItem progressItem = new DownloadProgressItem(fileChunk, taskId, transfered, chunkLastByte);
+                    DownloadProgressItem progressItem = new DownloadProgressItem(fileChunk, taskId, transferred, chunkLastByte);
                     reporter.Report(progressItem);
                 };
 
