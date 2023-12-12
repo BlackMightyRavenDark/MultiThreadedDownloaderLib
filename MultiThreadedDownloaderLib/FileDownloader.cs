@@ -119,7 +119,6 @@ namespace MultiThreadedDownloaderLib
 
             WorkStarted?.Invoke(this, size);
 
-            long transferred = 0L;
             int lastTime = Environment.TickCount;
             try
             {
@@ -132,11 +131,11 @@ namespace MultiThreadedDownloaderLib
                 LastErrorCode = requestResult.WebContent.ContentToStream(
                     stream, bufferSize, gZipped, (long bytes) =>
                     {
-                        transferred = bytes;
+                        DownloadedInLastSession = bytes;
                         int currentTime = Environment.TickCount;
                         if (currentTime - lastTime >= UpdateIntervalMilliseconds)
                         {
-                            WorkProgress?.Invoke(this, transferred, size);
+                            WorkProgress?.Invoke(this, bytes, size);
                             lastTime = currentTime;
                         }
                     }, _cancellationTokenSource.Token);
@@ -150,7 +149,6 @@ namespace MultiThreadedDownloaderLib
             }
 
             requestResult.Dispose();
-            DownloadedInLastSession = transferred;
             StreamSize = stream.Length;
 
             WorkFinished?.Invoke(this, DownloadedInLastSession, size, LastErrorCode);
