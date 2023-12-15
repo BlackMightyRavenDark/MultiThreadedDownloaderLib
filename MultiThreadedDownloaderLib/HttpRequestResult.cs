@@ -6,8 +6,8 @@ namespace MultiThreadedDownloaderLib
 {
     public class HttpRequestResult : IDisposable
     {
-        public int ErrorCode { get; private set; }
-        public string ErrorMessage { get; private set; }
+        public int ErrorCode { get; }
+        public string ErrorMessage { get; }
         public HttpWebResponse HttpWebResponse { get; private set; }
         public WebContent WebContent { get; private set; }
 
@@ -43,7 +43,7 @@ namespace MultiThreadedDownloaderLib
             {
                 string headerName = headers.GetKey(i);
                 string headerValue = headers.Get(i);
-                t += $"{headerName}: {headerValue}\r\n";
+                t += $"{headerName}: {headerValue}{Environment.NewLine}";
             }
 
             return t;

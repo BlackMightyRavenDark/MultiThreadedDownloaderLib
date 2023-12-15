@@ -33,23 +33,21 @@ namespace MultiThreadedDownloaderLib
 
         public int UpdateIntervalMilliseconds { get; set; } = 100;
         public int ChunksMergingUpdateIntervalMilliseconds { get; set; } = 100;
+        public long DownloadedBytes { get; private set; } = 0L;
         public long ContentLength { get; private set; } = -1L;
         public long RangeFrom { get; private set; } = 0L;
         public long RangeTo { get; private set; } = -1L;
-        public long DownloadedBytes { get; private set; } = 0L;
 
         /// <summary>
         /// WARNING!!! Experimental feature!
         /// Must be used very softly and carefully!
         /// </summary>
         public bool UseRamForTempFiles { get; set; } = false;
-        public int LastErrorCode { get; private set; }
-        public string LastErrorMessage { get; private set; }
+
         public int ThreadCount { get; set; } = 2;
         public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
-        private NameValueCollection _headers = new NameValueCollection();
-        private CancellationTokenSource _cancellationTokenSource;
-        private bool _isCanceled = false;
+        public int LastErrorCode { get; private set; }
+        public string LastErrorMessage { get; private set; }
         public bool IsTempDirectoryAvailable => !string.IsNullOrEmpty(TempDirectory) &&
             !string.IsNullOrWhiteSpace(TempDirectory) && Directory.Exists(TempDirectory);
         public bool IsMergingDirectoryAvailable => !string.IsNullOrEmpty(MergingDirectory) &&
@@ -57,6 +55,11 @@ namespace MultiThreadedDownloaderLib
         public bool HasErrorMessage => !string.IsNullOrEmpty(LastErrorMessage) &&
             !string.IsNullOrWhiteSpace(LastErrorMessage) &&
             !string.Equals(LastErrorMessage, "OK", StringComparison.OrdinalIgnoreCase);
+
+        private NameValueCollection _headers = new NameValueCollection();
+        private bool _isCanceled = false;
+
+        private CancellationTokenSource _cancellationTokenSource;
 
         public const int MEGABYTE = 1048576; //1024 * 1024;
 
@@ -104,10 +107,11 @@ namespace MultiThreadedDownloaderLib
                 string dirPath = Path.GetDirectoryName(filePath);
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
                 string ext = Path.GetExtension(filePath);
-                string part1 = !string.IsNullOrEmpty(dirPath) ? $"{dirPath}\\{fileName}" : fileName;
-                string newFileName;
+                string part1 = !string.IsNullOrEmpty(dirPath) ? Path.Combine(dirPath, fileName) : fileName;
                 bool isExtensionPresent = !string.IsNullOrEmpty(ext) && !string.IsNullOrWhiteSpace(ext);
+
                 int i = 2;
+                string newFileName;
                 do
                 {
                     newFileName = isExtensionPresent ? $"{part1}_{i++}{ext}" : $"{part1}_{i++}";
@@ -117,7 +121,7 @@ namespace MultiThreadedDownloaderLib
             return filePath;
         }
 
-        private IEnumerable<Tuple<long, long>> Split(long contentLength, int chunkCount)
+        private IEnumerable<Tuple<long, long>> SplitContentToChunks(long contentLength, int chunkCount)
         {
             long contentLengthRanged = RangeTo >= 0L ? RangeTo - RangeFrom : contentLength - RangeFrom;
             if (chunkCount <= 1 || contentLengthRanged <= MEGABYTE)
@@ -170,13 +174,12 @@ namespace MultiThreadedDownloaderLib
                 LastErrorCode = DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED;
                 return DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED;
             }
-            if (!UseRamForTempFiles &&
-                !string.IsNullOrEmpty(TempDirectory) && !string.IsNullOrWhiteSpace(TempDirectory) && !Directory.Exists(TempDirectory))
+            if (!UseRamForTempFiles && IsTempDirectoryAvailable && !Directory.Exists(TempDirectory))
             {
                 LastErrorCode = DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS;
                 return DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS;
             }
-            if (!string.IsNullOrEmpty(MergingDirectory) && !string.IsNullOrWhiteSpace(MergingDirectory) && !Directory.Exists(MergingDirectory))
+            if (IsMergingDirectoryAvailable && !Directory.Exists(MergingDirectory))
             {
                 LastErrorCode = DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS;
                 return DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS;
@@ -186,13 +189,13 @@ namespace MultiThreadedDownloaderLib
             if (string.IsNullOrEmpty(dirName) || string.IsNullOrWhiteSpace(dirName))
             {
                 string selfDirPath = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]);
-                OutputFileName = $"{selfDirPath}\\{OutputFileName}";
+                OutputFileName = Path.Combine(selfDirPath, OutputFileName);
             }
-            if (string.IsNullOrEmpty(TempDirectory) || string.IsNullOrWhiteSpace(TempDirectory))
+            if (!IsTempDirectoryAvailable)
             {
                 TempDirectory = Path.GetDirectoryName(OutputFileName);
             }
-            if (string.IsNullOrEmpty(MergingDirectory) || string.IsNullOrWhiteSpace(MergingDirectory))
+            if (!IsMergingDirectoryAvailable)
             {
                 MergingDirectory = TempDirectory;
             }
@@ -207,10 +210,8 @@ namespace MultiThreadedDownloaderLib
             LastErrorCode = GetUrlContentLength(Url, Headers, out long fullContentLength, out string errorText);
             ContentLength = fullContentLength == -1L ? -1L :
                 (RangeTo >= 0L ? RangeTo - RangeFrom + 1 : fullContentLength - RangeFrom);
-            if (ContentLength < -1L)
-            {
-                ContentLength = -1L;
-            }
+            if (ContentLength < -1L) { ContentLength = -1L; }
+
             int errorCode = LastErrorCode;
             Connected?.Invoke(this, Url, ContentLength, ref errorCode, ref errorText);
             if (LastErrorCode != errorCode)
@@ -251,8 +252,10 @@ namespace MultiThreadedDownloaderLib
             {
                 bufferSize = 8192;
             }
+
             int chunkCount = ContentLength > MEGABYTE ? ThreadCount : 1;
-            var tasks = Split(fullContentLength, chunkCount).Select((range, taskId) => Task.Run(() =>
+            var chunkRanges = SplitContentToChunks(fullContentLength, chunkCount);
+            var tasks = chunkRanges.Select((range, taskId) => Task.Run(() =>
             {
                 long chunkFirstByte = range.Item1;
                 long chunkLastByte = range.Item2;
@@ -265,9 +268,7 @@ namespace MultiThreadedDownloaderLib
                     chunkFileName = GetNumberedFileName(chunkFileName);
                 }
 
-                FileDownloader downloader = new FileDownloader();
-                downloader.Url = Url;
-                downloader.Headers = Headers;
+                FileDownloader downloader = new FileDownloader() { Url = Url, Headers = Headers };
                 downloader.SetRange(chunkFirstByte, chunkLastByte);
 
                 Stream streamChunk = null;
@@ -337,11 +338,13 @@ namespace MultiThreadedDownloaderLib
                 LastErrorMessage = ex.Message;
                 if (UseRamForTempFiles)
                 {
-                    for (int i = 0; i < threadProgressDict.Count; ++i)
+                    var values = threadProgressDict.Values;
+                    foreach (DownloadProgressItem item in values)
                     {
-                        if (threadProgressDict[i].FileChunk != null)
+                        if (item.FileChunk != null)
                         {
-                            threadProgressDict[i].FileChunk.Dispose();
+                            item.FileChunk.Dispose();
+
                             //TODO: Fix possible memory leaking
                             GC.Collect();
                         }
@@ -576,10 +579,10 @@ namespace MultiThreadedDownloaderLib
                 }
 
                 if (KeepDownloadedFileInTempOrMergingDirectory &&
-                    !string.IsNullOrEmpty(MergingDirectory) && !string.IsNullOrWhiteSpace(MergingDirectory))
+                    IsMergingDirectoryAvailable)
                 {
                     string fn = Path.GetFileName(OutputFileName);
-                    OutputFileName = MergingDirectory.EndsWith("\\") ? MergingDirectory + fn : $"{MergingDirectory}\\{fn}";
+                    OutputFileName = Path.Combine(MergingDirectory, fn);
                 }
                 OutputFileName = GetNumberedFileName(OutputFileName);
                 File.Move(tmpFileName, OutputFileName);
@@ -598,12 +601,9 @@ namespace MultiThreadedDownloaderLib
                 if (chunkCount > 1)
                 {
                     string fn = Path.GetFileName(OutputFileName);
-                    chunkFileName = $"{fn}.chunk_{taskId}.tmp";
-                    if (IsTempDirectoryAvailable)
-                    {
-                        chunkFileName = TempDirectory.EndsWith("\\") ?
-                            TempDirectory + chunkFileName : $"{TempDirectory}\\{chunkFileName}";
-                    }
+                    string suffix = $".chunk_{taskId}.tmp";
+                    chunkFileName = IsTempDirectoryAvailable ?
+                        Path.Combine(TempDirectory, fn + suffix) : fn + suffix;
                 }
                 else
                 {
@@ -614,8 +614,8 @@ namespace MultiThreadedDownloaderLib
                     else if (IsTempDirectoryAvailable)
                     {
                         string fn = Path.GetFileName(OutputFileName);
-                        chunkFileName = TempDirectory.EndsWith("\\") ?
-                            $"{TempDirectory}{fn}.chunk_{taskId}.tmp" : $"{TempDirectory}\\{fn}.chunk_{taskId}.tmp";
+                        string suffix = $".chunk_{taskId}.tmp";
+                        chunkFileName = Path.Combine(TempDirectory, fn + suffix);
                     }
                     else
                     {
@@ -633,13 +633,11 @@ namespace MultiThreadedDownloaderLib
             string tempFilePath;
             if (IsMergingDirectoryAvailable)
             {
-                tempFilePath = MergingDirectory.EndsWith("\\") ?
-                    $"{MergingDirectory}{fn}.tmp" : $"{MergingDirectory}\\{fn}.tmp";
+                tempFilePath = Path.Combine(MergingDirectory, $"{fn}.tmp");
             }
             else if (IsTempDirectoryAvailable)
             {
-                tempFilePath = TempDirectory.EndsWith("\\") ?
-                    $"{TempDirectory}{fn}.tmp" : $"{TempDirectory}\\{fn}.tmp";
+                tempFilePath = Path.Combine(TempDirectory, $"{fn}.tmp");
             }
             else
             {
@@ -697,15 +695,15 @@ namespace MultiThreadedDownloaderLib
             List<char> driveLetters = new List<char>();
             if (!string.IsNullOrEmpty(OutputFileName) && !string.IsNullOrWhiteSpace(OutputFileName))
             {
-                char c = OutputFileName.Length > 2 && OutputFileName[1] == ':' && OutputFileName[2] == '\\' ? OutputFileName[0] :
-                    Environment.GetCommandLineArgs()[0][0];
+                char c = OutputFileName.Length > 2 && OutputFileName[1] == ':' && OutputFileName[2] == '\\' ?
+                    OutputFileName[0] : Environment.GetCommandLineArgs()[0][0];
                 driveLetters.Add(char.ToUpper(c));
             }
-            if (!string.IsNullOrEmpty(TempDirectory) && !driveLetters.Contains(char.ToUpper(TempDirectory[0])))
+            if (IsTempDirectoryAvailable && !driveLetters.Contains(char.ToUpper(TempDirectory[0])))
             {
                 driveLetters.Add(char.ToUpper(TempDirectory[0]));
             }
-            if (!string.IsNullOrEmpty(MergingDirectory) && !driveLetters.Contains(char.ToUpper(MergingDirectory[0])))
+            if (IsMergingDirectoryAvailable && !driveLetters.Contains(char.ToUpper(MergingDirectory[0])))
             {
                 driveLetters.Add(char.ToUpper(MergingDirectory[0]));
             }

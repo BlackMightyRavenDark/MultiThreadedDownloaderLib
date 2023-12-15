@@ -5,7 +5,7 @@ namespace MultiThreadedDownloaderLib
 {
     internal sealed class FileChunk : IDisposable
     {
-        public string FilePath { get; private set; }
+        public string FilePath { get; }
         public Stream Stream { get; private set; }
 
         public FileChunk(string filePath, Stream stream)

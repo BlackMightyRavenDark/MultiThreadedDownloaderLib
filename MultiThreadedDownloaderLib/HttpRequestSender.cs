@@ -149,16 +149,16 @@ namespace MultiThreadedDownloaderLib
             string[] splitted = headerValue.Split('-');
             if (splitted.Length == 2)
             {
-                bool str0Empty = string.IsNullOrEmpty(splitted[0]) || string.IsNullOrWhiteSpace(splitted[0]);
-                bool str1Empty = string.IsNullOrEmpty(splitted[1]) || string.IsNullOrWhiteSpace(splitted[1]);
-                if (str0Empty && str1Empty)
+                bool isStr0Empty = string.IsNullOrEmpty(splitted[0]) || string.IsNullOrWhiteSpace(splitted[0]);
+                bool isStr1Empty = string.IsNullOrEmpty(splitted[1]) || string.IsNullOrWhiteSpace(splitted[1]);
+                if (isStr0Empty && isStr1Empty)
                 {
                     byteFrom = 0L;
                     byteTo = -1L;
                     return false;
                 }
 
-                if (!str0Empty)
+                if (!isStr0Empty)
                 {
                     if (!long.TryParse(splitted[0], out byteFrom))
                     {
@@ -172,7 +172,7 @@ namespace MultiThreadedDownloaderLib
                     byteFrom = 0L;
                 }
 
-                if (!str1Empty)
+                if (!isStr1Empty)
                 {
                     if (!long.TryParse(splitted[1], out byteTo))
                     {
