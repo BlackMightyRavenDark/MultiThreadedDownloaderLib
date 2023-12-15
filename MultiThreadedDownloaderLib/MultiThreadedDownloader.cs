@@ -322,8 +322,12 @@ namespace MultiThreadedDownloaderLib
                     if (_isCanceled)
                     {
                         LastErrorCode = DOWNLOAD_ERROR_CANCELED_BY_USER;
+                        LastErrorMessage = null;
                     }
-                    LastErrorMessage = downloader.LastErrorMessage;
+                    else
+                    {
+                        LastErrorMessage = downloader.LastErrorMessage;
+                    }
                 }
             }
             ));
