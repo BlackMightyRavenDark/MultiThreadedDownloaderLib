@@ -237,9 +237,12 @@ namespace MultiThreadedDownloaderLib
             Progress<DownloadProgressItem> progress = new Progress<DownloadProgressItem>();
             progress.ProgressChanged += (s, progressItem) =>
             {
-                threadProgressDict[progressItem.TaskId] = progressItem;
+                lock (threadProgressDict)
+                {
+                    threadProgressDict[progressItem.TaskId] = progressItem;
 
-                DownloadedBytes = threadProgressDict.Values.Select(it => it.ProcessedBytes).Sum();
+                    DownloadedBytes = threadProgressDict.Values.Select(it => it.ProcessedBytes).Sum();
+                }
 
                 DownloadProgress?.Invoke(this, DownloadedBytes);
             };
