@@ -73,7 +73,7 @@ namespace MultiThreadedDownloaderLib
 		
 		public delegate void ConnectingDelegate(object sender, string url);
 		public delegate void ConnectedDelegate(object sender, string url, long contentLength, ref int errorCode, ref string errorMessage);
-		public delegate void DownloadStartedDelegate(object sender, long contentLenth);
+		public delegate void DownloadStartedDelegate(object sender, long contentLength);
 		public delegate void DownloadProgressDelegate(object sender, long bytesTransferred);
 		public delegate void DownloadFinishedDelegate(object sender, long bytesTransferred, int errorCode, string fileName);
 		public delegate void ChunkMergingStartedDelegate(object sender, int chunkCount);
