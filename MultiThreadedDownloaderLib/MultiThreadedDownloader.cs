@@ -136,20 +136,11 @@ namespace MultiThreadedDownloaderLib
 			for (int i = 0; i < chunkCount; ++i)
 			{
 				bool lastChunk = i == chunkCount - 1;
-				long endPos;
-				if (lastChunk)
-				{
-					endPos = RangeTo >= 0 ? RangeTo : contentLength - 1;
-				}
-				else
-				{
-					endPos = startPos + chunkSize;
-				}
+				long endPos = lastChunk ? (RangeTo >= 0 ? RangeTo : contentLength - 1) : (startPos + chunkSize);
+
 				yield return new Tuple<long, long>(startPos, endPos);
-				if (!lastChunk)
-				{
-					startPos += chunkSize + 1;
-				}
+
+				if (!lastChunk) { startPos += chunkSize + 1; }
 			}
 		}
 
