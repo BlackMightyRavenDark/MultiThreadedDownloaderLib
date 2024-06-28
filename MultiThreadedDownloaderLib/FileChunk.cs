@@ -3,24 +3,24 @@ using System.IO;
 
 namespace MultiThreadedDownloaderLib
 {
-    internal sealed class FileChunk : IDisposable
-    {
-        public string FilePath { get; }
-        public Stream Stream { get; private set; }
+	internal sealed class FileChunk : IDisposable
+	{
+		public string FilePath { get; }
+		public Stream Stream { get; private set; }
 
-        public FileChunk(string filePath, Stream stream)
-        {
-            FilePath = filePath;
-            Stream = stream;
-        }
+		public FileChunk(string filePath, Stream stream)
+		{
+			FilePath = filePath;
+			Stream = stream;
+		}
 
-        public void Dispose()
-        {
-            if (Stream != null)
-            {
-                Stream.Close();
-                Stream = null;
-            }
-        }
-    }
+		public void Dispose()
+		{
+			if (Stream != null)
+			{
+				Stream.Close();
+				Stream = null;
+			}
+		}
+	}
 }
