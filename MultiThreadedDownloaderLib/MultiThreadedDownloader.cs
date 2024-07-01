@@ -72,7 +72,7 @@ namespace MultiThreadedDownloaderLib
 		public const int DOWNLOAD_ERROR_CUSTOM = -206;
 		
 		public delegate void ConnectingDelegate(object sender, string url);
-		public delegate void ConnectedDelegate(object sender, string url, long contentLength, ref int errorCode, ref string errorMessage);
+		public delegate void ConnectedDelegate(object sender, string url, long contentLength, CustomError customError);
 		public delegate void DownloadStartedDelegate(object sender, long contentLength);
 		public delegate void DownloadProgressDelegate(object sender, long bytesTransferred);
 		public delegate void DownloadFinishedDelegate(object sender, long bytesTransferred, int errorCode, string fileName);
@@ -203,15 +203,15 @@ namespace MultiThreadedDownloaderLib
 				(RangeTo >= 0L ? RangeTo - RangeFrom + 1 : fullContentLength - RangeFrom);
 			if (ContentLength < -1L) { ContentLength = -1L; }
 
-			int errorCode = LastErrorCode;
-			Connected?.Invoke(this, Url, ContentLength, ref errorCode, ref errorText);
-			if (LastErrorCode != errorCode)
+			CustomError customError = new CustomError(LastErrorCode, errorText);
+			Connected?.Invoke(this, Url, ContentLength, customError);
+			if (LastErrorCode != customError.ErrorCode)
 			{
-				LastErrorCode = errorCode;
+				LastErrorCode = customError.ErrorCode;
 			}
 			if (LastErrorCode != 200 && LastErrorCode != 206)
 			{
-				LastErrorMessage = errorText;
+				LastErrorMessage = customError.ErrorMessage;
 				return LastErrorCode;
 			}
 			if (ContentLength == 0L)

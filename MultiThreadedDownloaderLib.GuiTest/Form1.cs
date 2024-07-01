@@ -227,9 +227,9 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				lblDownloadingProgress.Text = "Подключение...";
 				lblDownloadingProgress.Refresh();
 			};
-			multiThreadedDownloader.Connected += (object s, string url, long contentLength, ref int errCode, ref string errorMessage) =>
+			multiThreadedDownloader.Connected += (object s, string url, long contentLength, CustomError customError) =>
 			{
-				if (errCode == 200 || errCode == 206)
+				if (customError.ErrorCode == 200 || customError.ErrorCode == 206)
 				{
 					lblDownloadingProgress.Text = "Подключено!";
 					lblDownloadingProgress.Refresh();
@@ -241,25 +241,25 @@ namespace MultiThreadedDownloaderLib.GuiTest
 						List<char> driveLetters = mtd.GetUsedDriveLetters();
 						if (driveLetters.Count > 0 && !IsEnoughDiskSpace(driveLetters, minimumFreeSpaceRequired))
 						{
-							errCode = FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
+							customError.ErrorCode = FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE;
+							customError.ErrorMessage = "Недостаточно места на диске!";
 							return;
 						}
 
 						if (mtd.UseRamForTempFiles && MemoryWatcher.Update() &&
 							MemoryWatcher.RamFree < (ulong)minimumFreeSpaceRequired)
 						{
-							errorMessage = "Недостаточно памяти!";
-							errCode = MultiThreadedDownloader.DOWNLOAD_ERROR_CUSTOM;
+							customError.ErrorMessage = "Недостаточно памяти!";
+							customError.ErrorCode = MultiThreadedDownloader.DOWNLOAD_ERROR_CUSTOM;
 							return;
 						}
 					}
 				}
 				else
 				{
-					lblDownloadingProgress.Text =
-						multiThreadedDownloader.HasErrorMessage ?
-						$"Ошибка: {multiThreadedDownloader.LastErrorMessage} (Код: {errCode})" :
-						$"Код ошибки: {errCode}";
+					lblDownloadingProgress.Text = multiThreadedDownloader.HasErrorMessage ?
+						$"Ошибка: {customError.ErrorMessage} (Код: {customError.ErrorCode})" :
+						$"Код ошибки: {customError.ErrorCode}";
 				}
 			};
 			multiThreadedDownloader.DownloadStarted += (s, contentLength) =>
