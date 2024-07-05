@@ -102,16 +102,13 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			}
 
 			btnDownloadMultiThreaded.Enabled = false;
-			numericUpDownUpdateInterval.Enabled = false;
-			btnHeaders.Enabled = false;
+			DisableControls();
 
 			if (string.IsNullOrEmpty(editUrl.Text) || string.IsNullOrWhiteSpace(editUrl.Text))
 			{
 				MessageBox.Show("Не указана ссылка!", "Ошибка!",
 					MessageBoxButtons.OK, MessageBoxIcon.Error);
-				btnDownloadMultiThreaded.Enabled = true;
-				btnHeaders.Enabled = true;
-				numericUpDownUpdateInterval.Enabled = true;
+				EnableControls();
 				return;
 			}
 
@@ -119,18 +116,13 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			{
 				MessageBox.Show("Не указано имя файла!", "Ошибка!",
 					MessageBoxButtons.OK, MessageBoxIcon.Error);
-				btnDownloadMultiThreaded.Enabled = true;
-				btnHeaders.Enabled = true;
-				numericUpDownUpdateInterval.Enabled = true;
+				EnableControls();
 				return;
 			}
 
 			isDownloading = true;
 
 			btnDownloadSingleThreaded.Text = "Stop";
-			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = false;
-			editFileName.Enabled = false;
-			btnSelectFile.Enabled = false;
 			lblMergingProgress.Text = null;
 
 			string fn = editFileName.Text;
@@ -192,22 +184,20 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			singleThreadedDownloader = null;
 
 			btnDownloadSingleThreaded.Text = "Download single threaded";
-			btnDownloadSingleThreaded.Enabled = true;
 			btnDownloadMultiThreaded.Enabled = true;
-			btnHeaders.Enabled = true;
-			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = true;
-			numericUpDownUpdateInterval.Enabled = true;
-			editFileName.Enabled = true;
-			btnSelectFile.Enabled = true;
+			EnableControls();
 		}
 
 		private async void btnDownloadMultiThreaded_Click(object sender, EventArgs e)
 		{
 			if (isDownloading)
 			{
-				btnDownloadMultiThreaded.Text = "Stopping...";
-				btnDownloadMultiThreaded.Enabled = false;
-				multiThreadedDownloader?.Stop();
+				if (multiThreadedDownloader != null)
+				{
+					btnDownloadMultiThreaded.Text = "Stopping...";
+					btnDownloadMultiThreaded.Enabled = false;
+					multiThreadedDownloader.Stop();
+				}
 				return;
 			}
 
@@ -215,11 +205,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
 			btnDownloadMultiThreaded.Text = "Stop";
 			btnDownloadSingleThreaded.Enabled = false;
-			btnHeaders.Enabled = false;
-			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = false;
-			numericUpDownThreadCount.Enabled = false;
-			numericUpDownUpdateInterval.Enabled = false;
-			numericUpDownChunksMergingUpdateInterval.Enabled = false;
+			DisableControls();
 			lblMergingProgress.Text = null;
 
 			multiThreadedDownloader = new MultiThreadedDownloader();
@@ -386,11 +372,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			btnDownloadMultiThreaded.Text = "Download multi threaded";
 			btnDownloadMultiThreaded.Enabled = true;
 			btnDownloadSingleThreaded.Enabled = true;
-			btnHeaders.Enabled = true;
-			numericUpDownThreadCount.Enabled = true;
-			numericUpDownUpdateInterval.Enabled = true;
-			numericUpDownChunksMergingUpdateInterval.Enabled = true;
-			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = true;
+			EnableControls();
 		}
 
 		public void OnConnecting(object sender, string url)
@@ -506,6 +488,40 @@ namespace MultiThreadedDownloaderLib.GuiTest
 					lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из <Неизвестно>";
 				}
 			}
+		}
+
+		private void DisableControls()
+		{
+			editUrl.Enabled = false;
+			editFileName.Enabled = false;
+			editTempPath.Enabled = false;
+			editMergingPath.Enabled = false;
+			btnSelectFile.Enabled = false;
+			btnSelectTempDir.Enabled = false;
+			btnSelectMergingDir.Enabled = false;
+			btnHeaders.Enabled = false;
+			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = false;
+			checkBoxUseRamForTempFiles.Enabled = false;
+			numericUpDownThreadCount.Enabled = false;
+			numericUpDownUpdateInterval.Enabled = false;
+			numericUpDownChunksMergingUpdateInterval.Enabled = false;
+		}
+
+		private void EnableControls()
+		{
+			editUrl.Enabled = true;
+			editFileName.Enabled = true;
+			editTempPath.Enabled = true;
+			editMergingPath.Enabled = true;
+			btnSelectFile.Enabled = true;
+			btnSelectTempDir.Enabled = true;
+			btnSelectMergingDir.Enabled = true;
+			btnHeaders.Enabled = true;
+			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = true;
+			checkBoxUseRamForTempFiles.Enabled = true;
+			numericUpDownThreadCount.Enabled = true;
+			numericUpDownUpdateInterval.Enabled = true;
+			numericUpDownChunksMergingUpdateInterval.Enabled = true;
 		}
 
 		private bool IsEnoughDiskSpace(IEnumerable<char> driveLetters, long contentLength)
