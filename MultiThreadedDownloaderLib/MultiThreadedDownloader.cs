@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
@@ -224,19 +225,14 @@ namespace MultiThreadedDownloaderLib
 
 			DownloadStarted?.Invoke(this, ContentLength);
 
-			Dictionary<int, DownloadProgressItem> threadProgressDict = new Dictionary<int, DownloadProgressItem>();
-			Progress<DownloadProgressItem> progress = new Progress<DownloadProgressItem>();
-			progress.ProgressChanged += (s, progressItem) =>
+			ConcurrentDictionary<int, DownloadProgressItem> threadProgressDict = new ConcurrentDictionary<int, DownloadProgressItem>();
+
+			void OnProgressUpdatedFunc(DownloadProgressItem progressItem)
 			{
-				lock (threadProgressDict)
-				{
-					threadProgressDict[progressItem.TaskId] = progressItem;
-
-					DownloadedBytes = threadProgressDict.Values.Select(it => it.ProcessedBytes).Sum();
-				}
-
+				threadProgressDict[progressItem.TaskId] = progressItem;
+				DownloadedBytes = threadProgressDict.Values.Select(item => item.ProcessedBytes).Sum();
 				DownloadProgress?.Invoke(this, DownloadedBytes);
-			};
+			}
 
 			if (ThreadCount <= 0)
 			{
@@ -247,14 +243,14 @@ namespace MultiThreadedDownloaderLib
 				bufferSize = 8192;
 			}
 
+			bool isError = false;
 			int chunkCount = ContentLength > MEGABYTE ? ThreadCount : 1;
+			List<FileDownloader> downloaders = new List<FileDownloader>();
 			var chunkRanges = SplitContentToChunks(fullContentLength, chunkCount);
 			var tasks = chunkRanges.Select((range, taskId) => Task.Run(() =>
 			{
 				long chunkFirstByte = range.Item1;
 				long chunkLastByte = range.Item2;
-
-				IProgress<DownloadProgressItem> reporter = progress;
 
 				string chunkFileName = GetTempChunkFilePath(chunkCount, taskId);
 				if (!string.IsNullOrEmpty(chunkFileName))
@@ -263,6 +259,7 @@ namespace MultiThreadedDownloaderLib
 				}
 
 				FileDownloader downloader = new FileDownloader() { Url = Url, Headers = Headers };
+				lock (downloaders) { downloaders.Add(downloader); }
 				downloader.SetRange(chunkFirstByte, chunkLastByte);
 
 				Stream streamChunk = null;
@@ -275,16 +272,34 @@ namespace MultiThreadedDownloaderLib
 					{
 						FileChunk fileChunk = new FileChunk(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
 						DownloadProgressItem progressItem = new DownloadProgressItem(fileChunk, taskId, transferred, chunkLastByte);
-						reporter.Report(progressItem);
+						OnProgressUpdatedFunc(progressItem);
 
 						lastTime = currentTime;
 					}
 				};
 				downloader.WorkFinished += (object sender, long transferred, long contentLen, int errCode) =>
 				{
+					if (errCode != 200 && errCode != 206)
+					{
+						lock (downloaders)
+						{
+							bool errored = downloaders.Any(d => d.LastErrorCode != 200 && d.LastErrorCode != 206);
+							if (errored)
+							{
+								if (!isError)
+								{
+									isError = true;
+									FileDownloader d = sender as FileDownloader;
+									LastErrorCode = d.LastErrorCode;
+									LastErrorMessage = d.LastErrorMessage;
+									AbortTasks(downloaders);
+								}
+							}
+						}
+					}
 					FileChunk fileChunk = new FileChunk(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
 					DownloadProgressItem progressItem = new DownloadProgressItem(fileChunk, taskId, transferred, chunkLastByte);
-					reporter.Report(progressItem);
+					OnProgressUpdatedFunc(progressItem);
 				};
 
 				try
@@ -306,6 +321,7 @@ namespace MultiThreadedDownloaderLib
 				}
 				catch (Exception ex)
 				{
+					AbortTasks(downloaders);
 					streamChunk?.Close();
 					LastErrorCode = ex.HResult;
 					LastErrorMessage = ex.Message;
@@ -318,7 +334,12 @@ namespace MultiThreadedDownloaderLib
 						LastErrorCode = DOWNLOAD_ERROR_CANCELED_BY_USER;
 						LastErrorMessage = null;
 					}
-					else
+					else if (isError && LastErrorCode == DOWNLOAD_ERROR_CANCELED_BY_USER) //TODO: Fix this shit!
+					{
+						//shit happens :'(
+						LastErrorCode = DOWNLOAD_ERROR_ABORTED;
+					}
+					else if (!isError)
 					{
 						LastErrorMessage = downloader.LastErrorMessage;
 					}
@@ -334,6 +355,7 @@ namespace MultiThreadedDownloaderLib
 			{
 				System.Diagnostics.Debug.WriteLine(ex.Message);
 				LastErrorMessage = ex.Message;
+				AbortTasks(downloaders);
 				if (UseRamForTempFiles)
 				{
 					var values = threadProgressDict.Values;
@@ -436,14 +458,16 @@ namespace MultiThreadedDownloaderLib
 			}
 		}
 
+		private void AbortTasks(IEnumerable<FileDownloader> downloaders)
+		{
+			foreach (FileDownloader d in downloaders)
+			{
+				d.Stop();
+			}
+		}
+
 		private async Task<int> MergeChunks(IEnumerable<FileChunk> chunks)
 		{
-			Progress<ChunkMergingProgressItem> progressMerging = new Progress<ChunkMergingProgressItem>();
-			progressMerging.ProgressChanged += (s, p) =>
-			{
-				ChunkMergingProgress?.Invoke(this, p.ChunkId, p.TotalChunkCount, p.ChunkPosition, p.ChunkLength);
-			};
-
 			int res = await Task.Run(() =>
 			{
 				string tmpFileName = GetNumberedFileName(GetTempMergingFilePath());
@@ -469,7 +493,6 @@ namespace MultiThreadedDownloaderLib
 					return DOWNLOAD_ERROR_CREATE_FILE;
 				}
 
-				IProgress<ChunkMergingProgressItem> reporter = progressMerging;
 				try
 				{
 					int i = 0;
@@ -499,7 +522,7 @@ namespace MultiThreadedDownloaderLib
 						{
 							ChunkMergingProgressItem item = new ChunkMergingProgressItem(
 								i, chunkCount, sourcePosition, sourceLength);
-							reporter.Report(item);
+							ChunkMergingProgress?.Invoke(this, item.ChunkId, item.TotalChunkCount, item.ChunkPosition, item.ChunkLength);
 						};
 						bool appended = Append(tmpStream, outputStream,
 							func, func, func,

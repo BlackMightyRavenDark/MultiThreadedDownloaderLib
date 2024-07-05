@@ -26,6 +26,7 @@ namespace MultiThreadedDownloaderLib
 		public bool HasErrorMessage => !string.IsNullOrEmpty(LastErrorMessage) &&
 			!string.IsNullOrWhiteSpace(LastErrorMessage) &&
 			!string.Equals(LastErrorMessage, "OK", StringComparison.OrdinalIgnoreCase);
+		private bool _isAborted = false;
 
 		public const int DOWNLOAD_ERROR_URL_NOT_DEFINED = -1;
 		public const int DOWNLOAD_ERROR_INVALID_URL = -2;
@@ -36,6 +37,7 @@ namespace MultiThreadedDownloaderLib
 		public const int DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE = -7;
 		public const int DOWNLOAD_ERROR_DRIVE_NOT_READY = -8;
 		public const int DOWNLOAD_ERROR_NULL_CONTENT = -9;
+		public const int DOWNLOAD_ERROR_ABORTED = -10;
 
 		public delegate void ConnectingDelegate(object sender, string url);
 		public delegate int ConnectedDelegate(object sender, string url, long contentLength, int errorCode);
@@ -62,6 +64,7 @@ namespace MultiThreadedDownloaderLib
 			CancellationTokenSource cancellationTokenSource = null)
 		{
 			IsActive = true;
+			_isAborted = false;
 
 			if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
 			{
@@ -120,6 +123,7 @@ namespace MultiThreadedDownloaderLib
 			WorkStarted?.Invoke(this, size);
 
 			int lastTime = Environment.TickCount;
+			bool isExceptionRaised = false;
 			try
 			{
 				_cancellationTokenSource = cancellationTokenSource != null ?
@@ -143,13 +147,17 @@ namespace MultiThreadedDownloaderLib
 			{
 				LastErrorCode = ex.HResult;
 				LastErrorMessage = ex.Message;
-				requestResult.Dispose();
-				IsActive = false;
-				return LastErrorCode;
+				isExceptionRaised = true;
+			}
+
+			if (!isExceptionRaised && _isAborted)
+			{
+				LastErrorCode = DOWNLOAD_ERROR_ABORTED;
+				LastErrorMessage = "Download aborted";
 			}
 
 			requestResult.Dispose();
-			StreamSize = stream.Length;
+			StreamSize = stream != null ? stream.Length : 0L;
 
 			WorkFinished?.Invoke(this, DownloadedInLastSession, size, LastErrorCode);
 
@@ -203,6 +211,12 @@ namespace MultiThreadedDownloaderLib
 			{
 				_cancellationTokenSource.Cancel();
 			}
+		}
+
+		public void Abort()
+		{
+			_isAborted = true;
+			Stop();
 		}
 
 		public static int GetUrlContentLength(string url, NameValueCollection headers,
@@ -348,6 +362,9 @@ namespace MultiThreadedDownloaderLib
 
 				case DOWNLOAD_ERROR_CANCELED_BY_USER:
 					return "Скачивание успешно отменено!";
+
+				case DOWNLOAD_ERROR_ABORTED:
+					return "Скачивание прервано!";
 
 				case DOWNLOAD_ERROR_INCOMPLETE_DATA_READ:
 					return "Ошибка чтения данных!";
