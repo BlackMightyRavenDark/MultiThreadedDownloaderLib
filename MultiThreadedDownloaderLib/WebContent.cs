@@ -77,7 +77,7 @@ namespace MultiThreadedDownloaderLib
 			return ContentToStream(stream, bufferSize, false, progress, cancellationToken);
 		}
 
-		public int ContentToString(out string resultString, int bufferSize, bool zipped,
+		public int ContentToString(out string resultString, Encoding encoding, int bufferSize, bool zipped,
 			ProgressDelegate progress, CancellationToken cancellationToken)
 		{
 			try
@@ -86,7 +86,7 @@ namespace MultiThreadedDownloaderLib
 				{
 					int errorCode = ContentToStream(stream, bufferSize, zipped, progress, cancellationToken);
 					resultString = errorCode == 200 || errorCode == 206 ?
-						Encoding.UTF8.GetString(stream.ToArray()) : null;
+						encoding.GetString(stream.ToArray()) : null;
 					return errorCode;
 				}
 			}
@@ -98,10 +98,27 @@ namespace MultiThreadedDownloaderLib
 			}
 		}
 
+		public int ContentToString(out string resultString, int bufferSize, bool zipped,
+			ProgressDelegate progress, CancellationToken cancellationToken)
+		{
+			return ContentToString(out resultString, Encoding.UTF8, bufferSize, zipped,
+				progress, cancellationToken);
+		}
+
 		public int ContentToString(out string resultString, int bufferSize,
 			ProgressDelegate progress, CancellationToken cancellationToken)
 		{
 			return ContentToString(out resultString, bufferSize, false, progress, cancellationToken);
+		}
+
+		public int ContentToString(out string resultString, Encoding encoding, bool zipped, int bufferSize = 4096)
+		{
+			return ContentToString(out resultString, encoding, bufferSize, zipped, null, default);
+		}
+
+		public int ContentToString(out string resultString, Encoding encoding, int bufferSize = 4096)
+		{
+			return ContentToString(out resultString, encoding, bufferSize, false, null, default);
 		}
 
 		public int ContentToString(out string resultString, bool zipped, int bufferSize = 4096)
