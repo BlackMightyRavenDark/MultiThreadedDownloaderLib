@@ -249,7 +249,7 @@ namespace MultiThreadedDownloaderLib
 		public static int GetUrlResponseHeaders(string url, NameValueCollection inHeaders,
 			out WebHeaderCollection outHeaders, out string errorText)
 		{
-			HttpRequestResult requestResult = HttpRequestSender.Send("GET", url, null, inHeaders);
+			HttpRequestResult requestResult = HttpRequestSender.Send("HEAD", url, null, inHeaders);
 			if (requestResult.ErrorCode == 200)
 			{
 				outHeaders = new WebHeaderCollection();
