@@ -417,7 +417,7 @@ namespace MultiThreadedDownloaderLib
 			if (UseRamForTempFiles || chunks.Count > 1)
 			{
 				ChunkMergingStarted?.Invoke(this, chunks.Count);
-				LastErrorCode = await MergeChunks(chunks);
+				LastErrorCode = await Task.Run(() => MergeChunks(chunks));
 				ChunkMergingFinished?.Invoke(this, LastErrorCode);
 			}
 			else if (!UseRamForTempFiles && chunks.Count == 1)
@@ -466,152 +466,155 @@ namespace MultiThreadedDownloaderLib
 			}
 		}
 
-		private async Task<int> MergeChunks(IEnumerable<FileChunk> chunks)
+		private int MergeChunks(IEnumerable<FileChunk> chunks)
 		{
-			int res = await Task.Run(() =>
-			{
-				string tmpFileName = GetNumberedFileName(GetTempMergingFilePath());
+			string tmpFileName = GetNumberedFileName(GetTempMergingFilePath());
 
-				Stream outputStream = null;
-				try
+			Stream outputStream = null;
+			try
+			{
+				outputStream = File.OpenWrite(tmpFileName);
+			}
+			catch (Exception ex)
+			{
+				System.Diagnostics.Debug.WriteLine(ex.Message);
+				outputStream?.Close();
+				if (UseRamForTempFiles)
 				{
-					outputStream = File.OpenWrite(tmpFileName);
-				}
-				catch (Exception ex)
-				{
-					System.Diagnostics.Debug.WriteLine(ex.Message);
-					outputStream?.Close();
-					if (UseRamForTempFiles)
+					foreach (FileChunk fc in chunks)
 					{
-						foreach (FileChunk fc in chunks)
+						fc.Dispose();
+					}
+					//TODO: Fix possible memory leaking
+					GC.Collect();
+				}
+				return DOWNLOAD_ERROR_CREATE_FILE;
+			}
+
+			try
+			{
+				int i = 0;
+				int chunkCount = chunks.Count();
+				foreach (FileChunk fileChunk in chunks)
+				{
+					string chunkFilePath = fileChunk.FilePath;
+					bool fileExists = false;
+					Stream tmpStream = fileChunk.Stream;
+					bool isMemoryStream = tmpStream != null;
+					if (!isMemoryStream)
+					{
+						fileExists = !string.IsNullOrEmpty(chunkFilePath) && !string.IsNullOrWhiteSpace(chunkFilePath) &&
+							File.Exists(chunkFilePath);
+						if (!fileExists)
 						{
-							fc.Dispose();
+							return DOWNLOAD_ERROR_MERGING_CHUNKS;
 						}
+						tmpStream = File.OpenRead(chunkFilePath);
+					}
+					else
+					{
+						tmpStream.Position = 0L;
+					}
+
+					void func(long sourcePosition, long sourceLength, long destinationPosition, long destinationLength)
+					{
+						ChunkMergingProgressItem item = new ChunkMergingProgressItem(
+							i, chunkCount, sourcePosition, sourceLength);
+						ChunkMergingProgress?.Invoke(this, item.ChunkId, item.TotalChunkCount, item.ChunkPosition, item.ChunkLength);
+					};
+					bool appended = Append(tmpStream, outputStream,
+						func, func, func,
+						_cancellationTokenSource.Token, ChunksMergingUpdateIntervalMilliseconds);
+
+					fileChunk.Dispose();
+					if (isMemoryStream)
+					{
 						//TODO: Fix possible memory leaking
 						GC.Collect();
 					}
-					return DOWNLOAD_ERROR_CREATE_FILE;
-				}
-
-				try
-				{
-					int i = 0;
-					int chunkCount = chunks.Count();
-					foreach (FileChunk fileChunk in chunks)
+					else
 					{
-						string chunkFilePath = fileChunk.FilePath;
-						bool fileExists = false;
-						Stream tmpStream = fileChunk.Stream;
-						bool isMemoryStream = tmpStream != null;
-						if (!isMemoryStream)
+						tmpStream.Close();
+					}
+
+					if (!appended)
+					{
+						outputStream.Close();
+						if (UseRamForTempFiles)
 						{
-							fileExists = !string.IsNullOrEmpty(chunkFilePath) && !string.IsNullOrWhiteSpace(chunkFilePath) &&
-								File.Exists(chunkFilePath);
-							if (!fileExists)
+							foreach (FileChunk fc in chunks)
 							{
-								return DOWNLOAD_ERROR_MERGING_CHUNKS;
+								fc.Dispose();
 							}
-							tmpStream = File.OpenRead(chunkFilePath);
-						}
-						else
-						{
-							tmpStream.Position = 0L;
-						}
-
-						void func(long sourcePosition, long sourceLength, long destinationPosition, long destinationLength)
-						{
-							ChunkMergingProgressItem item = new ChunkMergingProgressItem(
-								i, chunkCount, sourcePosition, sourceLength);
-							ChunkMergingProgress?.Invoke(this, item.ChunkId, item.TotalChunkCount, item.ChunkPosition, item.ChunkLength);
-						};
-						bool appended = Append(tmpStream, outputStream,
-							func, func, func,
-							_cancellationTokenSource.Token, ChunksMergingUpdateIntervalMilliseconds);
-
-						fileChunk.Dispose();
-						if (isMemoryStream)
-						{
 							//TODO: Fix possible memory leaking
 							GC.Collect();
 						}
-						else
-						{
-							tmpStream.Close();
-						}
-
-						if (!appended)
-						{
-							outputStream.Close();
-							if (UseRamForTempFiles)
-							{
-								foreach (FileChunk fc in chunks)
-								{
-									fc.Dispose();
-								}
-								//TODO: Fix possible memory leaking
-								GC.Collect(); 
-							}
-							return _cancellationTokenSource.IsCancellationRequested ?
-								DOWNLOAD_ERROR_CANCELED_BY_USER : DOWNLOAD_ERROR_MERGING_CHUNKS;
-						}
-
-						if (!isMemoryStream && fileExists)
-						{
-							File.Delete(chunkFilePath);
-						}
-
-						if (_isCanceled)
-						{
-							break;
-						}
-
-						++i;
+						return _cancellationTokenSource.IsCancellationRequested ?
+							DOWNLOAD_ERROR_CANCELED_BY_USER : DOWNLOAD_ERROR_MERGING_CHUNKS;
 					}
-				}
-				catch (Exception ex)
-				{
-					System.Diagnostics.Debug.WriteLine(ex.Message);
-					outputStream.Close();
-					if (UseRamForTempFiles)
+
+					if (!isMemoryStream && fileExists)
 					{
-						foreach (FileChunk fc in chunks)
-						{
-							fc.Dispose();
-						}
-						//TODO: Fix possible memory leaking
-						GC.Collect();
+						File.Delete(chunkFilePath);
 					}
-					return DOWNLOAD_ERROR_MERGING_CHUNKS;
+
+					if (_isCanceled)
+					{
+						break;
+					}
+
+					++i;
 				}
+			}
+			catch (Exception ex)
+			{
+				System.Diagnostics.Debug.WriteLine(ex.Message);
 				outputStream.Close();
-
-				if (_isCanceled)
+				if (UseRamForTempFiles)
 				{
-					if (UseRamForTempFiles)
+					foreach (FileChunk fc in chunks)
 					{
-						foreach (FileChunk fc in chunks)
-						{
-							fc.Dispose();
-						}
-						//TODO: Fix possible memory leaking
-						GC.Collect();
+						fc.Dispose();
 					}
-					return DOWNLOAD_ERROR_CANCELED_BY_USER;
+					//TODO: Fix possible memory leaking
+					GC.Collect();
 				}
+				return DOWNLOAD_ERROR_MERGING_CHUNKS;
+			}
+			outputStream.Close();
 
-				if (KeepDownloadedFileInTempOrMergingDirectory &&
-					IsMergingDirectoryAvailable)
+			if (_isCanceled)
+			{
+				if (UseRamForTempFiles)
 				{
-					string fn = Path.GetFileName(OutputFileName);
-					OutputFileName = Path.Combine(MergingDirectory, fn);
+					foreach (FileChunk fc in chunks)
+					{
+						fc.Dispose();
+					}
+					//TODO: Fix possible memory leaking
+					GC.Collect();
 				}
-				OutputFileName = GetNumberedFileName(OutputFileName);
+				return DOWNLOAD_ERROR_CANCELED_BY_USER;
+			}
+
+			if (KeepDownloadedFileInTempOrMergingDirectory &&
+				IsMergingDirectoryAvailable)
+			{
+				string fn = Path.GetFileName(OutputFileName);
+				OutputFileName = Path.Combine(MergingDirectory, fn);
+			}
+			OutputFileName = GetNumberedFileName(OutputFileName);
+
+			try
+			{
 				File.Move(tmpFileName, OutputFileName);
+			} catch (Exception ex)
+			{
+				System.Diagnostics.Debug.WriteLine(ex.Message);
+				return DOWNLOAD_ERROR_MERGING_CHUNKS;
+			}
 
-				return 200;
-			});
-
-			return res;
+			return 200;
 		}
 
 		private string GetTempChunkFilePath(int chunkCount, int taskId)
