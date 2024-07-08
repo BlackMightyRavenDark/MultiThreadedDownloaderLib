@@ -356,54 +356,19 @@ namespace MultiThreadedDownloaderLib
 				System.Diagnostics.Debug.WriteLine(ex.Message);
 				LastErrorMessage = ex.Message;
 				AbortTasks(downloaders);
-				if (UseRamForTempFiles)
-				{
-					var values = threadProgressDict.Values;
-					foreach (DownloadProgressItem item in values)
-					{
-						if (item.FileChunk != null)
-						{
-							item.FileChunk.Dispose();
-
-							//TODO: Fix possible memory leaking
-							GC.Collect();
-						}
-					}
-				}
+				ClearGarbage(threadProgressDict);
 				int ret = (ex is OperationCanceledException) ? DOWNLOAD_ERROR_CANCELED_BY_USER : ex.HResult;
 				return ret;
 			}
 
 			if (LastErrorCode != 200 && LastErrorCode != 206)
 			{
-				if (UseRamForTempFiles)
-				{
-					for (int i = 0; i < threadProgressDict.Count; ++i)
-					{
-						if (threadProgressDict[i].FileChunk != null)
-						{
-							threadProgressDict[i].FileChunk.Dispose();
-							//TODO: Fix possible memory leaking
-							GC.Collect();
-						}
-					}
-				}
+				ClearGarbage(threadProgressDict);
 				return LastErrorCode;
 			}
 			else if (_isCanceled)
 			{
-				if (UseRamForTempFiles)
-				{
-					for (int i = 0; i < threadProgressDict.Count; ++i)
-					{
-						if (threadProgressDict[i].FileChunk != null)
-						{
-							threadProgressDict[i].FileChunk.Dispose();
-							//TODO: Fix possible memory leaking
-							GC.Collect();
-						}
-					}
-				}
+				ClearGarbage(threadProgressDict);
 				LastErrorCode = DOWNLOAD_ERROR_CANCELED_BY_USER;
 				LastErrorMessage = null;
 				return LastErrorCode;
@@ -479,15 +444,7 @@ namespace MultiThreadedDownloaderLib
 			{
 				System.Diagnostics.Debug.WriteLine(ex.Message);
 				outputStream?.Close();
-				if (UseRamForTempFiles)
-				{
-					foreach (FileChunk fc in chunks)
-					{
-						fc.Dispose();
-					}
-					//TODO: Fix possible memory leaking
-					GC.Collect();
-				}
+				ClearGarbage(chunks);
 				return DOWNLOAD_ERROR_CREATE_FILE;
 			}
 
@@ -540,15 +497,7 @@ namespace MultiThreadedDownloaderLib
 					if (!appended)
 					{
 						outputStream.Close();
-						if (UseRamForTempFiles)
-						{
-							foreach (FileChunk fc in chunks)
-							{
-								fc.Dispose();
-							}
-							//TODO: Fix possible memory leaking
-							GC.Collect();
-						}
+						ClearGarbage(chunks);
 						return _cancellationTokenSource.IsCancellationRequested ?
 							DOWNLOAD_ERROR_CANCELED_BY_USER : DOWNLOAD_ERROR_MERGING_CHUNKS;
 					}
@@ -570,30 +519,14 @@ namespace MultiThreadedDownloaderLib
 			{
 				System.Diagnostics.Debug.WriteLine(ex.Message);
 				outputStream.Close();
-				if (UseRamForTempFiles)
-				{
-					foreach (FileChunk fc in chunks)
-					{
-						fc.Dispose();
-					}
-					//TODO: Fix possible memory leaking
-					GC.Collect();
-				}
+				ClearGarbage(chunks);
 				return DOWNLOAD_ERROR_MERGING_CHUNKS;
 			}
 			outputStream.Close();
 
 			if (_isCanceled)
 			{
-				if (UseRamForTempFiles)
-				{
-					foreach (FileChunk fc in chunks)
-					{
-						fc.Dispose();
-					}
-					//TODO: Fix possible memory leaking
-					GC.Collect();
-				}
+				ClearGarbage(chunks);
 				return DOWNLOAD_ERROR_CANCELED_BY_USER;
 			}
 
@@ -615,6 +548,35 @@ namespace MultiThreadedDownloaderLib
 			}
 
 			return 200;
+		}
+
+		private void ClearGarbage(ConcurrentDictionary<int, DownloadProgressItem> dictionary)
+		{
+			if (UseRamForTempFiles)
+			{
+				var values = dictionary.Values;
+				foreach (DownloadProgressItem item in values)
+				{
+					item.FileChunk?.Dispose();
+				}
+
+				//TODO: Fix possible memory leaking
+				GC.Collect();
+			}
+		}
+
+		private void ClearGarbage(IEnumerable<FileChunk> fileChunks)
+		{
+			if (UseRamForTempFiles)
+			{
+				foreach (FileChunk fileChunk in fileChunks)
+				{
+					fileChunk.Dispose();
+				}
+
+				//TODO: Fix possible memory leaking
+				GC.Collect();
+			}
 		}
 
 		private string GetTempChunkFilePath(int chunkCount, int taskId)
