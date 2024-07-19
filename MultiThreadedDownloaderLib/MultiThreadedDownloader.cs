@@ -75,7 +75,7 @@ namespace MultiThreadedDownloaderLib
 		public delegate void ConnectingDelegate(object sender, string url);
 		public delegate void ConnectedDelegate(object sender, string url, long contentLength, CustomError customError);
 		public delegate void DownloadStartedDelegate(object sender, long contentLength);
-		public delegate void DownloadProgressDelegate(object sender, long bytesTransferred);
+		public delegate void DownloadProgressDelegate(object sender, ConcurrentDictionary<int, DownloadableContentChunk> contentChunks);
 		public delegate void DownloadFinishedDelegate(object sender, long bytesTransferred, int errorCode, string fileName);
 		public delegate void ChunkMergingStartedDelegate(object sender, int chunkCount);
 		public delegate void ChunkMergingProgressDelegate(object sender, int chunkId,
@@ -231,7 +231,7 @@ namespace MultiThreadedDownloaderLib
 			{
 				contentChunks[contentChunk.TaskId] = contentChunk;
 				DownloadedBytes = contentChunks.Values.Select(item => item.ProcessedBytes).Sum();
-				DownloadProgress?.Invoke(this, DownloadedBytes);
+				DownloadProgress?.Invoke(this, contentChunks);
 			}
 
 			if (ThreadCount <= 0)

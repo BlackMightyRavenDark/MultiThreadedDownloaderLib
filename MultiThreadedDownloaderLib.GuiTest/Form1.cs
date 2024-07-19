@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -259,15 +261,28 @@ namespace MultiThreadedDownloaderLib.GuiTest
 					lblDownloadingProgress.Text = $"Скачано 0 из {contentLengthString}";
 				}));
 			};
-			multiThreadedDownloader.DownloadProgress += (s, bytesTransferred) =>
+			multiThreadedDownloader.DownloadProgress += (s, chunks) =>
 			{
 				Invoke(new MethodInvoker(() =>
 				{
+					var values = chunks.Values;
+					long bytesTransferred = values.Sum(item => item.ProcessedBytes);
 					long contentLength = (s as MultiThreadedDownloader).ContentLength;
 					if (contentLength > 0L)
 					{
+						LinkedList<MultipleProgressBarItem> progressBarItems = new LinkedList<MultipleProgressBarItem>();
+						foreach (DownloadableContentChunk item in values)
+						{
+							double percentItem = 100.0 / item.TotalBytes * item.ProcessedBytes;
+							string percentItemFormatted = string.Format("{0:F3}", percentItem);
+							string itemText = $"{item.TaskId}: {percentItemFormatted}%";
+							MultipleProgressBarItem mpi = new MultipleProgressBarItem(
+								0, 100, (int)percentItem, itemText, Color.Lime);
+							progressBarItems.AddLast(mpi);
+						}
+						progressBar1.SetItems(progressBarItems);
+
 						double percent = 100.0 / contentLength * bytesTransferred;
-						progressBar1.SetItem(0, 100, (int)percent);
 						string percentFormatted = string.Format("{0:F3}", percent);
 						lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%)";
 					}

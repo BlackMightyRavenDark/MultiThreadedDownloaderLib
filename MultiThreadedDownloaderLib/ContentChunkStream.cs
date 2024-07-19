@@ -3,7 +3,7 @@ using System.IO;
 
 namespace MultiThreadedDownloaderLib
 {
-	internal sealed class ContentChunkStream : IDisposable
+	public sealed class ContentChunkStream : IDisposable
 	{
 		public string FilePath { get; }
 		public Stream Stream { get; private set; }

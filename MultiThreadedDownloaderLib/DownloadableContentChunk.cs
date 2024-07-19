@@ -1,7 +1,7 @@
 ﻿
 namespace MultiThreadedDownloaderLib
 {
-	internal sealed class DownloadableContentChunk
+	public sealed class DownloadableContentChunk
 	{
 		public ContentChunkStream ChunkStream { get; }
 		public int TaskId { get; }
