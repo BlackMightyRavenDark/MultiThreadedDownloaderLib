@@ -77,6 +77,9 @@
       <DependentUpon>FormHeadersEditor.cs</DependentUpon>
     </Compile>
     <Compile Include="MemoryWatcher.cs" />
+    <Compile Include="MultipleProgressBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Form1.resx">

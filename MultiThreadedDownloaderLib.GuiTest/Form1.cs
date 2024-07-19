@@ -254,8 +254,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			{
 				Invoke(new MethodInvoker(() =>
 				{
-					progressBar1.Value = 0;
-					progressBar1.Maximum = 100;
+					progressBar1.SetItem(0, 100, 0);
 					string contentLengthString = contentLength > 0L ? contentLength.ToString() : "<Неизвестно>";
 					lblDownloadingProgress.Text = $"Скачано 0 из {contentLengthString}";
 				}));
@@ -268,7 +267,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 					if (contentLength > 0L)
 					{
 						double percent = 100.0 / contentLength * bytesTransferred;
-						progressBar1.Value = (int)percent;
+						progressBar1.SetItem(0, 100, (int)percent);
 						string percentFormatted = string.Format("{0:F3}", percent);
 						lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%)";
 					}
@@ -293,8 +292,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			{
 				Invoke(new MethodInvoker(() =>
 				{
-					progressBar1.Value = 0;
-					progressBar1.Maximum = chunkCount;
+					progressBar1.SetItem(0, chunkCount, 0);
 					lblMergingProgress.Left = lblDownloadingProgress.Left + lblDownloadingProgress.Width;
 					lblMergingProgress.Text = $"Объединение чанков: 0 / {chunkCount}";
 				}));
@@ -303,7 +301,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			{
 				Invoke(new MethodInvoker(() =>
 				{
-					progressBar1.Value = chunkId + 1;
+					progressBar1.SetItem(0, chunkCount, chunkId + 1);
 
 					double percent = 100.0 / chunkSize * chunkPosition;
 					string percentFormatted = string.Format("{0:F3}", percent);
@@ -383,8 +381,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			}
 			else
 			{
-				progressBar1.Value = 0;
-				progressBar1.Maximum = 100;
+				progressBar1.SetItem(0, 100, 0);
 				lblDownloadingProgress.Text = "Подключение...";
 				lblDownloadingProgress.Refresh();
 
@@ -439,8 +436,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			}
 			else
 			{
-				progressBar1.Value = 0;
-				progressBar1.Maximum = 100;
+				progressBar1.SetItem(0, 100, 0);
 				lblDownloadingProgress.Text = $"Скачано: 0 из {contentLength}";
 				lblDownloadingProgress.Refresh();
 			}
@@ -457,7 +453,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				if (contentLength > 0L)
 				{
 					double percent = 100.0 / contentLength * bytesTransferred;
-					progressBar1.Value = (int)percent;
+					progressBar1.SetItem(0, 100, (int)percent);
 					string percentFormatted = string.Format("{0:F3}", percent);
 					lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%)";
 				}
@@ -479,7 +475,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				if (contentLength > 0L)
 				{
 					double percent = 100.0 / contentLength * bytesTransferred;
-					progressBar1.Value = (int)percent;
+					progressBar1.SetItem(0, 100, (int)percent);
 					string percentFormatted = string.Format("{0:F3}", percent);
 					lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%)";
 				}

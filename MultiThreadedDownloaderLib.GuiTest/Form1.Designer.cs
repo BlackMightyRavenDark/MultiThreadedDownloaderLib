@@ -30,7 +30,6 @@
 		{
 			this.btnDownloadSingleThreaded = new System.Windows.Forms.Button();
 			this.editUrl = new System.Windows.Forms.TextBox();
-			this.progressBar1 = new System.Windows.Forms.ProgressBar();
 			this.btnDownloadMultiThreaded = new System.Windows.Forms.Button();
 			this.lblDownloadingProgress = new System.Windows.Forms.Label();
 			this.label1 = new System.Windows.Forms.Label();
@@ -53,6 +52,7 @@
 			this.numericUpDownUpdateInterval = new System.Windows.Forms.NumericUpDown();
 			this.label7 = new System.Windows.Forms.Label();
 			this.numericUpDownChunksMergingUpdateInterval = new System.Windows.Forms.NumericUpDown();
+			this.progressBar1 = new MultiThreadedDownloaderLib.MultipleProgressBar();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownThreadCount)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownUpdateInterval)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownChunksMergingUpdateInterval)).BeginInit();
@@ -74,13 +74,6 @@
 			this.editUrl.Name = "editUrl";
 			this.editUrl.Size = new System.Drawing.Size(693, 20);
 			this.editUrl.TabIndex = 1;
-			// 
-			// progressBar1
-			// 
-			this.progressBar1.Location = new System.Drawing.Point(12, 288);
-			this.progressBar1.Name = "progressBar1";
-			this.progressBar1.Size = new System.Drawing.Size(745, 23);
-			this.progressBar1.TabIndex = 2;
 			// 
 			// btnDownloadMultiThreaded
 			// 
@@ -332,11 +325,22 @@
 			0,
 			0});
 			// 
+			// progressBar1
+			// 
+			this.progressBar1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+			| System.Windows.Forms.AnchorStyles.Right)));
+			this.progressBar1.Location = new System.Drawing.Point(12, 288);
+			this.progressBar1.Name = "progressBar1";
+			this.progressBar1.Size = new System.Drawing.Size(744, 23);
+			this.progressBar1.TabIndex = 27;
+			this.progressBar1.Text = "multipleProgressBar1";
+			// 
 			// Form1
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(768, 322);
+			this.Controls.Add(this.progressBar1);
 			this.Controls.Add(this.numericUpDownChunksMergingUpdateInterval);
 			this.Controls.Add(this.label7);
 			this.Controls.Add(this.numericUpDownUpdateInterval);
@@ -359,7 +363,6 @@
 			this.Controls.Add(this.label1);
 			this.Controls.Add(this.lblDownloadingProgress);
 			this.Controls.Add(this.btnDownloadMultiThreaded);
-			this.Controls.Add(this.progressBar1);
 			this.Controls.Add(this.editUrl);
 			this.Controls.Add(this.btnDownloadSingleThreaded);
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
@@ -379,7 +382,6 @@
 
 		private System.Windows.Forms.Button btnDownloadSingleThreaded;
 		private System.Windows.Forms.TextBox editUrl;
-		private System.Windows.Forms.ProgressBar progressBar1;
 		private System.Windows.Forms.Button btnDownloadMultiThreaded;
 		private System.Windows.Forms.Label lblDownloadingProgress;
 		private System.Windows.Forms.Label label1;
@@ -402,5 +404,6 @@
 		private System.Windows.Forms.NumericUpDown numericUpDownUpdateInterval;
 		private System.Windows.Forms.Label label7;
 		private System.Windows.Forms.NumericUpDown numericUpDownChunksMergingUpdateInterval;
+		private MultipleProgressBar progressBar1;
 	}
 }
