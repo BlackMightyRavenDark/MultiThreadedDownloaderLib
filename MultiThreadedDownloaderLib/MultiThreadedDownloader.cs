@@ -270,8 +270,8 @@ namespace MultiThreadedDownloaderLib
 					int currentTime = Environment.TickCount;
 					if (currentTime - lastTime >= UpdateIntervalMilliseconds)
 					{
-						FileChunk fileChunk = new FileChunk(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
-						DownloadableContentChunk contentChunk = new DownloadableContentChunk(fileChunk, taskId, transferred, chunkLastByte);
+						ContentChunkStream chunkStream = new ContentChunkStream(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
+						DownloadableContentChunk contentChunk = new DownloadableContentChunk(chunkStream, taskId, transferred, chunkLastByte);
 						OnProgressUpdatedFunc(contentChunk);
 
 						lastTime = currentTime;
@@ -297,8 +297,8 @@ namespace MultiThreadedDownloaderLib
 							}
 						}
 					}
-					FileChunk fileChunk = new FileChunk(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
-					DownloadableContentChunk contentChunk = new DownloadableContentChunk(fileChunk, taskId, transferred, chunkLastByte);
+					ContentChunkStream chunkStream = new ContentChunkStream(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
+					DownloadableContentChunk contentChunk = new DownloadableContentChunk(chunkStream, taskId, transferred, chunkLastByte);
 					OnProgressUpdatedFunc(contentChunk);
 				};
 
@@ -374,10 +374,10 @@ namespace MultiThreadedDownloaderLib
 				return LastErrorCode;
 			}
 
-			List<FileChunk> chunks = new List<FileChunk>();
+			List<ContentChunkStream> chunks = new List<ContentChunkStream>();
 			for (int i = 0; i < contentChunks.Count; ++i)
 			{
-				chunks.Add(contentChunks[i].FileChunk);
+				chunks.Add(contentChunks[i].ChunkStream);
 			}
 			if (UseRamForTempFiles || chunks.Count > 1)
 			{
@@ -431,7 +431,7 @@ namespace MultiThreadedDownloaderLib
 			}
 		}
 
-		private int MergeChunks(IEnumerable<FileChunk> chunks)
+		private int MergeChunks(IEnumerable<ContentChunkStream> chunkStreams)
 		{
 			string tmpFileName = GetNumberedFileName(GetTempMergingFilePath());
 
@@ -444,19 +444,19 @@ namespace MultiThreadedDownloaderLib
 			{
 				System.Diagnostics.Debug.WriteLine(ex.Message);
 				outputStream?.Close();
-				ClearGarbage(chunks);
+				ClearGarbage(chunkStreams);
 				return DOWNLOAD_ERROR_CREATE_FILE;
 			}
 
 			try
 			{
 				int i = 0;
-				int chunkCount = chunks.Count();
-				foreach (FileChunk fileChunk in chunks)
+				int chunkCount = chunkStreams.Count();
+				foreach (ContentChunkStream chunkStream in chunkStreams)
 				{
-					string chunkFilePath = fileChunk.FilePath;
+					string chunkFilePath = chunkStream.FilePath;
 					bool fileExists = false;
-					Stream tmpStream = fileChunk.Stream;
+					Stream tmpStream = chunkStream.Stream;
 					bool isMemoryStream = tmpStream != null;
 					if (!isMemoryStream)
 					{
@@ -483,7 +483,7 @@ namespace MultiThreadedDownloaderLib
 						func, func, func,
 						_cancellationTokenSource.Token, ChunksMergingUpdateIntervalMilliseconds);
 
-					fileChunk.Dispose();
+					chunkStream.Dispose();
 					if (isMemoryStream)
 					{
 						//TODO: Fix possible memory leaking
@@ -497,7 +497,7 @@ namespace MultiThreadedDownloaderLib
 					if (!appended)
 					{
 						outputStream.Close();
-						ClearGarbage(chunks);
+						ClearGarbage(chunkStreams);
 						return _cancellationTokenSource.IsCancellationRequested ?
 							DOWNLOAD_ERROR_CANCELED_BY_USER : DOWNLOAD_ERROR_MERGING_CHUNKS;
 					}
@@ -519,14 +519,14 @@ namespace MultiThreadedDownloaderLib
 			{
 				System.Diagnostics.Debug.WriteLine(ex.Message);
 				outputStream.Close();
-				ClearGarbage(chunks);
+				ClearGarbage(chunkStreams);
 				return DOWNLOAD_ERROR_MERGING_CHUNKS;
 			}
 			outputStream.Close();
 
 			if (_isCanceled)
 			{
-				ClearGarbage(chunks);
+				ClearGarbage(chunkStreams);
 				return DOWNLOAD_ERROR_CANCELED_BY_USER;
 			}
 
@@ -557,7 +557,7 @@ namespace MultiThreadedDownloaderLib
 				var values = dictionary.Values;
 				foreach (DownloadableContentChunk item in values)
 				{
-					item.FileChunk?.Dispose();
+					item.ChunkStream?.Dispose();
 				}
 
 				//TODO: Fix possible memory leaking
@@ -565,13 +565,13 @@ namespace MultiThreadedDownloaderLib
 			}
 		}
 
-		private void ClearGarbage(IEnumerable<FileChunk> fileChunks)
+		private void ClearGarbage(IEnumerable<ContentChunkStream> contentChunkStreams)
 		{
 			if (UseRamForTempFiles)
 			{
-				foreach (FileChunk fileChunk in fileChunks)
+				foreach (ContentChunkStream chunk in contentChunkStreams)
 				{
-					fileChunk.Dispose();
+					chunk.Dispose();
 				}
 
 				//TODO: Fix possible memory leaking

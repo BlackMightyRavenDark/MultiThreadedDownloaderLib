@@ -3,14 +3,14 @@ namespace MultiThreadedDownloaderLib
 {
 	internal sealed class DownloadableContentChunk
 	{
-		public FileChunk FileChunk { get; }
+		public ContentChunkStream ChunkStream { get; }
 		public int TaskId { get; }
 		public long ProcessedBytes { get; }
 		public long TotalBytes { get; }
 
-		public DownloadableContentChunk(FileChunk fileChunk, int taskId, long processedBytes, long totalBtyes)
+		public DownloadableContentChunk(ContentChunkStream chunkStream, int taskId, long processedBytes, long totalBtyes)
 		{
-			FileChunk = fileChunk;
+			ChunkStream = chunkStream;
 			TaskId = taskId;
 			ProcessedBytes = processedBytes;
 			TotalBytes = totalBtyes;

@@ -3,12 +3,12 @@ using System.IO;
 
 namespace MultiThreadedDownloaderLib
 {
-	internal sealed class FileChunk : IDisposable
+	internal sealed class ContentChunkStream : IDisposable
 	{
 		public string FilePath { get; }
 		public Stream Stream { get; private set; }
 
-		public FileChunk(string filePath, Stream stream)
+		public ContentChunkStream(string filePath, Stream stream)
 		{
 			FilePath = filePath;
 			Stream = stream;
