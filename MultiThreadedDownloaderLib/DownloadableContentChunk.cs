@@ -5,15 +5,18 @@ namespace MultiThreadedDownloaderLib
 	{
 		public ContentChunkStream ChunkStream { get; }
 		public int TaskId { get; }
-		public long ProcessedBytes { get; }
+		public long ByteFrom { get; }
+		public long ByteTo { get; }
 		public long TotalBytes { get; }
+		public long ProcessedBytes { get; }
 
-		public DownloadableContentChunk(ContentChunkStream chunkStream, int taskId, long processedBytes, long totalBtyes)
+		public DownloadableContentChunk(ContentChunkStream chunkStream, int taskId,
+			long byteFrom, long byteTo, long processedBytes)
 		{
 			ChunkStream = chunkStream;
 			TaskId = taskId;
+			TotalBytes = byteTo - byteFrom + 1L;
 			ProcessedBytes = processedBytes;
-			TotalBytes = totalBtyes;
 		}
 	}
 }

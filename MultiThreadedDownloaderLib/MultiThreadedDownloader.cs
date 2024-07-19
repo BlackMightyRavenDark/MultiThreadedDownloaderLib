@@ -270,8 +270,9 @@ namespace MultiThreadedDownloaderLib
 					int currentTime = Environment.TickCount;
 					if (currentTime - lastTime >= UpdateIntervalMilliseconds)
 					{
+						(sender as FileDownloader).GetRange(out long byteFrom, out long byteTo);
 						ContentChunkStream chunkStream = new ContentChunkStream(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
-						DownloadableContentChunk contentChunk = new DownloadableContentChunk(chunkStream, taskId, transferred, chunkLastByte);
+						DownloadableContentChunk contentChunk = new DownloadableContentChunk(chunkStream, taskId, byteFrom, byteTo, transferred);
 						OnProgressUpdatedFunc(contentChunk);
 
 						lastTime = currentTime;
@@ -279,17 +280,17 @@ namespace MultiThreadedDownloaderLib
 				};
 				downloader.WorkFinished += (object sender, long transferred, long contentLen, int errCode) =>
 				{
+					FileDownloader d = sender as FileDownloader;
 					if (errCode != 200 && errCode != 206)
 					{
 						lock (downloaders)
 						{
-							bool errored = downloaders.Any(d => d.LastErrorCode != 200 && d.LastErrorCode != 206);
+							bool errored = downloaders.Any(item => item.LastErrorCode != 200 && item.LastErrorCode != 206);
 							if (errored)
 							{
 								if (!isError)
 								{
 									isError = true;
-									FileDownloader d = sender as FileDownloader;
 									LastErrorCode = d.LastErrorCode;
 									LastErrorMessage = d.LastErrorMessage;
 									AbortTasks(downloaders);
@@ -297,8 +298,10 @@ namespace MultiThreadedDownloaderLib
 							}
 						}
 					}
+
+					d.GetRange(out long byteFrom, out long byteTo);
 					ContentChunkStream chunkStream = new ContentChunkStream(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
-					DownloadableContentChunk contentChunk = new DownloadableContentChunk(chunkStream, taskId, transferred, chunkLastByte);
+					DownloadableContentChunk contentChunk = new DownloadableContentChunk(chunkStream, taskId, byteFrom, byteTo, transferred);
 					OnProgressUpdatedFunc(contentChunk);
 				};
 

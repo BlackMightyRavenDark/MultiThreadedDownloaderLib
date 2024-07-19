@@ -272,6 +272,12 @@ namespace MultiThreadedDownloaderLib
 			return errorCode;
 		}
 
+		public void GetRange(out long rangeFrom, out long rangeTo)
+		{
+			rangeFrom = _rangeFrom;
+			rangeTo = _rangeTo;
+		}
+
 		public bool SetRange(long rangeFrom, long rangeTo)
 		{
 			if (!IsRangeValid(rangeFrom, rangeTo))
