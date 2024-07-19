@@ -225,12 +225,12 @@ namespace MultiThreadedDownloaderLib
 
 			DownloadStarted?.Invoke(this, ContentLength);
 
-			ConcurrentDictionary<int, DownloadProgressItem> threadProgressDict = new ConcurrentDictionary<int, DownloadProgressItem>();
+			ConcurrentDictionary<int, DownloadableContentChunk> contentChunks = new ConcurrentDictionary<int, DownloadableContentChunk>();
 
-			void OnProgressUpdatedFunc(DownloadProgressItem progressItem)
+			void OnProgressUpdatedFunc(DownloadableContentChunk contentChunk)
 			{
-				threadProgressDict[progressItem.TaskId] = progressItem;
-				DownloadedBytes = threadProgressDict.Values.Select(item => item.ProcessedBytes).Sum();
+				contentChunks[contentChunk.TaskId] = contentChunk;
+				DownloadedBytes = contentChunks.Values.Select(item => item.ProcessedBytes).Sum();
 				DownloadProgress?.Invoke(this, DownloadedBytes);
 			}
 
@@ -271,8 +271,8 @@ namespace MultiThreadedDownloaderLib
 					if (currentTime - lastTime >= UpdateIntervalMilliseconds)
 					{
 						FileChunk fileChunk = new FileChunk(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
-						DownloadProgressItem progressItem = new DownloadProgressItem(fileChunk, taskId, transferred, chunkLastByte);
-						OnProgressUpdatedFunc(progressItem);
+						DownloadableContentChunk contentChunk = new DownloadableContentChunk(fileChunk, taskId, transferred, chunkLastByte);
+						OnProgressUpdatedFunc(contentChunk);
 
 						lastTime = currentTime;
 					}
@@ -298,8 +298,8 @@ namespace MultiThreadedDownloaderLib
 						}
 					}
 					FileChunk fileChunk = new FileChunk(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
-					DownloadProgressItem progressItem = new DownloadProgressItem(fileChunk, taskId, transferred, chunkLastByte);
-					OnProgressUpdatedFunc(progressItem);
+					DownloadableContentChunk contentChunk = new DownloadableContentChunk(fileChunk, taskId, transferred, chunkLastByte);
+					OnProgressUpdatedFunc(contentChunk);
 				};
 
 				try
@@ -356,28 +356,28 @@ namespace MultiThreadedDownloaderLib
 				System.Diagnostics.Debug.WriteLine(ex.Message);
 				LastErrorMessage = ex.Message;
 				AbortTasks(downloaders);
-				ClearGarbage(threadProgressDict);
+				ClearGarbage(contentChunks);
 				int ret = (ex is OperationCanceledException) ? DOWNLOAD_ERROR_CANCELED_BY_USER : ex.HResult;
 				return ret;
 			}
 
 			if (LastErrorCode != 200 && LastErrorCode != 206)
 			{
-				ClearGarbage(threadProgressDict);
+				ClearGarbage(contentChunks);
 				return LastErrorCode;
 			}
 			else if (_isCanceled)
 			{
-				ClearGarbage(threadProgressDict);
+				ClearGarbage(contentChunks);
 				LastErrorCode = DOWNLOAD_ERROR_CANCELED_BY_USER;
 				LastErrorMessage = null;
 				return LastErrorCode;
 			}
 
 			List<FileChunk> chunks = new List<FileChunk>();
-			for (int i = 0; i < threadProgressDict.Count; ++i)
+			for (int i = 0; i < contentChunks.Count; ++i)
 			{
-				chunks.Add(threadProgressDict[i].FileChunk);
+				chunks.Add(contentChunks[i].FileChunk);
 			}
 			if (UseRamForTempFiles || chunks.Count > 1)
 			{
@@ -550,12 +550,12 @@ namespace MultiThreadedDownloaderLib
 			return 200;
 		}
 
-		private void ClearGarbage(ConcurrentDictionary<int, DownloadProgressItem> dictionary)
+		private void ClearGarbage(ConcurrentDictionary<int, DownloadableContentChunk> dictionary)
 		{
 			if (UseRamForTempFiles)
 			{
 				var values = dictionary.Values;
-				foreach (DownloadProgressItem item in values)
+				foreach (DownloadableContentChunk item in values)
 				{
 					item.FileChunk?.Dispose();
 				}
