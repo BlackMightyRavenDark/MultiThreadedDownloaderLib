@@ -272,7 +272,8 @@ namespace MultiThreadedDownloaderLib
 					{
 						(sender as FileDownloader).GetRange(out long byteFrom, out long byteTo);
 						ContentChunkStream chunkStream = new ContentChunkStream(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
-						DownloadableContentChunk contentChunk = new DownloadableContentChunk(chunkStream, taskId, byteFrom, byteTo, transferred);
+						DownloadingTask downloadingTask = new DownloadingTask(chunkStream, byteFrom, byteTo);
+						DownloadableContentChunk contentChunk = new DownloadableContentChunk(downloadingTask, taskId, transferred);
 						OnProgressUpdatedFunc(contentChunk);
 
 						lastTime = currentTime;
@@ -301,7 +302,8 @@ namespace MultiThreadedDownloaderLib
 
 					d.GetRange(out long byteFrom, out long byteTo);
 					ContentChunkStream chunkStream = new ContentChunkStream(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
-					DownloadableContentChunk contentChunk = new DownloadableContentChunk(chunkStream, taskId, byteFrom, byteTo, transferred);
+					DownloadingTask downloadingTask = new DownloadingTask(chunkStream, byteFrom, byteTo);
+					DownloadableContentChunk contentChunk = new DownloadableContentChunk(downloadingTask, taskId, transferred);
 					OnProgressUpdatedFunc(contentChunk);
 				};
 
@@ -378,22 +380,22 @@ namespace MultiThreadedDownloaderLib
 				return LastErrorCode;
 			}
 
-			List<ContentChunkStream> chunks = new List<ContentChunkStream>();
+			List<DownloadingTask> downloadingTasks = new List<DownloadingTask>();
 			for (int i = 0; i < contentChunks.Count; ++i)
 			{
-				chunks.Add(contentChunks[i].ChunkStream);
+				downloadingTasks.Add(contentChunks[i].DownloadingTask);
 			}
 			contentChunks = null;
 
-			if (UseRamForTempFiles || chunks.Count > 1)
+			if (UseRamForTempFiles || downloadingTasks.Count > 1)
 			{
-				ChunkMergingStarted?.Invoke(this, chunks.Count);
-				LastErrorCode = await Task.Run(() => MergeChunks(chunks));
+				ChunkMergingStarted?.Invoke(this, downloadingTasks.Count);
+				LastErrorCode = await Task.Run(() => MergeChunks(downloadingTasks));
 				ChunkMergingFinished?.Invoke(this, LastErrorCode);
 			}
-			else if (!UseRamForTempFiles && chunks.Count == 1)
+			else if (!UseRamForTempFiles && downloadingTasks.Count == 1)
 			{
-				string chunkFilePath = chunks[0].FilePath;
+				string chunkFilePath = downloadingTasks[0].OutputStream.FilePath;
 				if (!string.IsNullOrEmpty(chunkFilePath) && !string.IsNullOrWhiteSpace(chunkFilePath) &&
 					File.Exists(chunkFilePath))
 				{
@@ -437,7 +439,7 @@ namespace MultiThreadedDownloaderLib
 			}
 		}
 
-		private int MergeChunks(IEnumerable<ContentChunkStream> chunkStreams)
+		private int MergeChunks(IEnumerable<DownloadingTask> downloadingTasks)
 		{
 			string tmpFileName = GetNumberedFileName(GetTempMergingFilePath());
 
@@ -450,19 +452,19 @@ namespace MultiThreadedDownloaderLib
 			{
 				System.Diagnostics.Debug.WriteLine(ex.Message);
 				outputStream?.Close();
-				ClearGarbage(chunkStreams);
+				ClearGarbage(downloadingTasks);
 				return DOWNLOAD_ERROR_CREATE_FILE;
 			}
 
 			try
 			{
 				int i = 0;
-				int chunkCount = chunkStreams.Count();
-				foreach (ContentChunkStream chunkStream in chunkStreams)
+				int chunkCount = downloadingTasks.Count();
+				foreach (DownloadingTask downloadingTask in downloadingTasks)
 				{
-					string chunkFilePath = chunkStream.FilePath;
+					string chunkFilePath = downloadingTask.OutputStream.FilePath;
 					bool fileExists = false;
-					Stream tmpStream = chunkStream.Stream;
+					Stream tmpStream = downloadingTask.OutputStream.Stream;
 					bool isMemoryStream = tmpStream != null;
 					if (!isMemoryStream)
 					{
@@ -489,7 +491,7 @@ namespace MultiThreadedDownloaderLib
 						func, func, func,
 						_cancellationTokenSource.Token, ChunksMergingUpdateIntervalMilliseconds);
 
-					chunkStream.Dispose();
+					downloadingTask.OutputStream.Dispose();
 					if (isMemoryStream)
 					{
 						//TODO: Fix possible memory leaking
@@ -503,7 +505,7 @@ namespace MultiThreadedDownloaderLib
 					if (!appended)
 					{
 						outputStream.Close();
-						ClearGarbage(chunkStreams);
+						ClearGarbage(downloadingTasks);
 						return _cancellationTokenSource.IsCancellationRequested ?
 							DOWNLOAD_ERROR_CANCELED_BY_USER : DOWNLOAD_ERROR_MERGING_CHUNKS;
 					}
@@ -525,14 +527,14 @@ namespace MultiThreadedDownloaderLib
 			{
 				System.Diagnostics.Debug.WriteLine(ex.Message);
 				outputStream.Close();
-				ClearGarbage(chunkStreams);
+				ClearGarbage(downloadingTasks);
 				return DOWNLOAD_ERROR_MERGING_CHUNKS;
 			}
 			outputStream.Close();
 
 			if (_isCanceled)
 			{
-				ClearGarbage(chunkStreams);
+				ClearGarbage(downloadingTasks);
 				return DOWNLOAD_ERROR_CANCELED_BY_USER;
 			}
 
@@ -560,14 +562,17 @@ namespace MultiThreadedDownloaderLib
 		{
 			if (UseRamForTempFiles)
 			{
-				var values = dictionary.Values;
-				foreach (DownloadableContentChunk item in values)
-				{
-					item.ChunkStream?.Dispose();
-				}
+				var tasks = dictionary.Values.Where(x => x.DownloadingTask != null).Select(x => x.DownloadingTask);
+				ClearGarbage(tasks);
+			}
+		}
 
-				//TODO: Fix possible memory leaking
-				GC.Collect();
+		private void ClearGarbage(IEnumerable<DownloadingTask> downloadingTasks)
+		{
+			if (UseRamForTempFiles)
+			{
+				var chunks = downloadingTasks.Where(x => x.OutputStream != null).Select(x => x.OutputStream);
+				ClearGarbage(chunks);
 			}
 		}
 
