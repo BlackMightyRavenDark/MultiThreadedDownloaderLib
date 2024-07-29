@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
@@ -18,54 +19,53 @@ namespace MultiThreadedDownloaderLib
 
 		protected override void OnPaint(PaintEventArgs e)
 		{
-            Rectangle rectangle = Deflate(e.ClipRectangle, 1, 1);
-            Brush brushBkg = new SolidBrush(BackColor);
-            e.Graphics.FillRectangle(brushBkg, rectangle);
-            if (Items != null)
-            {
-                int itemCount = Items.Count();
-                if (itemCount > 0)
-                {
-                    int itemWidth = itemCount > 1 ? Width / itemCount : Width - 1;
-                    int iter = 0;
-                    foreach (MultipleProgressBarItem item in Items)
-                    {
-                        Rectangle rect;
-                        e.Graphics.SetClip(e.ClipRectangle);
-                        int itemPositionX = itemWidth * iter;
-                        int n = item.Value * itemWidth / item.MaxValue;
-                        if (n > 0)
-                        {
-                            rect = new Rectangle(itemPositionX, 0, n, rectangle.Height);
-                            Brush brush = new SolidBrush(item.BackgroundColor);
-                            e.Graphics.FillRectangle(brush, rect);
-                            brush.Dispose();
-                        }
-                        rect = new Rectangle(itemPositionX, 0, itemWidth, rectangle.Height);
-                        e.Graphics.DrawRectangle(Pens.Black, rect);
-                        e.Graphics.SetClip(rect);
+			Rectangle rectangle = Deflate(e.ClipRectangle, 1, 1);
+			Brush brushBkg = new SolidBrush(BackColor);
+			e.Graphics.FillRectangle(brushBkg, rectangle);
+			if (Items != null)
+			{
+				int itemCount = Items.Count();
+				if (itemCount > 0)
+				{
+					float itemWidth = (float)Width / itemCount;
+					int iter = 0;
+					foreach (MultipleProgressBarItem item in Items)
+					{
+						Rectangle clipRect = Deflate(e.ClipRectangle, 1, 1);
+						e.Graphics.SetClip(e.ClipRectangle);
+						Rectangle rect;
+						float itemPositionX = (float)Math.Floor(itemWidth * iter);
+						float n = (float)Math.Floor(item.Value * itemWidth / item.MaxValue);
+						if (n > 0.0f)
+						{
+							rect = new Rectangle((int)itemPositionX, 0, (int)n, rectangle.Height);
+							Brush brush = new SolidBrush(item.BackgroundColor);
+							e.Graphics.FillRectangle(brush, rect);
+							brush.Dispose();
+						}
+						rect = new Rectangle((int)itemPositionX, 0, (int)itemWidth, rectangle.Height);
+						e.Graphics.SetClip(rect);
+						e.Graphics.DrawLine(Pens.Black, rect.Left, rect.Top, rect.Left, rect.Bottom);
 
-                        Brush brushText = new SolidBrush(ForeColor);
-                        string title = !string.IsNullOrEmpty(item.Title) && !string.IsNullOrWhiteSpace(item.Title) ?
-                            item.Title : $"Item №{iter}";
-                        SizeF size = e.Graphics.MeasureString(title, Font);
-                        float y = Height / 2.0f - size.Height / 2.0f;
-                        e.Graphics.DrawString(item.Title, Font, brushText, itemPositionX + 4.0f, y);
-                        brushText.Dispose();
+						Brush brushText = new SolidBrush(ForeColor);
+						string title = !string.IsNullOrEmpty(item.Title) && !string.IsNullOrWhiteSpace(item.Title) ?
+							item.Title : $"Item №{iter}";
+						SizeF size = e.Graphics.MeasureString(title, Font);
+						float y = Height / 2.0f - size.Height / 2.0f;
+						e.Graphics.DrawString(title, Font, brushText, itemPositionX + 4.0f, y);
+						brushText.Dispose();
 
-                        iter++;
-                    }
-                }
-            }
-            else
-            {
-                e.Graphics.DrawRectangle(Pens.Black, rectangle);
-            }
+						iter++;
+					}
+				}
+			}
 
-            brushBkg.Dispose();
-        }
+			e.Graphics.SetClip(e.ClipRectangle);
+			e.Graphics.DrawRectangle(Pens.Black, rectangle);
+			brushBkg.Dispose();
+		}
 
-        public void SetItems(IEnumerable<MultipleProgressBarItem> items)
+		public void SetItems(IEnumerable<MultipleProgressBarItem> items)
 		{
 			Items = items;
 			Refresh();
