@@ -364,6 +364,7 @@ namespace MultiThreadedDownloaderLib
 				return ret;
 			}
 
+			downloaders = null;
 			if (LastErrorCode != 200 && LastErrorCode != 206)
 			{
 				ClearGarbage(contentChunks);
@@ -382,6 +383,8 @@ namespace MultiThreadedDownloaderLib
 			{
 				chunks.Add(contentChunks[i].ChunkStream);
 			}
+			contentChunks = null;
+
 			if (UseRamForTempFiles || chunks.Count > 1)
 			{
 				ChunkMergingStarted?.Invoke(this, chunks.Count);
