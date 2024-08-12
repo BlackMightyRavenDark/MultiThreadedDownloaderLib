@@ -261,7 +261,6 @@ namespace MultiThreadedDownloaderLib
 				FileDownloader downloader = new FileDownloader() { Url = Url, Headers = Headers };
 				lock (downloaders) { downloaders.Add(downloader); }
 
-				Stream streamChunk = null;
 				int lastTime = Environment.TickCount;
 
 				downloader.WorkProgress += (object sender, long transferred, long contentLen) =>
@@ -269,9 +268,9 @@ namespace MultiThreadedDownloaderLib
 					int currentTime = Environment.TickCount;
 					if (currentTime - lastTime >= UpdateIntervalMilliseconds)
 					{
-						(sender as FileDownloader).GetRange(out long byteFrom, out long byteTo);
-						ContentChunkStream chunkStream = new ContentChunkStream(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
-						DownloadingTask downloadingTask = new DownloadingTask(chunkStream, byteFrom, byteTo);
+						FileDownloader d = sender as FileDownloader;
+						d.GetRange(out long byteFrom, out long byteTo);
+						DownloadingTask downloadingTask = new DownloadingTask(d.OutputStream, byteFrom, byteTo);
 						DownloadableContentChunk contentChunk = new DownloadableContentChunk(downloadingTask, taskId, transferred);
 						OnProgressUpdatedFunc(contentChunk);
 
@@ -300,12 +299,12 @@ namespace MultiThreadedDownloaderLib
 					}
 
 					d.GetRange(out long byteFrom, out long byteTo);
-					ContentChunkStream chunkStream = new ContentChunkStream(chunkFileName, (streamChunk is MemoryStream) ? streamChunk : null);
-					DownloadingTask downloadingTask = new DownloadingTask(chunkStream, byteFrom, byteTo);
+					DownloadingTask downloadingTask = new DownloadingTask(d.OutputStream, byteFrom, byteTo);
 					DownloadableContentChunk contentChunk = new DownloadableContentChunk(downloadingTask, taskId, transferred);
 					OnProgressUpdatedFunc(contentChunk);
 				};
 
+				Stream streamChunk = null;
 				try
 				{
 					if (UseRamForTempFiles)

@@ -14,7 +14,8 @@ namespace MultiThreadedDownloaderLib
 		public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
 		public double UpdateIntervalMilliseconds { get; set; } = 100.0;
 		public long DownloadedInLastSession { get; private set; } = 0L;
-		public long StreamSize { get; private set; } = 0L;
+		public long OutputStreamSize => OutputStream != null && OutputStream.Stream != null ? OutputStream.Stream.Length : 0L;
+		public ContentChunkStream OutputStream { get; private set; }
 		private long _rangeFrom = 0L;
 		private long _rangeTo = -1L;
 		private NameValueCollection _headers = new NameValueCollection();
@@ -65,6 +66,7 @@ namespace MultiThreadedDownloaderLib
 		{
 			IsActive = true;
 			_isAborted = false;
+			OutputStream = downloadingTask.OutputStream;
 
 			if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
 			{
@@ -80,7 +82,6 @@ namespace MultiThreadedDownloaderLib
 			SetRange(downloadingTask.ByteFrom, downloadingTask.ByteTo);
 
 			DownloadedInLastSession = 0L;
-			StreamSize = downloadingTask.OutputStream.Stream.Length;
 
 			Connecting?.Invoke(this, Url);
 
@@ -158,7 +159,6 @@ namespace MultiThreadedDownloaderLib
 			}
 
 			requestResult.Dispose();
-			StreamSize = downloadingTask.OutputStream.Stream != null ? downloadingTask.OutputStream.Stream.Length : 0L;
 
 			WorkFinished?.Invoke(this, DownloadedInLastSession, size, LastErrorCode);
 
