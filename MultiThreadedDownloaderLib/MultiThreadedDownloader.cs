@@ -284,16 +284,12 @@ namespace MultiThreadedDownloaderLib
 					{
 						lock (downloaders)
 						{
-							bool errored = downloaders.Any(item => item.LastErrorCode != 200 && item.LastErrorCode != 206);
-							if (errored)
+							if (!isError)
 							{
-								if (!isError)
-								{
-									isError = true;
-									LastErrorCode = d.LastErrorCode;
-									LastErrorMessage = d.LastErrorMessage;
-									AbortTasks(downloaders);
-								}
+								isError = true;
+								LastErrorCode = d.LastErrorCode;
+								LastErrorMessage = d.LastErrorMessage;
+								AbortTasks(downloaders);
 							}
 						}
 					}
