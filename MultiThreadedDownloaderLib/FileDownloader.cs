@@ -60,8 +60,8 @@ namespace MultiThreadedDownloaderLib
 			}
 		}
 
-		public int Download(Stream stream, int bufferSize,
-			CancellationTokenSource cancellationTokenSource = null)
+		public int Download(DownloadingTask downloadingTask, int bufferSize,
+			CancellationTokenSource cancellationTokenSource)
 		{
 			IsActive = true;
 			_isAborted = false;
@@ -72,14 +72,15 @@ namespace MultiThreadedDownloaderLib
 				return DOWNLOAD_ERROR_URL_NOT_DEFINED;
 			}
 
-			if (!IsRangeValid(_rangeFrom, _rangeTo))
+			if (!IsRangeValid(downloadingTask.ByteFrom, downloadingTask.ByteTo))
 			{
 				IsActive = false;
 				return DOWNLOAD_ERROR_RANGE;
 			}
+			SetRange(downloadingTask.ByteFrom, downloadingTask.ByteTo);
 
 			DownloadedInLastSession = 0L;
-			StreamSize = stream.Length;
+			StreamSize = downloadingTask.OutputStream.Stream.Length;
 
 			Connecting?.Invoke(this, Url);
 
@@ -133,7 +134,7 @@ namespace MultiThreadedDownloaderLib
 				bool gZipped = !string.IsNullOrEmpty(contentEncodingHeaderValue) &&
 					contentEncodingHeaderValue.Equals("gzip", StringComparison.OrdinalIgnoreCase);
 				LastErrorCode = requestResult.WebContent.ContentToStream(
-					stream, bufferSize, gZipped, (long bytes) =>
+					downloadingTask.OutputStream.Stream, bufferSize, gZipped, (long bytes) =>
 					{
 						DownloadedInLastSession = bytes;
 						int currentTime = Environment.TickCount;
@@ -157,7 +158,7 @@ namespace MultiThreadedDownloaderLib
 			}
 
 			requestResult.Dispose();
-			StreamSize = stream != null ? stream.Length : 0L;
+			StreamSize = downloadingTask.OutputStream.Stream != null ? downloadingTask.OutputStream.Stream.Length : 0L;
 
 			WorkFinished?.Invoke(this, DownloadedInLastSession, size, LastErrorCode);
 
@@ -165,10 +166,53 @@ namespace MultiThreadedDownloaderLib
 			return LastErrorCode;
 		}
 
-		public async Task<int> DownloadAsync(Stream stream, int bufferSize,
+		public int Download(DownloadingTask downloadingTask,
+			CancellationTokenSource cancellationTokenSource)
+		{
+			return Download(downloadingTask, 4096, cancellationTokenSource);
+		}
+
+		public int Download(DownloadingTask downloadingTask, int bufferSize = 4096)
+		{
+			return Download(downloadingTask, bufferSize, null);
+		}
+		
+		public int Download(ContentChunkStream contentChunkStream,
+			long rangeFrom, long rangeTo, int bufferSize,
 			CancellationTokenSource cancellationTokenSource = null)
 		{
-			return await Task.Run(() => Download(stream, bufferSize, cancellationTokenSource));
+			DownloadingTask downloadingTask = new DownloadingTask(contentChunkStream, rangeFrom, rangeTo);
+			return Download(downloadingTask, bufferSize, cancellationTokenSource);
+		}
+
+		public int Download(Stream outputStream, string outputFilePath,
+			long rangeFrom, long rangeTo, int bufferSize,
+			CancellationTokenSource cancellationTokenSource = null)
+		{
+			ContentChunkStream contentChunkStream = new ContentChunkStream(outputFilePath, outputStream);
+			return Download(contentChunkStream, rangeFrom, rangeTo,
+				bufferSize, cancellationTokenSource);
+		}
+
+		public int Download(Stream outputStream,
+			long rangeFrom, long rangeTo, int bufferSize,
+			CancellationTokenSource cancellationTokenSource = null)
+		{
+			return Download(outputStream, null, rangeFrom, rangeTo,
+				bufferSize, cancellationTokenSource);
+		}
+
+		public int Download(Stream outputStream, int bufferSize,
+			CancellationTokenSource cancellationTokenSource)
+		{
+			return Download(outputStream, _rangeFrom, _rangeTo,
+				bufferSize, cancellationTokenSource);
+		}
+
+		public int Download(Stream outputStream,
+			CancellationTokenSource cancellationTokenSource)
+		{
+			return Download(outputStream, 4096, cancellationTokenSource);
 		}
 
 		public int Download(Stream stream, int bufferSize = 4096)
@@ -176,9 +220,61 @@ namespace MultiThreadedDownloaderLib
 			return Download(stream, bufferSize, null);
 		}
 
-		public async Task<int> DownloadAsync(Stream stream, int bufferSize = 4096)
+		public async Task<int> DownloadAsync(DownloadingTask downloadingTask,
+			int bufferSize, CancellationTokenSource cancellationTokenSource)
 		{
-			return await Task.Run(() => Download(stream, bufferSize));
+			return await Task.Run(() => Download(downloadingTask, bufferSize, cancellationTokenSource));
+		}
+
+		public async Task<int> DownloadAsync(DownloadingTask downloadingTask,
+			CancellationTokenSource cancellationTokenSource)
+		{
+			return await DownloadAsync(downloadingTask, 4096, cancellationTokenSource);
+		}
+
+		public async Task<int> DownloadAsync(DownloadingTask downloadingTask, int bufferSize = 4096)
+		{
+			return await DownloadAsync(downloadingTask, bufferSize, null);
+		}
+
+		public async Task<int> DownloadAsync(ContentChunkStream contentChunkStream,
+			long rangeFrom, long rangeTo, int bufferSize,
+			CancellationTokenSource cancellationTokenSource = null)
+		{
+			DownloadingTask downloadingTask = new DownloadingTask(contentChunkStream, rangeFrom, rangeTo);
+			return await DownloadAsync(downloadingTask, bufferSize, cancellationTokenSource);
+		}
+
+		public async Task<int> DownloadAsync(Stream outputStream, string outputFilePath,
+			long rangeFrom, long rangeTo, int bufferSize,
+			CancellationTokenSource cancellationTokenSource = null)
+		{
+			ContentChunkStream contentChunkStream = new ContentChunkStream(outputFilePath, outputStream);
+			return await DownloadAsync(contentChunkStream, rangeFrom, rangeTo, bufferSize, cancellationTokenSource);
+		}
+
+		public async Task<int> DownloadAsync(Stream outputStream,
+			long rangeFrom, long rangeTo, int bufferSize,
+			CancellationTokenSource cancellationTokenSource = null)
+		{
+			return await DownloadAsync(outputStream, null, rangeFrom, rangeTo, bufferSize, cancellationTokenSource);
+		}
+
+		public async Task<int> DownloadAsync(Stream outputStream, int bufferSize,
+			CancellationTokenSource cancellationTokenSource)
+		{
+			return await DownloadAsync(outputStream, _rangeFrom, _rangeTo, bufferSize, cancellationTokenSource);
+		}
+
+		public async Task<int> DownloadAsync(Stream outputStream,
+			CancellationTokenSource cancellationTokenSource)
+		{
+			return await DownloadAsync(outputStream, 4096, cancellationTokenSource);
+		}
+
+		public async Task<int> DownloadAsync(Stream outputStream, int bufferSize = 4096)
+		{
+			return await DownloadAsync(outputStream, bufferSize, null);
 		}
 
 		public int DownloadString(out string responseString, Encoding encoding, int bufferSize = 4096)

@@ -260,7 +260,6 @@ namespace MultiThreadedDownloaderLib
 
 				FileDownloader downloader = new FileDownloader() { Url = Url, Headers = Headers };
 				lock (downloaders) { downloaders.Add(downloader); }
-				downloader.SetRange(chunkFirstByte, chunkLastByte);
 
 				Stream streamChunk = null;
 				int lastTime = Environment.TickCount;
@@ -317,7 +316,8 @@ namespace MultiThreadedDownloaderLib
 					{
 						streamChunk = File.OpenWrite(chunkFileName);
 					}
-					LastErrorCode = downloader.Download(streamChunk, bufferSize, _cancellationTokenSource);
+					LastErrorCode = downloader.Download(
+						streamChunk, chunkFirstByte, chunkLastByte, bufferSize, _cancellationTokenSource);
 					if (!UseRamForTempFiles)
 					{
 						streamChunk.Close();
