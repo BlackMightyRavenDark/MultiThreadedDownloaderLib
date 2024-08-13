@@ -312,7 +312,8 @@ namespace MultiThreadedDownloaderLib
 						streamChunk = File.OpenWrite(chunkFileName);
 					}
 					LastErrorCode = downloader.Download(
-						streamChunk, chunkFirstByte, chunkLastByte, bufferSize, _cancellationTokenSource);
+						streamChunk, UseRamForTempFiles ? null : chunkFileName,
+						chunkFirstByte, chunkLastByte, bufferSize, _cancellationTokenSource);
 					if (!UseRamForTempFiles)
 					{
 						streamChunk.Close();
