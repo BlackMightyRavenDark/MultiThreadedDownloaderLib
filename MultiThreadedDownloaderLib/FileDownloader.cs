@@ -61,6 +61,15 @@ namespace MultiThreadedDownloaderLib
 			}
 		}
 
+		public void DisposeOutputStream()
+		{
+			if (OutputStream != null)
+			{
+				OutputStream.Dispose();
+				OutputStream = null;
+			}
+		}
+
 		public int Download(DownloadingTask downloadingTask, int bufferSize,
 			CancellationTokenSource cancellationTokenSource)
 		{

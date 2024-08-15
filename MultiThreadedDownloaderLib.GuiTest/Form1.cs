@@ -332,6 +332,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
 			multiThreadedDownloader.Headers = headerCollection;
 			multiThreadedDownloader.ThreadCount = (int)numericUpDownThreadCount.Value;
+			multiThreadedDownloader.RetryCountPerThread = (int)numericUpDownRetryCountPerThread.Value;
 			multiThreadedDownloader.Url = editUrl.Text;
 			multiThreadedDownloader.OutputFileName = editFileName.Text;
 			multiThreadedDownloader.TempDirectory = editTempPath.Text;
@@ -514,6 +515,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = false;
 			checkBoxUseRamForTempFiles.Enabled = false;
 			numericUpDownThreadCount.Enabled = false;
+			numericUpDownRetryCountPerThread.Enabled = false;
 			numericUpDownUpdateInterval.Enabled = false;
 			numericUpDownChunksMergingUpdateInterval.Enabled = false;
 		}
@@ -531,6 +533,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = true;
 			checkBoxUseRamForTempFiles.Enabled = true;
 			numericUpDownThreadCount.Enabled = true;
+			numericUpDownRetryCountPerThread.Enabled = true;
 			numericUpDownUpdateInterval.Enabled = true;
 			numericUpDownChunksMergingUpdateInterval.Enabled = true;
 		}

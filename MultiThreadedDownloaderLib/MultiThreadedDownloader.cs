@@ -46,6 +46,12 @@ namespace MultiThreadedDownloaderLib
 		public bool UseRamForTempFiles { get; set; } = false;
 
 		public int ThreadCount { get; set; } = 2;
+
+		/// <summary>
+		/// Set it to below zero for infinite retries.
+		/// </summary>
+		public int RetryCountPerThread { get; set; } = 0;
+
 		public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
 		public int LastErrorCode { get; private set; }
 		public string LastErrorMessage { get; private set; }
@@ -258,6 +264,9 @@ namespace MultiThreadedDownloaderLib
 					chunkFileName = GetNumberedFileName(chunkFileName);
 				}
 
+				bool isInfiniteRetries = RetryCountPerThread < 0;
+				int retriesLeft = isInfiniteRetries ? -1 : RetryCountPerThread;
+
 				FileDownloader downloader = new FileDownloader() { Url = Url, Headers = Headers };
 				lock (downloaders) { downloaders.Add(downloader); }
 
@@ -280,7 +289,8 @@ namespace MultiThreadedDownloaderLib
 				downloader.WorkFinished += (object sender, long transferred, long contentLen, int errCode) =>
 				{
 					FileDownloader d = sender as FileDownloader;
-					if (errCode != 200 && errCode != 206)
+					if (errCode != 200 && errCode != 206 &&
+						!isInfiniteRetries && retriesLeft < 0)
 					{
 						lock (downloaders)
 						{
@@ -300,32 +310,70 @@ namespace MultiThreadedDownloaderLib
 					OnProgressUpdatedFunc(contentChunk);
 				};
 
-				Stream streamChunk = null;
-				try
+				while (true)
 				{
-					if (UseRamForTempFiles)
+					try
 					{
-						streamChunk = new MemoryStream();
+						Stream streamChunk = null;
+						if (UseRamForTempFiles)
+						{
+							downloader.DisposeOutputStream();
+							GC.Collect();
+							streamChunk = new MemoryStream();
+						}
+						else
+						{
+							long bytesNeeded = chunkLastByte - chunkFirstByte + MEGABYTE;
+							if (!IsEnoughDiskSpace(chunkFileName[0], bytesNeeded, out string errorMsg))
+							{
+								LastErrorCode = DOWNLOAD_ERROR_ABORTED;
+								LastErrorMessage = errorMsg;
+								return;
+							}
+							streamChunk = File.OpenWrite(chunkFileName);
+						}
+						LastErrorCode = downloader.Download(
+							streamChunk, UseRamForTempFiles ? null : chunkFileName,
+							chunkFirstByte, chunkLastByte, bufferSize, _cancellationTokenSource);
+						if (!UseRamForTempFiles)
+						{
+							downloader.DisposeOutputStream();
+							if (!_isCanceled && File.Exists(chunkFileName))
+							{
+								File.Delete(chunkFileName);
+							}
+						}
+						if (LastErrorCode == 200 || LastErrorCode == 206 || _isCanceled) { break; }
+						else if (!isInfiniteRetries)
+						{
+							lock (downloaders)
+							{
+								if (--retriesLeft < 0)
+								{
+									AbortTasks(downloaders);
+									break;
+								}
+							}
+						}
 					}
-					else
+					catch (Exception ex)
 					{
-						streamChunk = File.OpenWrite(chunkFileName);
+						System.Diagnostics.Debug.WriteLine($"Task №{taskId} is failed!");
+						System.Diagnostics.Debug.WriteLine(ex.Message);
+						if (isInfiniteRetries)
+						{
+							System.Diagnostics.Debug.WriteLine("Restarting the task...");
+						}
+						else if (retriesLeft >= 0)
+						{
+							retriesLeft--;
+							System.Diagnostics.Debug.WriteLine("Restarting the task...");
+						}
+						else
+						{
+							break;
+						}
 					}
-					LastErrorCode = downloader.Download(
-						streamChunk, UseRamForTempFiles ? null : chunkFileName,
-						chunkFirstByte, chunkLastByte, bufferSize, _cancellationTokenSource);
-					if (!UseRamForTempFiles)
-					{
-						streamChunk.Close();
-						streamChunk = null;
-					}
-				}
-				catch (Exception ex)
-				{
-					AbortTasks(downloaders);
-					streamChunk?.Close();
-					LastErrorCode = ex.HResult;
-					LastErrorMessage = ex.Message;
 				}
 
 				if (LastErrorCode != 200 && LastErrorCode != 206)
@@ -334,6 +382,11 @@ namespace MultiThreadedDownloaderLib
 					{
 						LastErrorCode = DOWNLOAD_ERROR_CANCELED_BY_USER;
 						LastErrorMessage = null;
+					}
+					else if (!isInfiniteRetries && retriesLeft < 0)
+					{
+						LastErrorCode = DOWNLOAD_ERROR_ABORTED;
+						LastErrorMessage = "Out of retries";
 					}
 					else if (isError && LastErrorCode == DOWNLOAD_ERROR_CANCELED_BY_USER) //TODO: Fix this shit!
 					{
@@ -552,6 +605,27 @@ namespace MultiThreadedDownloaderLib
 			}
 
 			return 200;
+		}
+
+		private bool IsEnoughDiskSpace(char driveLetter, long bytesNeeded, out string errorMessage)
+		{
+			try
+			{
+				DriveInfo di = new DriveInfo(driveLetter.ToString());
+				if (!di.IsReady)
+				{
+					errorMessage = "Диск не готов";
+					return false;
+				}
+				bool ok = di.AvailableFreeSpace > bytesNeeded;
+				errorMessage = ok ? null : "Недостаточно места на диске";
+				return ok;
+			} catch (Exception ex)
+			{
+				System.Diagnostics.Debug.WriteLine(ex.Message);
+				errorMessage = ex.Message;
+				return false;
+			}
 		}
 
 		private void ClearGarbage(ConcurrentDictionary<int, DownloadableContentChunk> dictionary)
