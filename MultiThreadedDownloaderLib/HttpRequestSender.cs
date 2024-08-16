@@ -13,26 +13,30 @@ namespace MultiThreadedDownloaderLib
 			{
 				HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
 				httpWebRequest.Method = method;
+				httpWebRequest.ServicePoint.Expect100Continue = false;
 
 				if (headers != null && headers.Count > 0)
 				{
 					SetRequestHeaders(httpWebRequest, headers);
 				}
 
-				if (!string.IsNullOrEmpty(body))
+				bool canSendBody = method == "POST" || method == "PUT";
+				if (canSendBody)
 				{
-					byte[] bodyBytes = Encoding.UTF8.GetBytes(body);
-					httpWebRequest.ContentLength = bodyBytes.Length;
-
-					Stream requestStream = httpWebRequest.GetRequestStream();
-					using (StreamWriter streamWriter = new StreamWriter(requestStream))
+					if (!string.IsNullOrEmpty(body))
 					{
-						streamWriter.Write(body);
+						byte[] bodyBytes = Encoding.UTF8.GetBytes(body);
+						httpWebRequest.ContentLength = bodyBytes.Length;
+
+						using (Stream requestStream = httpWebRequest.GetRequestStream())
+						{
+							requestStream.Write(bodyBytes, 0, bodyBytes.Length);
+						}
 					}
-				}
-				else if (method != "GET" && method != "HEAD")
-				{
-					httpWebRequest.ContentLength = 0L;
+					else
+					{
+						httpWebRequest.ContentLength = 0L;
+					}
 				}
 
 				HttpWebResponse response = (HttpWebResponse)httpWebRequest.GetResponse();
