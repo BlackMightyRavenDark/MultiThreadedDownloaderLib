@@ -140,9 +140,7 @@ namespace MultiThreadedDownloaderLib
 				_cancellationTokenSource = cancellationTokenSource != null ?
 					cancellationTokenSource : new CancellationTokenSource();
 
-				string contentEncodingHeaderValue = requestResult.HttpWebResponse.Headers?.Get("Content-Encoding");
-				bool gZipped = !string.IsNullOrEmpty(contentEncodingHeaderValue) &&
-					contentEncodingHeaderValue.Equals("gzip", StringComparison.OrdinalIgnoreCase);
+				bool gZipped = requestResult.IsZippedContent();
 				LastErrorCode = requestResult.WebContent.ContentToStream(
 					downloadingTask.OutputStream.Stream, bufferSize, gZipped, (long bytes) =>
 					{
