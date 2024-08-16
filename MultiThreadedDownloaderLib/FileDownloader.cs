@@ -75,6 +75,7 @@ namespace MultiThreadedDownloaderLib
 		{
 			IsActive = true;
 			_isAborted = false;
+			LastErrorMessage = null;
 			OutputStream = downloadingTask.OutputStream;
 
 			if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
@@ -96,7 +97,7 @@ namespace MultiThreadedDownloaderLib
 
 			HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, null, Headers);
 			LastErrorCode = requestResult.ErrorCode;
-			LastErrorMessage = requestResult.ErrorMessage;
+			LastErrorMessage = HasErrors ? requestResult.ErrorMessage : null;
 			if (HasErrors)
 			{
 				requestResult.Dispose();
