@@ -7,6 +7,8 @@ namespace MultiThreadedDownloaderLib.RequestsTest
 {
 	public partial class Form1 : Form
 	{
+		private string _requestBody = null;
+
 		public Form1()
 		{
 			InitializeComponent();
@@ -44,7 +46,7 @@ namespace MultiThreadedDownloaderLib.RequestsTest
 
 			NameValueCollection headers = HttpRequestSender.ParseHeaderList(textBoxRequestHeaders.Text);
 			HttpRequestResult requestResult = await Task.Run(() => HttpRequestSender.Send(
-				requestType, requestUrl, null, headers));
+				requestType, requestUrl, _requestBody, headers));
 			lblStatusCode.Text = $"Код возврата: {requestResult.ErrorCode}";
 			if (requestResult.HttpWebResponse != null)
 			{
@@ -53,6 +55,15 @@ namespace MultiThreadedDownloaderLib.RequestsTest
 			requestResult.Dispose();
 
 			btnSend.Enabled = true;
+		}
+
+		private void btnSetRequestBody_Click(object sender, EventArgs e)
+		{
+			RequestBodyEditor editor = new RequestBodyEditor(_requestBody);
+			if (editor.ShowDialog() == DialogResult.OK)
+			{
+				_requestBody = editor.BodyContent;
+			}
 		}
 	}
 }
