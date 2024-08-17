@@ -77,6 +77,7 @@ namespace MultiThreadedDownloaderLib
 		public const int DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS = -204;
 		public const int DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS = -205;
 		public const int DOWNLOAD_ERROR_CUSTOM = -206;
+		public const int DOWNLOAD_ERROR_CHUNK_SEQUENCE = -207;
 		
 		public delegate void ConnectingDelegate(object sender, string url);
 		public delegate void ConnectedDelegate(object sender, string url, long contentLength, CustomError customError);
@@ -429,11 +430,17 @@ namespace MultiThreadedDownloaderLib
 				return LastErrorCode;
 			}
 
-			List<DownloadingTask> downloadingTasks = new List<DownloadingTask>();
-			for (int i = 0; i < contentChunks.Count; ++i)
+			List<DownloadingTask> downloadingTasks = BuildChunkSequence(contentChunks, out bool isValid);
+			if (!isValid || downloadingTasks == null || downloadingTasks.Count <= 0)
 			{
-				downloadingTasks.Add(contentChunks[i].DownloadingTask);
+				contentChunks = null;
+				if (UseRamForTempFiles && downloadingTasks != null) { ClearGarbage(downloadingTasks); }
+				LastErrorCode = DOWNLOAD_ERROR_CHUNK_SEQUENCE;
+				LastErrorMessage = null;
+				DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
+				return LastErrorCode;
 			}
+
 			contentChunks = null;
 
 			if (UseRamForTempFiles || downloadingTasks.Count > 1)
@@ -486,6 +493,30 @@ namespace MultiThreadedDownloaderLib
 			{
 				d.Stop();
 			}
+		}
+
+		private List<DownloadingTask> BuildChunkSequence(
+			ConcurrentDictionary<int, DownloadableContentChunk> contentChunks, out bool isValid)
+		{
+			int count = contentChunks.Count;
+			if (count > 0)
+			{
+				isValid = true;
+				for (int i = 0; i < count; ++i)
+				{
+					isValid &= contentChunks.ContainsKey(i) &&
+						contentChunks[i]?.DownloadingTask?.OutputStream != null;
+					if (!isValid) { return null; }
+				}
+
+				List<DownloadingTask> taskList = contentChunks.Select(item => item.Value.DownloadingTask).ToList();
+				taskList.Sort((x, y) => x.ByteFrom < y.ByteFrom ? -1 : 1);
+
+				return taskList;
+			}
+
+			isValid = false;
+			return null;
 		}
 
 		private int MergeChunks(IEnumerable<DownloadingTask> downloadingTasks)
@@ -818,6 +849,9 @@ namespace MultiThreadedDownloaderLib
 
 				case DOWNLOAD_ERROR_CUSTOM:
 					return null;
+
+				case DOWNLOAD_ERROR_CHUNK_SEQUENCE:
+					return "Неправильная последовательность чанков!";
 
 				default:
 					return FileDownloader.ErrorCodeToString(errorCode);
