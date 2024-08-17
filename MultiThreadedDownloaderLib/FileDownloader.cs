@@ -95,7 +95,7 @@ namespace MultiThreadedDownloaderLib
 
 			Connecting?.Invoke(this, Url);
 
-			HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, null, Headers);
+			HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, Headers);
 			LastErrorCode = requestResult.ErrorCode;
 			LastErrorMessage = HasErrors ? requestResult.ErrorMessage : null;
 			if (HasErrors)
@@ -353,7 +353,7 @@ namespace MultiThreadedDownloaderLib
 		public static int GetUrlResponseHeaders(string url, NameValueCollection inHeaders,
 			out WebHeaderCollection outHeaders, out string errorText)
 		{
-			HttpRequestResult requestResult = HttpRequestSender.Send("HEAD", url, null, inHeaders);
+			HttpRequestResult requestResult = HttpRequestSender.Send("HEAD", url, inHeaders);
 			if (requestResult.ErrorCode == 200)
 			{
 				outHeaders = new WebHeaderCollection();

@@ -7,13 +7,14 @@ namespace MultiThreadedDownloaderLib
 {
 	public static class HttpRequestSender
 	{
-		public static HttpRequestResult Send(string method, string url, string body, NameValueCollection headers)
+		public static HttpRequestResult Send(string method, string url,
+			Stream body, NameValueCollection headers, bool sendExpect100ContinueHeader = false)
 		{
 			try
 			{
 				HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
 				httpWebRequest.Method = method;
-				httpWebRequest.ServicePoint.Expect100Continue = false;
+				httpWebRequest.ServicePoint.Expect100Continue = sendExpect100ContinueHeader;
 
 				if (headers != null && headers.Count > 0)
 				{
@@ -23,14 +24,22 @@ namespace MultiThreadedDownloaderLib
 				bool canSendBody = method == "POST" || method == "PUT";
 				if (canSendBody)
 				{
-					if (!string.IsNullOrEmpty(body))
+					if (body != null && body.Length > 0L)
 					{
-						byte[] bodyBytes = Encoding.UTF8.GetBytes(body);
-						httpWebRequest.ContentLength = bodyBytes.Length;
-
-						using (Stream requestStream = httpWebRequest.GetRequestStream())
+						long contentLength = body.Length - body.Position;
+						httpWebRequest.ContentLength = contentLength > 0L ? contentLength : 0L;
+						if (httpWebRequest.ContentLength > 0L)
 						{
-							requestStream.Write(bodyBytes, 0, bodyBytes.Length);
+							using (Stream requestStream = httpWebRequest.GetRequestStream())
+							{
+								byte[] buffer = new byte[4096];
+								while (true)
+								{
+									int bytesRead = body.Read(buffer, 0, buffer.Length);
+									if (bytesRead <= 0) { break; }
+									requestStream.Write(buffer, 0, bytesRead);
+								}
+							}
 						}
 					}
 					else
@@ -60,6 +69,38 @@ namespace MultiThreadedDownloaderLib
 				string errorMessage = ex.Message;
 				return new HttpRequestResult(errorCode, errorMessage, null, null);
 			}
+		}
+
+	   public static HttpRequestResult Send(string method, string url,
+			byte[] body, NameValueCollection headers = null)
+		{
+			Stream stream = body?.ToStream(true);
+			HttpRequestResult result = Send(method, url, stream, headers, false);
+			stream?.Close();
+			return result;
+		}
+
+		public static HttpRequestResult Send(string method, string url,
+			 string body, Encoding bodyEncoding, NameValueCollection headers = null)
+		{
+			byte[] bodyBytes = !string.IsNullOrEmpty(body) ? bodyEncoding.GetBytes(body) : null;
+			return Send(method, url, bodyBytes, headers);
+		}
+
+		public static HttpRequestResult Send(string method, string url,
+			 string body, NameValueCollection headers = null)
+		{
+			return Send(method, url, body, Encoding.UTF8, headers);
+		}
+
+		public static HttpRequestResult Send(string method, string url, NameValueCollection headers = null)
+		{
+			return Send(method, url, (byte[])null, headers);
+		}
+
+		public static HttpRequestResult Send(string url)
+		{
+			return Send("GET", url);
 		}
 
 		public static void SetRequestHeaders(HttpWebRequest request, NameValueCollection headers)
@@ -221,6 +262,18 @@ namespace MultiThreadedDownloaderLib
 			}
 
 			return headers;
+		}
+
+		private static Stream ToStream(this byte[] bytes, bool seekToBeginning = false)
+		{
+			if (bytes.Length > 0)
+			{
+				MemoryStream stream = new MemoryStream();
+				stream.Write(bytes, 0, bytes.Length);
+				if (seekToBeginning) { stream.Position = 0L; }
+				return stream;
+			}
+			return null;
 		}
 	}
 }
