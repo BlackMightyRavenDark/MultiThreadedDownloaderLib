@@ -146,7 +146,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			singleThreadedDownloader.TryCount = (int)numericUpDownTryCountInsideEachThread.Value;
 
 			Stream stream = File.OpenWrite(fn);
-			int errorCode = await singleThreadedDownloader.DownloadAsync(stream);
+			int errorCode = await Task.Run(() => singleThreadedDownloader.Download(stream, fn));
 			stream.Close();
 			System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
 			if (errorCode == 200 || errorCode == 206)

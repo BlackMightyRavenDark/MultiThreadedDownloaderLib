@@ -230,6 +230,19 @@ namespace MultiThreadedDownloaderLib
 			return Download(downloadingTask, bufferSize, cancellationTokenSource);
 		}
 
+		public int Download(ContentChunkStream contentChunkStream,
+			long rangeFrom, long rangeTo,
+			CancellationTokenSource cancellationTokenSource = null)
+		{
+			return Download(contentChunkStream, rangeFrom, rangeTo, 4096, cancellationTokenSource);
+		}
+
+		public int Download(ContentChunkStream contentChunkStream,
+			CancellationTokenSource cancellationTokenSource = null)
+		{
+			return Download(contentChunkStream, 0L, -1L, 4096, cancellationTokenSource);
+		}
+
 		public int Download(Stream outputStream, string outputFilePath,
 			long rangeFrom, long rangeTo, int bufferSize,
 			CancellationTokenSource cancellationTokenSource = null)
@@ -247,83 +260,45 @@ namespace MultiThreadedDownloaderLib
 				bufferSize, cancellationTokenSource);
 		}
 
-		public int Download(Stream outputStream, int bufferSize,
-			CancellationTokenSource cancellationTokenSource)
+		public int Download(Stream outputStream, string outputFilePath, int bufferSize,
+			CancellationTokenSource cancellationTokenSource = null)
 		{
-			long rangeFrom = DownloadingTask != null ? DownloadingTask.ByteFrom : _rangeFrom;
-			long rangeTo = DownloadingTask != null ? DownloadingTask.ByteTo : _rangeTo;
-			return Download(outputStream, rangeFrom, rangeTo,
+			return Download(outputStream, outputFilePath, _rangeFrom, _rangeTo,
 				bufferSize, cancellationTokenSource);
 		}
 
-		public int Download(Stream outputStream, int bufferSize)
+		public int Download(Stream outputStream, string outputFilePath,
+			long rangeFrom, long rangeTo, CancellationTokenSource cancellationTokenSource = null)
+		{
+			return Download(outputStream, outputFilePath, rangeFrom, rangeTo, 4096, cancellationTokenSource);
+		}
+
+		public int Download(Stream outputStream, long rangeFrom, long rangeTo,
+			CancellationTokenSource cancellationTokenSource = null)
+		{
+			return Download(outputStream, null, rangeFrom, rangeTo, cancellationTokenSource);
+		}
+
+		public int Download(Stream outputStream, string outputFilePath, int bufferSize = 4096)
+		{
+			return Download(outputStream, outputFilePath, bufferSize, null);
+		}
+
+		public int Download(Stream outputStream, int bufferSize = 4096)
 		{
 			return Download(outputStream, bufferSize, null);
+		}
+
+		public int Download(Stream outputStream, int bufferSize,
+			CancellationTokenSource cancellationTokenSource)
+		{
+			return Download(outputStream, null, bufferSize, cancellationTokenSource);
 		}
 
 		public int Download(Stream outputStream,
 			CancellationTokenSource cancellationTokenSource)
 		{
 			return Download(outputStream, 4096, cancellationTokenSource);
-		}
-
-		public async Task<int> DownloadAsync(DownloadingTask downloadingTask,
-			int bufferSize, CancellationTokenSource cancellationTokenSource)
-		{
-			return await Task.Run(() => Download(downloadingTask, bufferSize, cancellationTokenSource));
-		}
-
-		public async Task<int> DownloadAsync(DownloadingTask downloadingTask,
-			CancellationTokenSource cancellationTokenSource)
-		{
-			return await DownloadAsync(downloadingTask, 4096, cancellationTokenSource);
-		}
-
-		public async Task<int> DownloadAsync(DownloadingTask downloadingTask, int bufferSize = 4096)
-		{
-			return await DownloadAsync(downloadingTask, bufferSize, null);
-		}
-
-		public async Task<int> DownloadAsync(ContentChunkStream contentChunkStream,
-			long rangeFrom, long rangeTo, int bufferSize,
-			CancellationTokenSource cancellationTokenSource = null)
-		{
-			DownloadingTask downloadingTask = new DownloadingTask(contentChunkStream, rangeFrom, rangeTo);
-			return await DownloadAsync(downloadingTask, bufferSize, cancellationTokenSource);
-		}
-
-		public async Task<int> DownloadAsync(Stream outputStream, string outputFilePath,
-			long rangeFrom, long rangeTo, int bufferSize,
-			CancellationTokenSource cancellationTokenSource = null)
-		{
-			ContentChunkStream contentChunkStream = new ContentChunkStream(outputFilePath, outputStream);
-			return await DownloadAsync(contentChunkStream, rangeFrom, rangeTo, bufferSize, cancellationTokenSource);
-		}
-
-		public async Task<int> DownloadAsync(Stream outputStream,
-			long rangeFrom, long rangeTo, int bufferSize,
-			CancellationTokenSource cancellationTokenSource = null)
-		{
-			return await DownloadAsync(outputStream, null, rangeFrom, rangeTo, bufferSize, cancellationTokenSource);
-		}
-
-		public async Task<int> DownloadAsync(Stream outputStream, int bufferSize,
-			CancellationTokenSource cancellationTokenSource)
-		{
-			long rangeFrom = DownloadingTask != null ? DownloadingTask.ByteFrom : _rangeFrom;
-			long rangeTo = DownloadingTask != null ? DownloadingTask.ByteTo : _rangeTo;
-			return await DownloadAsync(outputStream, rangeFrom, rangeTo, bufferSize, cancellationTokenSource);
-		}
-
-		public async Task<int> DownloadAsync(Stream outputStream,
-			CancellationTokenSource cancellationTokenSource)
-		{
-			return await DownloadAsync(outputStream, 4096, cancellationTokenSource);
-		}
-
-		public async Task<int> DownloadAsync(Stream outputStream, int bufferSize = 4096)
-		{
-			return await DownloadAsync(outputStream, bufferSize, null);
 		}
 
 		public int DownloadString(out string responseString, Encoding encoding, int bufferSize = 4096)
