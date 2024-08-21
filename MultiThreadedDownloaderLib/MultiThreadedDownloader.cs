@@ -48,9 +48,16 @@ namespace MultiThreadedDownloaderLib
 		public int ThreadCount { get; set; } = 2;
 
 		/// <summary>
-		/// Set it to below zero for infinite retries.
+		/// Set it to zero or less for infinite retries.
 		/// </summary>
-		public int RetryCountPerThread { get; set; } = 0;
+		public int TryCountPerThread { get; set; } = 1;
+
+		/// <summary>
+		/// Try count inside each download thread.
+		/// The thread will be restarted when out of tries.
+		/// Set it to zero or less for infinite retries.
+		/// </summary>
+		public int TryCountInsideThread { get; set; } = 1;
 
 		public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
 		public int LastErrorCode { get; private set; }
@@ -251,6 +258,9 @@ namespace MultiThreadedDownloaderLib
 			}
 
 			bool isError = false;
+			bool isExceptionRaised = false;
+			bool isInfiniteRetries = TryCountPerThread <= 0;
+			bool isOutOfTries = false;
 			int chunkCount = ContentLength > MEGABYTE ? ThreadCount : 1;
 			List<FileDownloader> downloaders = new List<FileDownloader>();
 			var chunkRanges = SplitContentToChunks(fullContentLength, chunkCount);
@@ -265,33 +275,34 @@ namespace MultiThreadedDownloaderLib
 					chunkFileName = GetNumberedFileName(chunkFileName);
 				}
 
-				bool isInfiniteRetries = RetryCountPerThread < 0;
-				int retriesLeft = isInfiniteRetries ? -1 : RetryCountPerThread;
+				int taskTryNumber = 0;
 
-				FileDownloader downloader = new FileDownloader() { Url = Url, Headers = Headers };
+				FileDownloader downloader = new FileDownloader()
+					{ Url = Url, Headers = Headers, TryCount = TryCountInsideThread };
 				lock (downloaders) { downloaders.Add(downloader); }
 
 				int lastTime = Environment.TickCount;
 
-				downloader.WorkProgress += (object sender, long transferred, long contentLen) =>
+				downloader.WorkProgress += (object sender, long transferred, long contentLen, int tryNumber, int maxTryCount) =>
 				{
 					int currentTime = Environment.TickCount;
 					if (currentTime - lastTime >= UpdateIntervalMilliseconds)
 					{
 						FileDownloader d = sender as FileDownloader;
 						d.GetRange(out long byteFrom, out long byteTo);
-						DownloadingTask downloadingTask = new DownloadingTask(d.OutputStream, byteFrom, byteTo);
+						DownloadingTask downloadingTask = new DownloadingTask(d.DownloadingTask.OutputStream, byteFrom, byteTo);
 						DownloadableContentChunk contentChunk = new DownloadableContentChunk(downloadingTask, taskId, transferred);
 						OnProgressUpdatedFunc(contentChunk);
 
 						lastTime = currentTime;
 					}
 				};
-				downloader.WorkFinished += (object sender, long transferred, long contentLen, int errCode) =>
+				downloader.WorkFinished += (object sender, long transferred, long contentLen, int tryNumber, int maxTryCount, int errCode) =>
 				{
 					FileDownloader d = sender as FileDownloader;
 					if (errCode != 200 && errCode != 206 &&
-						!isInfiniteRetries && retriesLeft < 0)
+						((!isInfiniteRetries && taskTryNumber >= TryCountPerThread) || isOutOfTries) &&
+						!isExceptionRaised)
 					{
 						lock (downloaders)
 						{
@@ -306,7 +317,7 @@ namespace MultiThreadedDownloaderLib
 					}
 
 					d.GetRange(out long byteFrom, out long byteTo);
-					DownloadingTask downloadingTask = new DownloadingTask(d.OutputStream, byteFrom, byteTo);
+					DownloadingTask downloadingTask = new DownloadingTask(d.DownloadingTask.OutputStream, byteFrom, byteTo);
 					DownloadableContentChunk contentChunk = new DownloadableContentChunk(downloadingTask, taskId, transferred);
 					OnProgressUpdatedFunc(contentChunk);
 				};
@@ -315,6 +326,7 @@ namespace MultiThreadedDownloaderLib
 				{
 					try
 					{
+						taskTryNumber++;
 						Stream streamChunk = null;
 						if (UseRamForTempFiles)
 						{
@@ -336,24 +348,45 @@ namespace MultiThreadedDownloaderLib
 						LastErrorCode = downloader.Download(
 							streamChunk, UseRamForTempFiles ? null : chunkFileName,
 							chunkFirstByte, chunkLastByte, bufferSize, _cancellationTokenSource);
-						if (!UseRamForTempFiles)
+
+						lock (downloaders)
 						{
-							downloader.DisposeOutputStream();
-							if (!_isCanceled && File.Exists(chunkFileName))
+							isOutOfTries = isInfiniteRetries ? false : taskTryNumber + 1 > TryCountPerThread;
+							if (LastErrorCode == 200 || LastErrorCode == 206)
 							{
-								File.Delete(chunkFileName);
+								if (!UseRamForTempFiles) { downloader.DisposeOutputStream(); }
+								break;
 							}
-						}
-						if (LastErrorCode == 200 || LastErrorCode == 206 || _isCanceled) { break; }
-						else if (!isInfiniteRetries)
-						{
-							lock (downloaders)
+							else if (_isCanceled || isOutOfTries)
 							{
-								if (--retriesLeft < 0)
+								downloader.DisposeOutputStream();
+								if (UseRamForTempFiles) { GC.Collect(); }
+								break;
+							}
+							else if (!isInfiniteRetries)
+							{
+								if (isOutOfTries || taskTryNumber + 1 > TryCountPerThread)
 								{
-									AbortTasks(downloaders);
+									if (!isOutOfTries)
+									{
+										System.Diagnostics.Debug.WriteLine($"The task №{taskId}: Out of tries");
+										isOutOfTries = true;
+										AbortTasks(downloaders);
+									}
 									break;
 								}
+								else
+								{
+									downloader.DisposeOutputStream();
+									if (!UseRamForTempFiles) { File.Delete(chunkFileName); }
+									System.Diagnostics.Debug.WriteLine($"Restarting the task №{taskId}... Try №{taskTryNumber + 1} / {TryCountPerThread}");
+								}
+							}
+							else
+							{
+								downloader.DisposeOutputStream();
+								if (!UseRamForTempFiles) { File.Delete(chunkFileName); }
+								System.Diagnostics.Debug.WriteLine($"Restarting the task №{taskId}... Try №{taskTryNumber + 1}");
 							}
 						}
 					}
@@ -361,19 +394,11 @@ namespace MultiThreadedDownloaderLib
 					{
 						System.Diagnostics.Debug.WriteLine($"Task №{taskId} is failed!");
 						System.Diagnostics.Debug.WriteLine(ex.Message);
-						if (isInfiniteRetries)
-						{
-							System.Diagnostics.Debug.WriteLine("Restarting the task...");
-						}
-						else if (retriesLeft >= 0)
-						{
-							retriesLeft--;
-							System.Diagnostics.Debug.WriteLine("Restarting the task...");
-						}
-						else
-						{
-							break;
-						}
+						LastErrorCode = DOWNLOAD_ERROR_ABORTED;
+						LastErrorMessage = ex.Message;
+						isExceptionRaised = true;
+						AbortTasks(downloaders);
+						break;
 					}
 				}
 
@@ -384,17 +409,17 @@ namespace MultiThreadedDownloaderLib
 						LastErrorCode = DOWNLOAD_ERROR_CANCELED_BY_USER;
 						LastErrorMessage = null;
 					}
-					else if (!isInfiniteRetries && retriesLeft < 0)
-					{
-						LastErrorCode = DOWNLOAD_ERROR_ABORTED;
-						LastErrorMessage = "Out of retries";
-					}
 					else if (isError && LastErrorCode == DOWNLOAD_ERROR_CANCELED_BY_USER) //TODO: Fix this shit!
 					{
 						//shit happens :'(
 						LastErrorCode = DOWNLOAD_ERROR_ABORTED;
 					}
-					else if (!isError)
+					else if (isOutOfTries)
+					{
+						LastErrorCode = DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT;
+						LastErrorMessage = null;
+					}
+					else if (!isError && !isExceptionRaised)
 					{
 						LastErrorMessage = downloader.LastErrorMessage;
 					}

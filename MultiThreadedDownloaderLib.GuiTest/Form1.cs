@@ -143,6 +143,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			singleThreadedDownloader.Url = editUrl.Text;
 			singleThreadedDownloader.Headers = headerCollection;
 			singleThreadedDownloader.UpdateIntervalMilliseconds = (double)numericUpDownUpdateInterval.Value;
+			singleThreadedDownloader.TryCount = (int)numericUpDownTryCountInsideEachThread.Value;
 
 			Stream stream = File.OpenWrite(fn);
 			int errorCode = await singleThreadedDownloader.DownloadAsync(stream);
@@ -165,6 +166,10 @@ namespace MultiThreadedDownloaderLib.GuiTest
 						lblDownloadingProgress.Text = "Ошибка: Диск не готов!";
 						break;
 
+					case FileDownloader.DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT:
+						lblDownloadingProgress.Text = "Ошибка: Закончились попытки! Скачивание прервано!";
+						break;
+
 					default:
 						if (singleThreadedDownloader.HasErrorMessage)
 						{
@@ -178,6 +183,10 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				if (singleThreadedDownloader.HasErrorMessage)
 				{
 					messageText += $"{Environment.NewLine}Текст ошибки: {singleThreadedDownloader.LastErrorMessage}";
+				}
+				else if (errorCode == FileDownloader.DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT)
+				{
+					messageText = $"Скачивание прервано!{Environment.NewLine}{messageText}";
 				}
 				ShowErrorMessage(errorCode, messageText);
 			}
@@ -332,7 +341,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
 			multiThreadedDownloader.Headers = headerCollection;
 			multiThreadedDownloader.ThreadCount = (int)numericUpDownThreadCount.Value;
-			multiThreadedDownloader.RetryCountPerThread = (int)numericUpDownRetryCountPerThread.Value;
+			multiThreadedDownloader.TryCountPerThread = (int)numericUpDownTryCountPerThread.Value;
+			multiThreadedDownloader.TryCountInsideThread = (int)numericUpDownTryCountInsideEachThread.Value;
 			multiThreadedDownloader.Url = editUrl.Text;
 			multiThreadedDownloader.OutputFileName = editFileName.Text;
 			multiThreadedDownloader.TempDirectory = editTempPath.Text;
@@ -361,6 +371,10 @@ namespace MultiThreadedDownloaderLib.GuiTest
 						lblDownloadingProgress.Text = "Ошибка: Диск не готов!";
 						break;
 
+					case FileDownloader.DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT:
+						lblDownloadingProgress.Text = "Ошибка: Скачивание прервано! Закончились попытки!";
+						break;
+
 					case MultiThreadedDownloader.DOWNLOAD_ERROR_CUSTOM:
 						lblDownloadingProgress.Text = multiThreadedDownloader.HasErrorMessage ?
 							"Ошибка!" : $"Ошибка: {multiThreadedDownloader.LastErrorMessage}";
@@ -368,7 +382,12 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				}
 
 				string messageText = MultiThreadedDownloader.ErrorCodeToString(errorCode);
-				if (multiThreadedDownloader.HasErrorMessage)
+				if (errorCode == FileDownloader.DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT)
+				{
+					lblDownloadingProgress.Text = "Ошибка: Скачивание прервано! Закончились попытки!";
+					messageText = $"Скачивание прервано!{Environment.NewLine}{messageText}";
+				}
+				else if (multiThreadedDownloader.HasErrorMessage)
 				{
 					lblDownloadingProgress.Text = $"Ошибка: {multiThreadedDownloader.LastErrorMessage} (Код: {errorCode})";
 					messageText += $"{Environment.NewLine}Текст ошибки: {multiThreadedDownloader.LastErrorMessage}";
@@ -389,18 +408,18 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			EnableControls();
 		}
 
-		public void OnConnecting(object sender, string url)
+		public void OnConnecting(object sender, string url, int tryNumber, int maxTryCount)
 		{
 			if (InvokeRequired)
 			{
-				Invoke(new MethodInvoker(() => OnConnecting(sender, url)));
+				Invoke(new MethodInvoker(() => OnConnecting(sender, url, tryNumber, maxTryCount)));
 			}
 			else
 			{
 				progressBar1.SetItem(0, 100, 0);
-				lblDownloadingProgress.Text = "Подключение...";
-				lblDownloadingProgress.Refresh();
-
+				string t = $"Подключение... Попытка №{tryNumber}";
+				if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
+				lblDownloadingProgress.Text = t;
 			}
 		}    
 
@@ -444,25 +463,27 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			return errorCode;
 		}
 
-		public void OnWorkStarted(object sender, long contentLength)
+		public void OnWorkStarted(object sender, long contentLength, int tryNumber, int maxTryCount)
 		{
 			if (InvokeRequired)
 			{
-				Invoke(new MethodInvoker(() => OnWorkStarted(sender, contentLength)));
+				Invoke(new MethodInvoker(() => OnWorkStarted(sender, contentLength, tryNumber, maxTryCount)));
 			}
 			else
 			{
 				progressBar1.SetItem(0, 100, 0);
-				lblDownloadingProgress.Text = $"Скачано: 0 из {contentLength}";
+				string t = $"Скачано: 0 из {contentLength}, Попытка №{tryNumber}";
+				if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
+				lblDownloadingProgress.Text = t;
 				lblDownloadingProgress.Refresh();
 			}
 		}
 
-		public void OnWorkProgress(object sender, long bytesTransferred, long contentLength)
+		public void OnWorkProgress(object sender, long bytesTransferred, long contentLength, int tryNumber, int maxTryCount)
 		{
 			if (InvokeRequired)
 			{
-				Invoke(new MethodInvoker(() => OnWorkProgress(sender, bytesTransferred, contentLength)));
+				Invoke(new MethodInvoker(() => OnWorkProgress(sender, bytesTransferred, contentLength, tryNumber, maxTryCount)));
 			}
 			else
 			{
@@ -471,7 +492,9 @@ namespace MultiThreadedDownloaderLib.GuiTest
 					double percent = 100.0 / contentLength * bytesTransferred;
 					progressBar1.SetItem(0, 100, (int)percent);
 					string percentFormatted = string.Format("{0:F3}", percent);
-					lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%)";
+					string t = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%), Попытка №{tryNumber}";
+					if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
+					lblDownloadingProgress.Text = t;
 				}
 				else
 				{
@@ -480,11 +503,11 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			}
 		}
 
-		public void OnWorkFinished(object sender, long bytesTransferred, long contentLength, int errorCode)
+		public void OnWorkFinished(object sender, long bytesTransferred, long contentLength, int tryNumber, int maxTryCount, int errorCode)
 		{
 			if (InvokeRequired)
 			{
-				Invoke(new MethodInvoker(() => OnWorkFinished(sender, bytesTransferred, contentLength, errorCode)));
+				Invoke(new MethodInvoker(() => OnWorkFinished(sender, bytesTransferred, contentLength, tryNumber, maxTryCount, errorCode)));
 			}
 			else
 			{
@@ -493,7 +516,9 @@ namespace MultiThreadedDownloaderLib.GuiTest
 					double percent = 100.0 / contentLength * bytesTransferred;
 					progressBar1.SetItem(0, 100, (int)percent);
 					string percentFormatted = string.Format("{0:F3}", percent);
-					lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%)";
+					string t = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%), Попытка №{tryNumber}";
+					if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
+					lblDownloadingProgress.Text = t;
 				}
 				else
 				{
@@ -515,7 +540,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = false;
 			checkBoxUseRamForTempFiles.Enabled = false;
 			numericUpDownThreadCount.Enabled = false;
-			numericUpDownRetryCountPerThread.Enabled = false;
+			numericUpDownTryCountPerThread.Enabled = false;
+			numericUpDownTryCountInsideEachThread.Enabled = false;
 			numericUpDownUpdateInterval.Enabled = false;
 			numericUpDownChunksMergingUpdateInterval.Enabled = false;
 		}
@@ -533,7 +559,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = true;
 			checkBoxUseRamForTempFiles.Enabled = true;
 			numericUpDownThreadCount.Enabled = true;
-			numericUpDownRetryCountPerThread.Enabled = true;
+			numericUpDownTryCountPerThread.Enabled = true;
+			numericUpDownTryCountInsideEachThread.Enabled = true;
 			numericUpDownUpdateInterval.Enabled = true;
 			numericUpDownChunksMergingUpdateInterval.Enabled = true;
 		}

@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -11,13 +13,18 @@ namespace MultiThreadedDownloaderLib
 	public sealed class FileDownloader : IDisposable
 	{
 		public string Url { get; set; }
+
+		/// <summary>
+		/// Set it to zero or less for infinite retries.
+		/// </summary>
+		public int TryCount { get; set; } = 1;
+
 		public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
 		public double UpdateIntervalMilliseconds { get; set; } = 100.0;
 		public long DownloadedInLastSession { get; private set; } = 0L;
-		public long OutputStreamSize => OutputStream != null && OutputStream.Stream != null ? OutputStream.Stream.Length : 0L;
-		public ContentChunkStream OutputStream { get; private set; }
-		private long _rangeFrom = 0L;
-		private long _rangeTo = -1L;
+		public long OutputStreamSize => DownloadingTask?.OutputStream?.Stream != null ?
+			DownloadingTask.OutputStream.Stream.Length : 0L;
+		public DownloadingTask DownloadingTask { get; private set; }
 		private NameValueCollection _headers = new NameValueCollection();
 		private CancellationTokenSource _cancellationTokenSource;
 		public bool IsActive { get; private set; } = false;
@@ -28,6 +35,8 @@ namespace MultiThreadedDownloaderLib
 			!string.IsNullOrWhiteSpace(LastErrorMessage) &&
 			!string.Equals(LastErrorMessage, "OK", StringComparison.OrdinalIgnoreCase);
 		private bool _isAborted = false;
+		private long _rangeFrom = 0L;
+		private long _rangeTo = -1L;
 
 		public const int DOWNLOAD_ERROR_URL_NOT_DEFINED = -1;
 		public const int DOWNLOAD_ERROR_INVALID_URL = -2;
@@ -39,12 +48,15 @@ namespace MultiThreadedDownloaderLib
 		public const int DOWNLOAD_ERROR_DRIVE_NOT_READY = -8;
 		public const int DOWNLOAD_ERROR_NULL_CONTENT = -9;
 		public const int DOWNLOAD_ERROR_ABORTED = -10;
+		public const int DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT = -11;
 
-		public delegate void ConnectingDelegate(object sender, string url);
+		public delegate void ConnectingDelegate(object sender, string url, int tryNumber, int maxTryCount);
 		public delegate int ConnectedDelegate(object sender, string url, long contentLength, int errorCode);
-		public delegate void WorkStartedDelegate(object sender, long contentLength);
-		public delegate void WorkProgressDelegate(object sender, long bytesTransferred, long contentLength);
-		public delegate void WorkFinishedDelegate(object sender, long bytesTransferred, long contentLength, int errorCode);
+		public delegate void WorkStartedDelegate(object sender, long contentLength, int tryNumber, int maxTryCount);
+		public delegate void WorkProgressDelegate(object sender, long bytesTransferred, long contentLength,
+			int tryNumber, int maxTryCount);
+		public delegate void WorkFinishedDelegate(object sender, long bytesTransferred, long contentLength,
+			int tryNumber, int maxTryCount, int errorCode);
 		public ConnectingDelegate Connecting;
 		public ConnectedDelegate Connected;
 		public WorkStartedDelegate WorkStarted;
@@ -63,10 +75,10 @@ namespace MultiThreadedDownloaderLib
 
 		public void DisposeOutputStream()
 		{
-			if (OutputStream != null)
+			if (DownloadingTask != null)
 			{
-				OutputStream.Dispose();
-				OutputStream = null;
+				DownloadingTask.OutputStream?.Dispose();
+				DownloadingTask = null;
 			}
 		}
 
@@ -76,7 +88,7 @@ namespace MultiThreadedDownloaderLib
 			IsActive = true;
 			_isAborted = false;
 			LastErrorMessage = null;
-			OutputStream = downloadingTask.OutputStream;
+			DownloadingTask = downloadingTask;
 
 			if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
 			{
@@ -89,86 +101,111 @@ namespace MultiThreadedDownloaderLib
 				IsActive = false;
 				return DOWNLOAD_ERROR_RANGE;
 			}
-			SetRange(downloadingTask.ByteFrom, downloadingTask.ByteTo);
 
 			DownloadedInLastSession = 0L;
+			int tryNumber = 1;
+			int maximumTryCount = TryCount;
+			bool isInfiniteRetries = maximumTryCount <= 0;
 
-			Connecting?.Invoke(this, Url);
+			Connecting?.Invoke(this, Url, tryNumber, maximumTryCount);
 
-			HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, Headers);
-			LastErrorCode = requestResult.ErrorCode;
-			LastErrorMessage = HasErrors ? requestResult.ErrorMessage : null;
-			if (HasErrors)
+			_cancellationTokenSource = cancellationTokenSource != null ?
+				cancellationTokenSource : new CancellationTokenSource();
+
+			Dictionary<int, long> chunkProcessingDict = new Dictionary<int, long>();
+			long contentLength = downloadingTask.ByteTo == -1L ? -1L : downloadingTask.ByteTo - downloadingTask.ByteFrom + 1L;
+			do
 			{
-				requestResult.Dispose();
-				IsActive = false;
-				return LastErrorCode;
-			}
-			else if (requestResult.WebContent == null)
-			{
-				requestResult.Dispose();
-				LastErrorCode = DOWNLOAD_ERROR_NULL_CONTENT;
-				IsActive = false;
-				return LastErrorCode;
-			}
+				SetRange(downloadingTask.ByteFrom + DownloadedInLastSession, downloadingTask.ByteTo);
+				HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, Headers);
+				LastErrorCode = requestResult.ErrorCode;
+				LastErrorMessage = HasErrors ? requestResult.ErrorMessage : null;
+				if (HasErrors)
+				{
+					requestResult.Dispose();
+					IsActive = false;
+					return LastErrorCode;
+				}
+				else if (requestResult.WebContent == null)
+				{
+					requestResult.Dispose();
+					LastErrorCode = DOWNLOAD_ERROR_NULL_CONTENT;
+					IsActive = false;
+					return LastErrorCode;
+				}
 
-			long size = requestResult.WebContent.Length;
-			if (Connected != null)
-			{
-				LastErrorCode = Connected.Invoke(this, Url, size, LastErrorCode);
-			}
+				if (contentLength == -1L) { contentLength = requestResult.WebContent.Length; }
 
-			if (HasErrors)
-			{
-				requestResult.Dispose();
-				IsActive = false;
-				return LastErrorCode;
-			}
+				if (Connected != null)
+				{
+					LastErrorCode = Connected.Invoke(this, Url, contentLength, LastErrorCode);
+				}
 
-			if (requestResult.WebContent.Length == 0L)
-			{
-				requestResult.Dispose();
-				IsActive = false;
-				return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
-			}
+				if (HasErrors)
+				{
+					requestResult.Dispose();
+					IsActive = false;
+					return LastErrorCode;
+				}
 
-			WorkStarted?.Invoke(this, size);
+				if (contentLength == 0L)
+				{
+					requestResult.Dispose();
+					IsActive = false;
+					LastErrorCode = DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
+					return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
+				}
 
-			int lastTime = Environment.TickCount;
-			bool isExceptionRaised = false;
-			try
-			{
-				_cancellationTokenSource = cancellationTokenSource != null ?
-					cancellationTokenSource : new CancellationTokenSource();
+				WorkStarted?.Invoke(this, contentLength, tryNumber, maximumTryCount);
 
-				bool gZipped = requestResult.IsZippedContent();
-				LastErrorCode = requestResult.WebContent.ContentToStream(
-					downloadingTask.OutputStream.Stream, bufferSize, gZipped, (long bytes) =>
-					{
-						DownloadedInLastSession = bytes;
-						int currentTime = Environment.TickCount;
-						if (currentTime - lastTime >= UpdateIntervalMilliseconds)
+				int lastTime = Environment.TickCount;
+				bool completed = false;
+				try
+				{
+					bool gZipped = requestResult.IsZippedContent();
+					LastErrorCode = requestResult.WebContent.ContentToStream(
+						downloadingTask.OutputStream.Stream, bufferSize, gZipped, (long bytes) =>
 						{
-							WorkProgress?.Invoke(this, bytes, size);
-							lastTime = currentTime;
-						}
-					}, _cancellationTokenSource.Token);
-			} catch (Exception ex)
+							chunkProcessingDict[tryNumber] = bytes;
+							DownloadedInLastSession = chunkProcessingDict.Sum(item => item.Value);
+							int currentTime = Environment.TickCount;
+							if (currentTime - lastTime >= UpdateIntervalMilliseconds)
+							{
+								WorkProgress?.Invoke(this, DownloadedInLastSession, contentLength,
+									tryNumber, maximumTryCount);
+								lastTime = currentTime;
+							}
+						}, _cancellationTokenSource.Token);
+					completed = true;
+				}
+				catch (Exception ex)
+				{
+					System.Diagnostics.Debug.WriteLine(ex.Message);
+					if (isInfiniteRetries)
+					{
+						System.Diagnostics.Debug.WriteLine($"Restarting... Try №{++tryNumber}");
+					}
+					else if (tryNumber < maximumTryCount)
+					{
+						System.Diagnostics.Debug.WriteLine($"Restarting... Try №{tryNumber + 1} / {maximumTryCount}");
+					}
+				}
+
+				requestResult.Dispose();
+				if (completed) { break; }
+			} while (!_cancellationTokenSource.IsCancellationRequested &&
+				((!isInfiniteRetries && tryNumber++ < maximumTryCount) || isInfiniteRetries));
+			if (_cancellationTokenSource.IsCancellationRequested)
 			{
-				LastErrorCode = ex.HResult;
-				LastErrorMessage = ex.Message;
-				isExceptionRaised = true;
+				LastErrorCode = _isAborted ? DOWNLOAD_ERROR_ABORTED : DOWNLOAD_ERROR_CANCELED_BY_USER;
 			}
-
-			if (!isExceptionRaised && _isAborted)
+			else if (!isInfiniteRetries && tryNumber > maximumTryCount)
 			{
-				LastErrorCode = DOWNLOAD_ERROR_ABORTED;
-				LastErrorMessage = "Download aborted";
+				System.Diagnostics.Debug.WriteLine("Out of tries");
+				LastErrorCode = DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT;
+				tryNumber--;
 			}
-
-			requestResult.Dispose();
-
-			WorkFinished?.Invoke(this, DownloadedInLastSession, size, LastErrorCode);
+			WorkFinished?.Invoke(this, DownloadedInLastSession, contentLength, tryNumber, maximumTryCount, LastErrorCode);
 
 			IsActive = false;
 			return LastErrorCode;
@@ -184,7 +221,7 @@ namespace MultiThreadedDownloaderLib
 		{
 			return Download(downloadingTask, bufferSize, null);
 		}
-		
+
 		public int Download(ContentChunkStream contentChunkStream,
 			long rangeFrom, long rangeTo, int bufferSize,
 			CancellationTokenSource cancellationTokenSource = null)
@@ -213,19 +250,21 @@ namespace MultiThreadedDownloaderLib
 		public int Download(Stream outputStream, int bufferSize,
 			CancellationTokenSource cancellationTokenSource)
 		{
-			return Download(outputStream, _rangeFrom, _rangeTo,
+			long rangeFrom = DownloadingTask != null ? DownloadingTask.ByteFrom : _rangeFrom;
+			long rangeTo = DownloadingTask != null ? DownloadingTask.ByteTo : _rangeTo;
+			return Download(outputStream, rangeFrom, rangeTo,
 				bufferSize, cancellationTokenSource);
+		}
+
+		public int Download(Stream outputStream, int bufferSize)
+		{
+			return Download(outputStream, bufferSize, null);
 		}
 
 		public int Download(Stream outputStream,
 			CancellationTokenSource cancellationTokenSource)
 		{
 			return Download(outputStream, 4096, cancellationTokenSource);
-		}
-
-		public int Download(Stream stream, int bufferSize = 4096)
-		{
-			return Download(stream, bufferSize, null);
 		}
 
 		public async Task<int> DownloadAsync(DownloadingTask downloadingTask,
@@ -271,7 +310,9 @@ namespace MultiThreadedDownloaderLib
 		public async Task<int> DownloadAsync(Stream outputStream, int bufferSize,
 			CancellationTokenSource cancellationTokenSource)
 		{
-			return await DownloadAsync(outputStream, _rangeFrom, _rangeTo, bufferSize, cancellationTokenSource);
+			long rangeFrom = DownloadingTask != null ? DownloadingTask.ByteFrom : _rangeFrom;
+			long rangeTo = DownloadingTask != null ? DownloadingTask.ByteTo : _rangeTo;
+			return await DownloadAsync(outputStream, rangeFrom, rangeTo, bufferSize, cancellationTokenSource);
 		}
 
 		public async Task<int> DownloadAsync(Stream outputStream,
@@ -378,8 +419,16 @@ namespace MultiThreadedDownloaderLib
 
 		public void GetRange(out long rangeFrom, out long rangeTo)
 		{
-			rangeFrom = _rangeFrom;
-			rangeTo = _rangeTo;
+			if (DownloadingTask != null)
+			{
+				rangeFrom = DownloadingTask.ByteFrom;
+				rangeTo = DownloadingTask.ByteTo;
+			}
+			else
+			{
+				rangeFrom = _rangeFrom;
+				rangeTo = _rangeTo;
+			}
 		}
 
 		public bool SetRange(long rangeFrom, long rangeTo)
@@ -388,10 +437,9 @@ namespace MultiThreadedDownloaderLib
 			{
 				return false;
 			}
-			
 			_rangeFrom = rangeFrom;
 			_rangeTo = rangeTo;
- 
+
 			for (int i = 0; i < Headers.Count; ++i)
 			{
 				string headerName = Headers.GetKey(i);
@@ -404,7 +452,7 @@ namespace MultiThreadedDownloaderLib
 				}
 			}
 
-			string rangeValue = _rangeTo >= 0L ? $"{_rangeFrom}-{_rangeTo}" : $"{_rangeFrom}-";
+			string rangeValue = rangeTo >= 0L ? $"{rangeFrom}-{rangeTo}" : $"{rangeFrom}-";
 			Headers.Add("Range", rangeValue);
 
 			return true;
@@ -432,14 +480,12 @@ namespace MultiThreadedDownloaderLib
 
 						if (!string.IsNullOrEmpty(headerValue) && headerName.ToLower().Equals("range"))
 						{
-							if (HttpRequestSender.ParseRangeHeaderValue(headerValue, out _rangeFrom, out _rangeTo))
+							if (HttpRequestSender.ParseRangeHeaderValue(headerValue, out long rangeFrom, out long rangeTo))
 							{
-								SetRange(_rangeFrom, _rangeTo);
+								SetRange(rangeFrom, rangeTo);
 							}
 							else
 							{
-								_rangeFrom = 0L;
-								_rangeTo = -1L;
 								System.Diagnostics.Debug.WriteLine("Failed to parse the \"Range\" header!");
 							}
 							continue;
@@ -493,6 +539,9 @@ namespace MultiThreadedDownloaderLib
 
 				case DOWNLOAD_ERROR_NULL_CONTENT:
 					return "Ошибка получения контента!";
+
+				case DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT:
+					return "Закончились попытки!";
 
 				default:
 					return $"Код ошибки: {errorCode}";
