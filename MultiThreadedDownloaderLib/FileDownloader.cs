@@ -115,7 +115,12 @@ namespace MultiThreadedDownloaderLib
 			long contentLength = downloadingTask.ByteTo == -1L ? -1L : downloadingTask.ByteTo - downloadingTask.ByteFrom + 1L;
 			do
 			{
-				SetRange(downloadingTask.ByteFrom + DownloadedInLastSession, downloadingTask.ByteTo);
+				if (!SetRange(downloadingTask.ByteFrom + DownloadedInLastSession, downloadingTask.ByteTo))
+				{
+					LastErrorCode = DOWNLOAD_ERROR_RANGE;
+					LastErrorMessage = "Ошибка диапазона! Скачивание прервано!";
+					return LastErrorCode;
+				}
 				HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, Headers);
 				LastErrorCode = requestResult.ErrorCode;
 				LastErrorMessage = HasErrors ? requestResult.ErrorMessage : null;
