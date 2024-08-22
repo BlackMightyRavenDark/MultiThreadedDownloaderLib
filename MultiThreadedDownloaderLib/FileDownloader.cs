@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading;
 
@@ -347,7 +346,7 @@ namespace MultiThreadedDownloaderLib
 			out long contentLength, out string errorText)
 		{
 			int errorCode = GetUrlResponseHeaders(url, inHeaders,
-				out WebHeaderCollection responseHeaders, out errorText);
+				out NameValueCollection responseHeaders, out errorText);
 			if (errorCode == 200)
 			{
 				return ExtractContentLengthFromHeaders(responseHeaders, out contentLength);
@@ -389,12 +388,12 @@ namespace MultiThreadedDownloaderLib
 		}
 
 		public static int GetUrlResponseHeaders(string url, NameValueCollection inHeaders,
-			out WebHeaderCollection outHeaders, out string errorText)
+			out NameValueCollection outHeaders, out string errorText)
 		{
 			HttpRequestResult requestResult = HttpRequestSender.Send("HEAD", url, inHeaders);
 			if (requestResult.ErrorCode == 200)
 			{
-				outHeaders = new WebHeaderCollection();
+				outHeaders = new NameValueCollection();
 				for (int i = 0; i < requestResult.HttpWebResponse.Headers.Count; ++i)
 				{
 					string name = requestResult.HttpWebResponse.Headers.GetKey(i);
