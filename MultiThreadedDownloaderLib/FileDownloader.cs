@@ -240,7 +240,7 @@ namespace MultiThreadedDownloaderLib
 		public int Download(ContentChunkStream contentChunkStream,
 			CancellationTokenSource cancellationTokenSource = null)
 		{
-			return Download(contentChunkStream, 0L, -1L, 4096, cancellationTokenSource);
+			return Download(contentChunkStream, _rangeFrom, _rangeTo, cancellationTokenSource);
 		}
 
 		public int Download(Stream outputStream, string outputFilePath,
