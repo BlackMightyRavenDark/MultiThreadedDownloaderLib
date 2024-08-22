@@ -5,13 +5,13 @@ namespace MultiThreadedDownloaderLib
 {
 	public sealed class ContentChunkStream : IDisposable
 	{
-		public string FilePath { get; }
 		public Stream Stream { get; private set; }
+		public string FilePath { get; }
 
-		public ContentChunkStream(string filePath, Stream stream)
+		public ContentChunkStream(Stream stream, string filePath = null)
 		{
-			FilePath = filePath;
 			Stream = stream;
+			FilePath = filePath;
 		}
 
 		public void Dispose()

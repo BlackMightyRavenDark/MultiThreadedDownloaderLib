@@ -247,7 +247,7 @@ namespace MultiThreadedDownloaderLib
 			long rangeFrom, long rangeTo, int bufferSize,
 			CancellationTokenSource cancellationTokenSource = null)
 		{
-			ContentChunkStream contentChunkStream = new ContentChunkStream(outputFilePath, outputStream);
+			ContentChunkStream contentChunkStream = new ContentChunkStream(outputStream, outputFilePath);
 			return Download(contentChunkStream, rangeFrom, rangeTo,
 				bufferSize, cancellationTokenSource);
 		}
