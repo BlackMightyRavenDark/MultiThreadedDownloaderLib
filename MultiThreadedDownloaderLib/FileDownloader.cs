@@ -343,31 +343,49 @@ namespace MultiThreadedDownloaderLib
 			Stop();
 		}
 
-		public static int GetUrlContentLength(string url, NameValueCollection headers,
+		public static int GetUrlContentLength(string url, NameValueCollection inHeaders,
 			out long contentLength, out string errorText)
 		{
-			int errorCode = GetUrlResponseHeaders(url, headers,
+			int errorCode = GetUrlResponseHeaders(url, inHeaders,
 				out WebHeaderCollection responseHeaders, out errorText);
 			if (errorCode == 200)
 			{
-				for (int i = 0; i < responseHeaders.Count; ++i)
-				{
-					string headerName = responseHeaders.GetKey(i);
-					if (headerName.Equals("Content-Length"))
-					{
-						string headerValue = responseHeaders.Get(i);
-						if (!long.TryParse(headerValue, out contentLength))
-						{
-							contentLength = -1L;
-							return 204;
-						}
-						return 200;
-					}
-				}
+				return ExtractContentLengthFromHeaders(responseHeaders, out contentLength);
 			}
 
 			contentLength = -1L;
 			return errorCode;
+		}
+
+		public static int GetUrlContentLength(string url, out long contentLength, out string errorText)
+		{
+			return GetUrlContentLength(url, null, out contentLength, out errorText);
+		}
+
+		public static int GetUrlContentLength(string url, out long contentLength)
+		{
+			return GetUrlContentLength(url, out contentLength, out _);
+		}
+
+		public static int ExtractContentLengthFromHeaders(NameValueCollection responseHeaders, out long contentLength)
+		{
+			for (int i = 0; i < responseHeaders.Count; ++i)
+			{
+				string headerName = responseHeaders.GetKey(i);
+				if (headerName.Equals("Content-Length"))
+				{
+					string headerValue = responseHeaders.Get(i);
+					if (!long.TryParse(headerValue, out contentLength))
+					{
+						contentLength = -1L;
+						return 204;
+					}
+					return 200;
+				}
+			}
+
+			contentLength = -1L;
+			return 404;
 		}
 
 		public static int GetUrlResponseHeaders(string url, NameValueCollection inHeaders,
