@@ -411,8 +411,21 @@ namespace MultiThreadedDownloaderLib
 			{
 				return false;
 			}
+
+			ResetRange();
 			_rangeFrom = rangeFrom;
 			_rangeTo = rangeTo;
+
+			string rangeValue = rangeTo >= 0L ? $"{rangeFrom}-{rangeTo}" : $"{rangeFrom}-";
+			Headers.Add("Range", rangeValue);
+
+			return true;
+		}
+
+		public void ResetRange()
+		{
+			_rangeFrom = 0L;
+			_rangeTo = -1L;
 
 			for (int i = 0; i < Headers.Count; ++i)
 			{
@@ -425,11 +438,6 @@ namespace MultiThreadedDownloaderLib
 					break;
 				}
 			}
-
-			string rangeValue = rangeTo >= 0L ? $"{rangeFrom}-{rangeTo}" : $"{rangeFrom}-";
-			Headers.Add("Range", rangeValue);
-
-			return true;
 		}
 
 		public static bool IsRangeValid(long rangeFrom, long rangeTo)
