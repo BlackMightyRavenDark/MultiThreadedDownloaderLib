@@ -254,7 +254,7 @@ namespace MultiThreadedDownloaderLib
 			void OnProgressUpdatedFunc(DownloadableContentChunk contentChunk)
 			{
 				contentChunks[contentChunk.TaskId] = contentChunk;
-				DownloadedBytes = contentChunks.Values.Select(item => item.ProcessedBytes).Sum();
+				DownloadedBytes = contentChunks.Sum(item => item.Value.ProcessedBytes);
 				DownloadProgress?.Invoke(this, contentChunks);
 			}
 
@@ -573,7 +573,7 @@ namespace MultiThreadedDownloaderLib
 				foreach (DownloadingTask downloadingTask in downloadingTasks)
 				{
 					string chunkFilePath = downloadingTask.OutputStream.FilePath;
-					bool fileExists = false;
+					bool fileExists;
 					Stream tmpStream = downloadingTask.OutputStream.Stream;
 					bool isMemoryStream = tmpStream != null && tmpStream is MemoryStream;
 					if (!isMemoryStream)
@@ -589,6 +589,7 @@ namespace MultiThreadedDownloaderLib
 					else
 					{
 						tmpStream.Position = 0L;
+						fileExists = false;
 					}
 
 					void func(long sourcePosition, long sourceLength, long destinationPosition, long destinationLength)
@@ -625,10 +626,7 @@ namespace MultiThreadedDownloaderLib
 						File.Delete(chunkFilePath);
 					}
 
-					if (_isCanceled)
-					{
-						break;
-					}
+					if (_isCanceled) { break; }
 
 					++i;
 				}
