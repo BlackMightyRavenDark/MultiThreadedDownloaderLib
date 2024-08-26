@@ -575,7 +575,7 @@ namespace MultiThreadedDownloaderLib
 					string chunkFilePath = downloadingTask.OutputStream.FilePath;
 					bool fileExists = false;
 					Stream tmpStream = downloadingTask.OutputStream.Stream;
-					bool isMemoryStream = tmpStream != null;
+					bool isMemoryStream = tmpStream != null && tmpStream is MemoryStream;
 					if (!isMemoryStream)
 					{
 						fileExists = !string.IsNullOrEmpty(chunkFilePath) && !string.IsNullOrWhiteSpace(chunkFilePath) &&
