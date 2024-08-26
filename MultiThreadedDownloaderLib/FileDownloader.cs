@@ -87,6 +87,7 @@ namespace MultiThreadedDownloaderLib
 			_isAborted = false;
 			LastErrorMessage = null;
 			DownloadingTask = downloadingTask;
+			DownloadedInLastSession = 0L;
 
 			if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
 			{
@@ -100,21 +101,44 @@ namespace MultiThreadedDownloaderLib
 				return DOWNLOAD_ERROR_RANGE;
 			}
 
-			DownloadedInLastSession = 0L;
-			int tryNumber = 1;
+			long outputStreamInitialPosition = downloadingTask.OutputStream.Stream.Position;
+			int tryNumber = 0;
 			int maximumTryCount = TryCount;
 			bool isInfiniteRetries = maximumTryCount <= 0;
 
 			Connecting?.Invoke(this, Url, tryNumber, maximumTryCount);
 
+			LastErrorCode = GetUrlResponseHeaders(Url, Headers, out NameValueCollection responseHeaders, out string headersErrorText);
+			if (LastErrorCode != 200 && LastErrorCode != 206)
+			{
+				LastErrorMessage = headersErrorText;
+				WorkFinished?.Invoke(this, DownloadedInLastSession, -1L, tryNumber, maximumTryCount, LastErrorCode);
+				return LastErrorCode;
+			}
+
 			_cancellationTokenSource = cancellationTokenSource != null ?
 				cancellationTokenSource : new CancellationTokenSource();
 
 			Dictionary<int, long> chunkProcessingDict = new Dictionary<int, long>();
-			long contentLength = downloadingTask.ByteTo == -1L ? -1L : downloadingTask.ByteTo - downloadingTask.ByteFrom + 1L;
+
+			bool isRangeSupported = IsRangeSupported(responseHeaders);
+			long contentLength;
+			if (isRangeSupported)
+			{
+				ExtractContentLengthFromHeaders(responseHeaders, out contentLength);
+			}
+			else
+			{
+				contentLength = -1L;
+				ResetRange();
+			}
+
 			do
 			{
-				if (!SetRange(downloadingTask.ByteFrom + DownloadedInLastSession, downloadingTask.ByteTo))
+				tryNumber++;
+
+				long byteTo = downloadingTask.ByteTo == -1L ? contentLength - 1L : downloadingTask.ByteTo;
+				if (isRangeSupported && !SetRange(DownloadedInLastSession + downloadingTask.ByteFrom, byteTo))
 				{
 					LastErrorCode = DOWNLOAD_ERROR_RANGE;
 					LastErrorMessage = "Ошибка диапазона! Скачивание прервано!";
@@ -137,7 +161,10 @@ namespace MultiThreadedDownloaderLib
 					return LastErrorCode;
 				}
 
-				if (contentLength == -1L) { contentLength = requestResult.WebContent.Length; }
+				if (contentLength == -1L)
+				{
+					contentLength = requestResult.WebContent.Length;
+				}
 
 				if (Connected != null)
 				{
@@ -195,18 +222,25 @@ namespace MultiThreadedDownloaderLib
 				}
 
 				requestResult.Dispose();
+
 				if (completed) { break; }
-			} while (!_cancellationTokenSource.IsCancellationRequested &&
-				((!isInfiniteRetries && tryNumber++ < maximumTryCount) || isInfiniteRetries));
+				else if (!isInfiniteRetries && tryNumber >= maximumTryCount)
+				{
+					System.Diagnostics.Debug.WriteLine("Out of tries");
+					LastErrorCode = DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT;
+					break;
+				}
+				else if (!isRangeSupported)
+				{
+					System.Diagnostics.Debug.WriteLine("Resuming downloads is unavailable for this URL! Restarting from the beginning...");
+					chunkProcessingDict.Clear();
+					DownloadedInLastSession = 0L;
+					downloadingTask.OutputStream.Stream.Position = outputStreamInitialPosition;
+				}
+			} while (!_cancellationTokenSource.IsCancellationRequested);
 			if (_cancellationTokenSource.IsCancellationRequested)
 			{
 				LastErrorCode = _isAborted ? DOWNLOAD_ERROR_ABORTED : DOWNLOAD_ERROR_CANCELED_BY_USER;
-			}
-			else if (!isInfiniteRetries && tryNumber > maximumTryCount)
-			{
-				System.Diagnostics.Debug.WriteLine("Out of tries");
-				LastErrorCode = DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT;
-				tryNumber--;
 			}
 			WorkFinished?.Invoke(this, DownloadedInLastSession, contentLength, tryNumber, maximumTryCount, LastErrorCode);
 
@@ -366,6 +400,60 @@ namespace MultiThreadedDownloaderLib
 			return GetUrlContentLength(url, out contentLength, out _);
 		}
 
+		public static int IsRangeSupported(string url, NameValueCollection inHeaders,
+			out bool result, out string errorText)
+		{
+			int errorCode = GetUrlResponseHeaders(url, inHeaders,
+				out NameValueCollection responseHeaders, out errorText);
+			if (errorCode == 200)
+			{
+				return IsAcceptRangeBytes(responseHeaders, out result);
+			}
+
+			result = false;
+			return 404;
+		}
+
+		public static int IsRangeSupported(string url, NameValueCollection inHeaders,
+			out bool result)
+		{
+			return IsRangeSupported(url, inHeaders, out result, out _);
+		}
+
+		public static int IsRangeSupported(string url, out bool result)
+		{
+			return IsRangeSupported(url, null, out result);
+		}
+
+		public static bool IsRangeSupported(NameValueCollection responseHeaders)
+		{
+			IsAcceptRangeBytes(responseHeaders, out bool result);
+			return result;
+		}
+
+		private static int IsAcceptRangeBytes(NameValueCollection responseHeaders, out bool result)
+		{
+			for (int i = 0; i < responseHeaders.Count; ++i)
+			{
+				string headerName = responseHeaders.GetKey(i);
+				if (string.Compare(headerName, "accept-ranges", StringComparison.OrdinalIgnoreCase) == 0)
+				{
+					string headerValue = responseHeaders.Get(i);
+					if (headerValue.ToLower().Contains("bytes"))
+					{
+						result = true;
+						return 200;
+					}
+
+					result = false;
+					return 204;
+				}
+			}
+
+			result = false;
+			return 404;
+		}
+
 		public static int ExtractContentLengthFromHeaders(NameValueCollection responseHeaders, out long contentLength)
 		{
 			for (int i = 0; i < responseHeaders.Count; ++i)
@@ -391,7 +479,7 @@ namespace MultiThreadedDownloaderLib
 			out NameValueCollection outHeaders, out string errorText)
 		{
 			HttpRequestResult requestResult = HttpRequestSender.Send("HEAD", url, inHeaders);
-			if (requestResult.ErrorCode == 200)
+			if (requestResult.ErrorCode == 200 || requestResult.ErrorCode == 206)
 			{
 				outHeaders = new NameValueCollection();
 				for (int i = 0; i < requestResult.HttpWebResponse.Headers.Count; ++i)
