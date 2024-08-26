@@ -25,13 +25,6 @@ namespace MultiThreadedDownloaderLib
 		public string TempDirectory { get; set; } = null;
 		public string MergingDirectory { get; set; } = null;
 		public bool KeepDownloadedFileInTempOrMergingDirectory { get; set; } = false;
-
-		/// <summary>
-		/// Enables or disables some temporary files location logic.
-		/// Disable it, if you want to set directories manually.
-		/// </summary>
-		public bool LogicEnabled { get; set; } = false;
-
 		public int UpdateIntervalMilliseconds { get; set; } = 100;
 		public int ChunksMergingUpdateIntervalMilliseconds { get; set; } = 100;
 		public long DownloadedBytes { get; private set; } = 0L;
@@ -740,22 +733,15 @@ namespace MultiThreadedDownloaderLib
 					chunkFileName = IsTempDirectoryAvailable ?
 						Path.Combine(TempDirectory, fn + suffix) : fn + suffix;
 				}
+				else if (IsTempDirectoryAvailable)
+				{
+					string fn = Path.GetFileName(OutputFileName);
+					string suffix = $".chunk_{taskId}.tmp";
+					chunkFileName = Path.Combine(TempDirectory, fn + suffix);
+				}
 				else
 				{
-					if (LogicEnabled)
-					{
-						chunkFileName = OutputFileName + ".tmp";
-					}
-					else if (IsTempDirectoryAvailable)
-					{
-						string fn = Path.GetFileName(OutputFileName);
-						string suffix = $".chunk_{taskId}.tmp";
-						chunkFileName = Path.Combine(TempDirectory, fn + suffix);
-					}
-					else
-					{
-						chunkFileName = OutputFileName + ".tmp";
-					}
+					chunkFileName = OutputFileName + ".tmp";
 				}
 				return chunkFileName;
 			}
