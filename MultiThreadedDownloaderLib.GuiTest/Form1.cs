@@ -275,29 +275,60 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				Invoke(new MethodInvoker(() =>
 				{
 					var values = chunks.Values;
-					long bytesTransferred = values.Sum(item => item.ProcessedBytes);
+					int itemCount = values.Count;
+					LinkedList<MultipleProgressBarItem> progressBarItems = new LinkedList<MultipleProgressBarItem>();
+					foreach (DownloadableContentChunk item in values)
+					{
+						string itemText;
+						double percentItem = 0.0;
+						switch (item.State)
+						{
+							case DownloadableContentChunkState.Connecting:
+								itemText = $"{item.TaskId}: Connecting...";
+								break;
+
+							case DownloadableContentChunkState.Connected:
+								itemText = $"{item.TaskId}: Connected!";
+								break;
+
+							case DownloadableContentChunkState.Errored:
+								itemText = $"{item.TaskId}: Error!";
+								break;
+
+							default:
+								if (item.TotalBytes > 0L && item.ProcessedBytes >= 0L)
+								{
+									percentItem = 100.0 / item.TotalBytes * item.ProcessedBytes;
+									string percentItemFormatted = string.Format("{0:F3}", percentItem);
+									itemText = itemCount > 1 ? $"{item.TaskId}: {percentItemFormatted}%" : $"{percentItemFormatted}%";
+								}
+								else
+								{
+									string processedBytesString = item.ProcessedBytes < 0L ? "0" : item.ProcessedBytes.ToString();
+									itemText = itemCount > 1 ? $"{item.TaskId}: {processedBytesString} / <Неизвестно>" :
+										$"{processedBytesString} / <Неизвестно>";
+								}
+								break;
+						}
+						Color itemBackgroundColor = item.State == DownloadableContentChunkState.Errored ? Color.Orange : Color.Lime;
+						MultipleProgressBarItem mpi = new MultipleProgressBarItem(
+							0, 100, (int)percentItem, itemText, itemBackgroundColor);
+						progressBarItems.AddLast(mpi);
+					}
+
+					progressBar1.SetItems(progressBarItems);
+
+					long totalBytesTransferred = values.Where(item => item.ProcessedBytes >= 0L).Sum(item => item.ProcessedBytes);
 					long contentLength = (s as MultiThreadedDownloader).ContentLength;
 					if (contentLength > 0L)
 					{
-						LinkedList<MultipleProgressBarItem> progressBarItems = new LinkedList<MultipleProgressBarItem>();
-						foreach (DownloadableContentChunk item in values)
-						{
-							double percentItem = 100.0 / item.TotalBytes * item.ProcessedBytes;
-							string percentItemFormatted = string.Format("{0:F3}", percentItem);
-							string itemText = $"{item.TaskId}: {percentItemFormatted}%";
-							MultipleProgressBarItem mpi = new MultipleProgressBarItem(
-								0, 100, (int)percentItem, itemText, Color.Lime);
-							progressBarItems.AddLast(mpi);
-						}
-						progressBar1.SetItems(progressBarItems);
-
-						double percent = 100.0 / contentLength * bytesTransferred;
+						double percent = 100.0 / contentLength * totalBytesTransferred;
 						string percentFormatted = string.Format("{0:F3}", percent);
-						lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%)";
+						lblDownloadingProgress.Text = $"Скачано {totalBytesTransferred} из {contentLength} ({percentFormatted}%)";
 					}
 					else
 					{
-						lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из <Неизвестно>";
+						lblDownloadingProgress.Text = $"Скачано {totalBytesTransferred} из <Неизвестно>";
 					}
 				}));
 			};

@@ -303,6 +303,27 @@ namespace MultiThreadedDownloaderLib
 
 				int lastTime = Environment.TickCount;
 
+				downloader.Connecting += (object sender, string url, int tryNumber, int maxTryCount) =>
+				{
+					FileDownloader d = sender as FileDownloader;
+					d.GetRange(out long byteFrom, out long byteTo);
+					DownloadingTask downloadingTask = new DownloadingTask(d.DownloadingTask.OutputStream, byteFrom, byteTo);
+					DownloadableContentChunk contentChunk = new DownloadableContentChunk(
+						downloadingTask, taskId, -1L, DownloadableContentChunkState.Connecting);
+					OnProgressUpdatedFunc(contentChunk);
+				};
+				downloader.Connected += (object sender, string url, long contentLength, int errCode) =>
+				{
+					FileDownloader d = sender as FileDownloader;
+					d.GetRange(out long byteFrom, out long byteTo);
+					DownloadingTask downloadingTask = new DownloadingTask(d.DownloadingTask.OutputStream, byteFrom, byteTo);
+					DownloadableContentChunkState state = errCode == 200 || errCode == 206 ?
+						DownloadableContentChunkState.Connected : DownloadableContentChunkState.Errored;
+					DownloadableContentChunk contentChunk = new DownloadableContentChunk(downloadingTask, taskId, 0L, state);
+					OnProgressUpdatedFunc(contentChunk);
+
+					return errCode;
+				};
 				downloader.WorkProgress += (object sender, long transferred, long contentLen, int tryNumber, int maxTryCount) =>
 				{
 					int currentTime = Environment.TickCount;
@@ -311,7 +332,8 @@ namespace MultiThreadedDownloaderLib
 						FileDownloader d = sender as FileDownloader;
 						d.GetRange(out long byteFrom, out long byteTo);
 						DownloadingTask downloadingTask = new DownloadingTask(d.DownloadingTask.OutputStream, byteFrom, byteTo);
-						DownloadableContentChunk contentChunk = new DownloadableContentChunk(downloadingTask, taskId, transferred);
+						DownloadableContentChunk contentChunk = new DownloadableContentChunk(
+							downloadingTask, taskId, transferred, DownloadableContentChunkState.Downloading);
 						OnProgressUpdatedFunc(contentChunk);
 
 						lastTime = currentTime;
@@ -319,6 +341,7 @@ namespace MultiThreadedDownloaderLib
 				};
 				downloader.WorkFinished += (object sender, long transferred, long contentLen, int tryNumber, int maxTryCount, int errCode) =>
 				{
+					DownloadableContentChunkState taskState;
 					FileDownloader d = sender as FileDownloader;
 					if (errCode != 200 && errCode != 206 && !isExceptionRaised && !_isCanceled)
 					{
@@ -335,11 +358,18 @@ namespace MultiThreadedDownloaderLib
 								}
 							}
 						}
+
+						taskState = DownloadableContentChunkState.Errored;
+					}
+					else
+					{
+						taskState = DownloadableContentChunkState.Finished;
 					}
 
 					d.GetRange(out long byteFrom, out long byteTo);
 					DownloadingTask downloadingTask = new DownloadingTask(d.DownloadingTask.OutputStream, byteFrom, byteTo);
-					DownloadableContentChunk contentChunk = new DownloadableContentChunk(downloadingTask, taskId, transferred);
+					DownloadableContentChunk contentChunk = new DownloadableContentChunk(
+						downloadingTask, taskId, transferred, taskState);
 					OnProgressUpdatedFunc(contentChunk);
 				};
 
