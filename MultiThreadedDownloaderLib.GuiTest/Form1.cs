@@ -447,10 +447,11 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			}
 			else
 			{
-				progressBar1.SetItem(0, 100, 0);
 				string t = $"Подключение... Попытка №{tryNumber}";
 				if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
 				lblDownloadingProgress.Text = t;
+
+				progressBar1.SetItem(0, 100, 0, t);
 			}
 		}    
 
@@ -484,10 +485,13 @@ namespace MultiThreadedDownloaderLib.GuiTest
 							}
 						}
 					}
+
+					progressBar1.SetItem(0, 100, 0, "Подключено!");
 				}
 				else
 				{
 					lblDownloadingProgress.Text = $"Ошибка {errorCode}";
+					progressBar1.SetItems(null);
 				}
 			};
 
@@ -502,11 +506,12 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			}
 			else
 			{
-				progressBar1.SetItem(0, 100, 0);
 				string t = $"Скачано: 0 из {contentLength}, Попытка №{tryNumber}";
 				if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
 				lblDownloadingProgress.Text = t;
 				lblDownloadingProgress.Refresh();
+
+				progressBar1.SetItem(0, 100, 0, t);
 			}
 		}
 
@@ -521,15 +526,16 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				if (contentLength > 0L)
 				{
 					double percent = 100.0 / contentLength * bytesTransferred;
-					progressBar1.SetItem(0, 100, (int)percent);
 					string percentFormatted = string.Format("{0:F3}", percent);
 					string t = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%), Попытка №{tryNumber}";
 					if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
 					lblDownloadingProgress.Text = t;
+					progressBar1.SetItem(0, 100, (int)percent, $"{percentFormatted}%");
 				}
 				else
 				{
 					lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из <Неизвестно>";
+					progressBar1.SetItem(0, 100, 0, $"Скачано {bytesTransferred} байт");
 				}
 			}
 		}
@@ -545,15 +551,16 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				if (contentLength > 0L)
 				{
 					double percent = 100.0 / contentLength * bytesTransferred;
-					progressBar1.SetItem(0, 100, (int)percent);
 					string percentFormatted = string.Format("{0:F3}", percent);
 					string t = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%), Попытка №{tryNumber}";
 					if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
 					lblDownloadingProgress.Text = t;
+					progressBar1.SetItem(0, 100, (int)percent, $"{percentFormatted}%");
 				}
 				else
 				{
 					lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из <Неизвестно>";
+					progressBar1.SetItem(0, 100, 0, $"Скачано {bytesTransferred} байт");
 				}
 			}
 		}
