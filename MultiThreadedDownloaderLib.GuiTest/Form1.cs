@@ -466,7 +466,6 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				if (errorCode == 200 || errorCode == 206)
 				{
 					lblDownloadingProgress.Text = "Подключено!";
-					lblDownloadingProgress.Refresh();
 					if (contentLength > 0L)
 					{
 						string fn = editFileName.Text;
@@ -509,7 +508,6 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				string t = $"Скачано: 0 из {contentLength}, Попытка №{tryNumber}";
 				if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
 				lblDownloadingProgress.Text = t;
-				lblDownloadingProgress.Refresh();
 
 				progressBar1.SetItem(0, 100, 0, t);
 			}
