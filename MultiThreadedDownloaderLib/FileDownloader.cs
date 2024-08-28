@@ -366,12 +366,15 @@ namespace MultiThreadedDownloaderLib
 			return DownloadString(out responseString, Encoding.UTF8, bufferSize);
 		}
 
-		public void Stop()
+		public bool Stop()
 		{
 			if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
 			{
 				_cancellationTokenSource.Cancel();
+				return true;
 			}
+
+			return false;
 		}
 
 		public void Abort()
