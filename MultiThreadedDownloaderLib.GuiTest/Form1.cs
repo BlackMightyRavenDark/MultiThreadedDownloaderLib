@@ -23,7 +23,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
 		private void Form1_Load(object sender, EventArgs e)
 		{
-			MultiThreadedDownloader.SetMaximumConnectionsLimit(100);
+			MultiThreadedDownloader.SetDefaultMaximumConnectionLimit(100);
 			lblDownloadingProgress.Text = null;
 			lblMergingProgress.Text = null;
 
