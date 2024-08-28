@@ -52,6 +52,7 @@ namespace MultiThreadedDownloaderLib
 		/// </summary>
 		public int TryCountInsideThread { get; set; } = 1;
 
+		public bool IsActive { get; private set; }
 		public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
 		public int LastErrorCode { get; private set; }
 		public string LastErrorMessage { get; private set; }
@@ -169,6 +170,7 @@ namespace MultiThreadedDownloaderLib
 		/// Leave zero for auto select.</param>
 		public async Task<int> Download(int bufferSize = 0)
 		{
+			IsActive = true;
 			Preparing?.Invoke(this);
 
 			_isCanceled = false;
@@ -178,22 +180,26 @@ namespace MultiThreadedDownloaderLib
 			if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(Url))
 			{
 				LastErrorCode = DOWNLOAD_ERROR_NO_URL_SPECIFIED;
+				IsActive = false;
 				return DOWNLOAD_ERROR_NO_URL_SPECIFIED;
 			}
 			if (string.IsNullOrEmpty(OutputFileName) || string.IsNullOrWhiteSpace(OutputFileName))
 			{
 				LastErrorCode = DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED;
-				return DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED;
+                IsActive = false;
+                return DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED;
 			}
 			if (!UseRamForTempFiles && IsTempDirectoryAvailable && !Directory.Exists(TempDirectory))
 			{
 				LastErrorCode = DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS;
-				return DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS;
+                IsActive = false;
+                return DOWNLOAD_ERROR_TEMPORARY_DIR_NOT_EXISTS;
 			}
 			if (IsMergingDirectoryAvailable && !Directory.Exists(MergingDirectory))
 			{
 				LastErrorCode = DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS;
-				return DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS;
+                IsActive = false;
+                return DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS;
 			}
 
 			string dirName = Path.GetDirectoryName(OutputFileName);
@@ -214,7 +220,8 @@ namespace MultiThreadedDownloaderLib
 			List<char> driveLetters = GetUsedDriveLetters();
 			if (driveLetters.Count > 0 && !driveLetters.Contains('\\') && !IsDrivesReady(driveLetters))
 			{
-				return DOWNLOAD_ERROR_DRIVE_NOT_READY;
+                IsActive = false;
+                return DOWNLOAD_ERROR_DRIVE_NOT_READY;
 			}
 
 			Connecting?.Invoke(this, Url);
@@ -224,7 +231,8 @@ namespace MultiThreadedDownloaderLib
 			{
 				LastErrorMessage = headersErrorMessage;
 				DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
-				return LastErrorCode;
+                IsActive = false;
+                return LastErrorCode;
 			}
 
 			ExtractContentLengthFromHeaders(responseHeaders, out long fullContentLength);
@@ -241,12 +249,14 @@ namespace MultiThreadedDownloaderLib
 			if (LastErrorCode != 200 && LastErrorCode != 206)
 			{
 				LastErrorMessage = customError.ErrorMessage;
-				return LastErrorCode;
+                IsActive = false;
+                return LastErrorCode;
 			}
 			if (ContentLength == 0L)
 			{
 				LastErrorCode = DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
-				return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
+                IsActive = false;
+                return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
 			}
 
 			_cancellationTokenSource = new CancellationTokenSource();
@@ -477,21 +487,24 @@ namespace MultiThreadedDownloaderLib
 				AbortTasks(downloaders);
 				ClearGarbage(contentChunks);
 				int ret = (ex is OperationCanceledException) ? DOWNLOAD_ERROR_CANCELED_BY_USER : ex.HResult;
-				return ret;
+                IsActive = false;
+                return ret;
 			}
 
 			downloaders = null;
 			if (LastErrorCode != 200 && LastErrorCode != 206)
 			{
 				ClearGarbage(contentChunks);
-				return LastErrorCode;
+                IsActive = false;
+                return LastErrorCode;
 			}
 			else if (_isCanceled)
 			{
 				ClearGarbage(contentChunks);
 				LastErrorCode = DOWNLOAD_ERROR_CANCELED_BY_USER;
 				LastErrorMessage = null;
-				return LastErrorCode;
+                IsActive = false;
+                return LastErrorCode;
 			}
 
 			List<DownloadingTask> downloadingTasks = BuildChunkSequence(contentChunks, out bool isValid);
@@ -502,7 +515,8 @@ namespace MultiThreadedDownloaderLib
 				LastErrorCode = DOWNLOAD_ERROR_CHUNK_SEQUENCE;
 				LastErrorMessage = null;
 				DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
-				return LastErrorCode;
+                IsActive = false;
+                return LastErrorCode;
 			}
 
 			contentChunks = null;
@@ -539,7 +553,8 @@ namespace MultiThreadedDownloaderLib
 
 			DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
 
-			return LastErrorCode;
+            IsActive = false;
+            return LastErrorCode;
 		}
 
 		public bool Stop()
