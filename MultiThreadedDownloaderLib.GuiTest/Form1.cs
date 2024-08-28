@@ -113,6 +113,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				MessageBox.Show("Не указана ссылка!", "Ошибка!",
 					MessageBoxButtons.OK, MessageBoxIcon.Error);
 				EnableControls();
+				btnDownloadMultiThreaded.Enabled = true;
 				return;
 			}
 
@@ -121,6 +122,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				MessageBox.Show("Не указано имя файла!", "Ошибка!",
 					MessageBoxButtons.OK, MessageBoxIcon.Error);
 				EnableControls();
+				btnDownloadMultiThreaded.Enabled = true;
 				return;
 			}
 
@@ -235,6 +237,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			{
 				Invoke(new MethodInvoker(() =>
 				{
+					btnDownloadMultiThreaded.Text = "Stop";
+					btnDownloadMultiThreaded.Enabled = true;
 					if (customError.ErrorCode == 200 || customError.ErrorCode == 206)
 					{
 						lblDownloadingProgress.Text = "Подключено!";
