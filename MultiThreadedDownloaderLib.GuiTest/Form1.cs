@@ -223,6 +223,10 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			lblMergingProgress.Text = null;
 
 			multiThreadedDownloader = new MultiThreadedDownloader();
+			multiThreadedDownloader.Preparing += (s) =>
+			{
+				Invoke(new MethodInvoker(() => lblDownloadingProgress.Text = "Подготовка..."));
+			};
 			multiThreadedDownloader.Connecting += (s, url) =>
 			{
 				Invoke(new MethodInvoker(() => lblDownloadingProgress.Text = "Подключение..."));

@@ -78,7 +78,8 @@ namespace MultiThreadedDownloaderLib
 		public const int DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS = -205;
 		public const int DOWNLOAD_ERROR_CUSTOM = -206;
 		public const int DOWNLOAD_ERROR_CHUNK_SEQUENCE = -207;
-		
+
+		public delegate void PreparingDelegate(object sender);
 		public delegate void ConnectingDelegate(object sender, string url);
 		public delegate void ConnectedDelegate(object sender, string url, long contentLength, CustomError customError);
 		public delegate void DownloadStartedDelegate(object sender, long contentLength);
@@ -89,6 +90,7 @@ namespace MultiThreadedDownloaderLib
 			int chunkCount, long chunkPosition, long chunkSize);
 		public delegate void ChunkMergingFinishedDelegate(object sender, int errorCode);
 
+		public PreparingDelegate Preparing;
 		public ConnectingDelegate Connecting;
 		public ConnectedDelegate Connected;
 		public DownloadStartedDelegate DownloadStarted;
@@ -167,6 +169,8 @@ namespace MultiThreadedDownloaderLib
 		/// Leave zero for auto select.</param>
 		public async Task<int> Download(int bufferSize = 0)
 		{
+			Preparing?.Invoke(this);
+
 			_isCanceled = false;
 			LastErrorMessage = null;
 			DownloadedBytes = 0L;
