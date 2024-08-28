@@ -27,10 +27,12 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			lblDownloadingProgress.Text = null;
 			lblMergingProgress.Text = null;
 
-			headerCollection = new NameValueCollection();
-			headerCollection.Add("User-Agent", "Mozilla/Firefoxxx 66.6");
-			headerCollection.Add("Accept", "*/*");
-			headerCollection.Add("Range", "0-");
+			headerCollection = new NameValueCollection()
+			{
+				{ "User-Agent", "Mozilla/Firefoxxx 66.6" },
+				{ "Accept", "*/*" },
+				{ "Range", "0-" }
+			};
 		}
 
 		private void btnSelectFile_Click(object sender, EventArgs e)
