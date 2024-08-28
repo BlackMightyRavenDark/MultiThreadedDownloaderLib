@@ -542,13 +542,16 @@ namespace MultiThreadedDownloaderLib
 			return LastErrorCode;
 		}
 
-		public void Stop()
+		public bool Stop()
 		{
 			if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
 			{
 				_cancellationTokenSource.Cancel();
 				_isCanceled = true;
+				return true;
 			}
+
+			return false;
 		}
 
 		private void AbortTasks(IEnumerable<FileDownloader> downloaders)

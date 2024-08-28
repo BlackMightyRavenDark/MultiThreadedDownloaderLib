@@ -210,9 +210,11 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			{
 				if (multiThreadedDownloader != null)
 				{
-					btnDownloadMultiThreaded.Text = "Stopping...";
-					btnDownloadMultiThreaded.Enabled = false;
-					multiThreadedDownloader.Stop();
+					if (multiThreadedDownloader.Stop())
+					{
+						btnDownloadMultiThreaded.Text = "Stopping...";
+						btnDownloadMultiThreaded.Enabled = false;
+					}
 				}
 				return;
 			}
@@ -237,8 +239,6 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			{
 				Invoke(new MethodInvoker(() =>
 				{
-					btnDownloadMultiThreaded.Text = "Stop";
-					btnDownloadMultiThreaded.Enabled = true;
 					if (customError.ErrorCode == 200 || customError.ErrorCode == 206)
 					{
 						lblDownloadingProgress.Text = "Подключено!";
