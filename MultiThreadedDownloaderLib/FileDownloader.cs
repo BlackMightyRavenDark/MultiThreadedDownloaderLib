@@ -48,6 +48,7 @@ namespace MultiThreadedDownloaderLib
 		public const int DOWNLOAD_ERROR_ABORTED = -10;
 		public const int DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT = -11;
 
+		public delegate void PreparingDelegate(object sender, string url, DownloadingTask downloadingTask);
 		public delegate void ConnectingDelegate(object sender, string url, int tryNumber, int maxTryCount);
 		public delegate int ConnectedDelegate(object sender, string url, long contentLength, int errorCode);
 		public delegate void WorkStartedDelegate(object sender, long contentLength, int tryNumber, int maxTryCount);
@@ -55,6 +56,7 @@ namespace MultiThreadedDownloaderLib
 			int tryNumber, int maxTryCount);
 		public delegate void WorkFinishedDelegate(object sender, long bytesTransferred, long contentLength,
 			int tryNumber, int maxTryCount, int errorCode);
+		public PreparingDelegate Preparing;
 		public ConnectingDelegate Connecting;
 		public ConnectedDelegate Connected;
 		public WorkStartedDelegate WorkStarted;
@@ -83,6 +85,8 @@ namespace MultiThreadedDownloaderLib
 		public int Download(DownloadingTask downloadingTask, int bufferSize,
 			CancellationTokenSource cancellationTokenSource)
 		{
+			Preparing?.Invoke(this, Url, downloadingTask);
+
 			IsActive = true;
 			_isAborted = false;
 			LastErrorMessage = null;

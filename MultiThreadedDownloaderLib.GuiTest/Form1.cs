@@ -136,6 +136,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			}
 
 			singleThreadedDownloader = new FileDownloader();
+			singleThreadedDownloader.Preparing += OnPreparing;
 			singleThreadedDownloader.Connecting += OnConnecting;
 			singleThreadedDownloader.Connected += OnConnected;
 			singleThreadedDownloader.WorkStarted += OnWorkStarted;
@@ -439,6 +440,20 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			btnDownloadMultiThreaded.Enabled = true;
 			btnDownloadSingleThreaded.Enabled = true;
 			EnableControls();
+		}
+
+		public void OnPreparing(object sender, string url, DownloadingTask downloadingTask)
+		{
+			if (InvokeRequired)
+			{
+				Invoke(new MethodInvoker(() => OnPreparing(sender, url, downloadingTask)));
+			}
+			else
+			{
+				lblDownloadingProgress.Text = "Подготовка к скачиванию...";
+				lblMergingProgress.Text = null;
+				progressBar1.SetItem("Подготовка...");
+			}
 		}
 
 		public void OnConnecting(object sender, string url, int tryNumber, int maxTryCount)
