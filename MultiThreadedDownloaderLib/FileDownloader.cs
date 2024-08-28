@@ -202,12 +202,15 @@ namespace MultiThreadedDownloaderLib
 						{
 							chunkProcessingDict[tryNumber] = bytes;
 							DownloadedInLastSession = chunkProcessingDict.Sum(item => item.Value);
-							int currentTime = Environment.TickCount;
-							if (currentTime - lastTime >= UpdateIntervalMilliseconds)
+							if (!_isAborted && WorkProgress != null)
 							{
-								WorkProgress?.Invoke(this, DownloadedInLastSession, contentLength,
-									tryNumber, maximumTryCount);
-								lastTime = currentTime;
+								int currentTime = Environment.TickCount;
+								if (currentTime - lastTime >= UpdateIntervalMilliseconds)
+								{
+									WorkProgress.Invoke(this, DownloadedInLastSession, contentLength,
+										tryNumber, maximumTryCount);
+									lastTime = currentTime;
+								}
 							}
 						}, _cancellationTokenSource.Token);
 					completed = true;
@@ -246,7 +249,11 @@ namespace MultiThreadedDownloaderLib
 			{
 				LastErrorCode = _isAborted ? DOWNLOAD_ERROR_ABORTED : DOWNLOAD_ERROR_CANCELED_BY_USER;
 			}
-			WorkFinished?.Invoke(this, DownloadedInLastSession, contentLength, tryNumber, maximumTryCount, LastErrorCode);
+
+			if (!_isAborted && WorkFinished != null)
+			{
+				WorkFinished.Invoke(this, DownloadedInLastSession, contentLength, tryNumber, maximumTryCount, LastErrorCode);
+			}
 
 			IsActive = false;
 			return LastErrorCode;
@@ -377,10 +384,10 @@ namespace MultiThreadedDownloaderLib
 			return false;
 		}
 
-		public void Abort()
+		public bool Abort()
 		{
-			_isAborted = true;
-			Stop();
+			_isAborted = Stop();
+			return _isAborted;
 		}
 
 		public static int GetUrlContentLength(string url, NameValueCollection inHeaders,
