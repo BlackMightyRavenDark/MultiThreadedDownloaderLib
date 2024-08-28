@@ -834,6 +834,11 @@ namespace MultiThreadedDownloaderLib
 			return false;
 		}
 
+		public static int GetDefaultMaximumConnectionLimit()
+		{
+			return ServicePointManager.DefaultConnectionLimit;
+		}
+
 		public static void SetDefaultMaximumConnectionLimit(int limit)
 		{
 			ServicePointManager.DefaultConnectionLimit = limit;
