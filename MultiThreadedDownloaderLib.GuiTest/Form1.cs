@@ -453,7 +453,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
 				lblDownloadingProgress.Text = t;
 
-				progressBar1.SetItem(0, 100, 0, t);
+				progressBar1.SetItem(t);
 			}
 		}    
 
@@ -487,7 +487,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 						}
 					}
 
-					progressBar1.SetItem(0, 100, 0, "Подключено!");
+					progressBar1.SetItem("Подключено!");
 				}
 				else
 				{
@@ -511,7 +511,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
 				lblDownloadingProgress.Text = t;
 
-				progressBar1.SetItem(0, 100, 0, "0,000%");
+				progressBar1.SetItem("0,000%");
 			}
 		}
 
@@ -535,7 +535,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				else
 				{
 					lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из <Неизвестно>";
-					progressBar1.SetItem(0, 100, 0, $"Скачано {bytesTransferred} байт");
+					progressBar1.SetItem($"Скачано {bytesTransferred} байт");
 				}
 			}
 		}
@@ -560,7 +560,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				else
 				{
 					lblDownloadingProgress.Text = $"Скачано {bytesTransferred} из <Неизвестно>";
-					progressBar1.SetItem(0, 100, 0, $"Скачано {bytesTransferred} байт");
+					progressBar1.SetItem($"Скачано {bytesTransferred} байт");
 				}
 			}
 		}

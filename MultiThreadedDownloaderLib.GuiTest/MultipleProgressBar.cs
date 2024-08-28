@@ -92,6 +92,11 @@ namespace MultiThreadedDownloaderLib
 			SetItem(min, max, value, null);
 		}
 
+		public void SetItem(string title)
+		{
+			SetItem(0, 100, 0, title);
+		}
+
 		public void ClearItems()
 		{
 			SetItems(null);
