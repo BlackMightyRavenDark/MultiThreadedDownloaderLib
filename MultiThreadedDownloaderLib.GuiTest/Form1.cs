@@ -509,7 +509,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
 				lblDownloadingProgress.Text = t;
 
-				progressBar1.SetItem(0, 100, 0, t);
+				progressBar1.SetItem(0, 100, 0, "0,000%");
 			}
 		}
 
