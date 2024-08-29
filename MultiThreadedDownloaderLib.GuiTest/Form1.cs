@@ -423,7 +423,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			multiThreadedDownloader.UpdateIntervalMilliseconds = (int)numericUpDownUpdateInterval.Value;
 			multiThreadedDownloader.ChunksMergingUpdateIntervalMilliseconds = (int)numericUpDownChunksMergingUpdateInterval.Value;
 
-			int errorCode = await Task.Run(() => multiThreadedDownloader.Download());
+			bool useAccurateMode = checkBoxUseAccurateMode.Checked;
+			int errorCode = await Task.Run(() => multiThreadedDownloader.Download(useAccurateMode));
 			System.Diagnostics.Debug.WriteLine($"Error code = {errorCode}");
 
 			if (multiThreadedDownloader.UseRamForTempFiles)
@@ -633,6 +634,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			btnHeaders.Enabled = false;
 			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = false;
 			checkBoxUseRamForTempFiles.Enabled = false;
+			checkBoxUseAccurateMode.Enabled = false;
 			numericUpDownThreadCount.Enabled = false;
 			numericUpDownTryCountPerThread.Enabled = false;
 			numericUpDownTryCountInsideEachThread.Enabled = false;
@@ -652,6 +654,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			btnHeaders.Enabled = true;
 			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = true;
 			checkBoxUseRamForTempFiles.Enabled = true;
+			checkBoxUseAccurateMode.Enabled = true;
 			numericUpDownThreadCount.Enabled = true;
 			numericUpDownTryCountPerThread.Enabled = true;
 			numericUpDownTryCountInsideEachThread.Enabled = true;

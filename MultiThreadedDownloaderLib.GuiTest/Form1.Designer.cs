@@ -57,6 +57,7 @@
 			this.numericUpDownTryCountInsideEachThread = new System.Windows.Forms.NumericUpDown();
 			this.label10 = new System.Windows.Forms.Label();
 			this.progressBar1 = new MultiThreadedDownloaderLib.MultipleProgressBar();
+			this.checkBoxUseAccurateMode = new System.Windows.Forms.CheckBox();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownThreadCount)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownUpdateInterval)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownChunksMergingUpdateInterval)).BeginInit();
@@ -67,7 +68,7 @@
 			// btnDownloadSingleThreaded
 			// 
 			this.btnDownloadSingleThreaded.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.btnDownloadSingleThreaded.Location = new System.Drawing.Point(12, 292);
+			this.btnDownloadSingleThreaded.Location = new System.Drawing.Point(12, 314);
 			this.btnDownloadSingleThreaded.Name = "btnDownloadSingleThreaded";
 			this.btnDownloadSingleThreaded.Size = new System.Drawing.Size(138, 23);
 			this.btnDownloadSingleThreaded.TabIndex = 0;
@@ -85,7 +86,7 @@
 			// btnDownloadMultiThreaded
 			// 
 			this.btnDownloadMultiThreaded.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.btnDownloadMultiThreaded.Location = new System.Drawing.Point(156, 292);
+			this.btnDownloadMultiThreaded.Location = new System.Drawing.Point(156, 314);
 			this.btnDownloadMultiThreaded.Name = "btnDownloadMultiThreaded";
 			this.btnDownloadMultiThreaded.Size = new System.Drawing.Size(148, 23);
 			this.btnDownloadMultiThreaded.TabIndex = 3;
@@ -97,7 +98,7 @@
 			// 
 			this.lblDownloadingProgress.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
 			this.lblDownloadingProgress.AutoSize = true;
-			this.lblDownloadingProgress.Location = new System.Drawing.Point(9, 326);
+			this.lblDownloadingProgress.Location = new System.Drawing.Point(9, 348);
 			this.lblDownloadingProgress.Name = "lblDownloadingProgress";
 			this.lblDownloadingProgress.Size = new System.Drawing.Size(58, 13);
 			this.lblDownloadingProgress.TabIndex = 4;
@@ -192,7 +193,7 @@
 			// 
 			// numericUpDownThreadCount
 			// 
-			this.numericUpDownThreadCount.Location = new System.Drawing.Point(334, 160);
+			this.numericUpDownThreadCount.Location = new System.Drawing.Point(332, 184);
 			this.numericUpDownThreadCount.Maximum = new decimal(new int[] {
 			25,
 			0,
@@ -215,7 +216,7 @@
 			// label5
 			// 
 			this.label5.AutoSize = true;
-			this.label5.Location = new System.Drawing.Point(9, 162);
+			this.label5.Location = new System.Drawing.Point(7, 186);
 			this.label5.Name = "label5";
 			this.label5.Size = new System.Drawing.Size(113, 13);
 			this.label5.TabIndex = 16;
@@ -225,7 +226,7 @@
 			// 
 			this.lblMergingProgress.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
 			this.lblMergingProgress.AutoSize = true;
-			this.lblMergingProgress.Location = new System.Drawing.Point(73, 326);
+			this.lblMergingProgress.Location = new System.Drawing.Point(73, 348);
 			this.lblMergingProgress.Name = "lblMergingProgress";
 			this.lblMergingProgress.Size = new System.Drawing.Size(96, 13);
 			this.lblMergingProgress.TabIndex = 17;
@@ -266,7 +267,7 @@
 			// label6
 			// 
 			this.label6.AutoSize = true;
-			this.label6.Location = new System.Drawing.Point(9, 238);
+			this.label6.Location = new System.Drawing.Point(7, 262);
 			this.label6.Name = "label6";
 			this.label6.Size = new System.Drawing.Size(220, 13);
 			this.label6.TabIndex = 21;
@@ -279,7 +280,7 @@
 			0,
 			0,
 			0});
-			this.numericUpDownUpdateInterval.Location = new System.Drawing.Point(334, 236);
+			this.numericUpDownUpdateInterval.Location = new System.Drawing.Point(332, 260);
 			this.numericUpDownUpdateInterval.Maximum = new decimal(new int[] {
 			2000,
 			0,
@@ -302,7 +303,7 @@
 			// label7
 			// 
 			this.label7.AutoSize = true;
-			this.label7.Location = new System.Drawing.Point(9, 264);
+			this.label7.Location = new System.Drawing.Point(7, 288);
 			this.label7.Name = "label7";
 			this.label7.Size = new System.Drawing.Size(266, 13);
 			this.label7.TabIndex = 24;
@@ -315,7 +316,7 @@
 			0,
 			0,
 			0});
-			this.numericUpDownChunksMergingUpdateInterval.Location = new System.Drawing.Point(334, 262);
+			this.numericUpDownChunksMergingUpdateInterval.Location = new System.Drawing.Point(332, 286);
 			this.numericUpDownChunksMergingUpdateInterval.Maximum = new decimal(new int[] {
 			1000,
 			0,
@@ -338,7 +339,7 @@
 			// label8
 			// 
 			this.label8.AutoSize = true;
-			this.label8.Location = new System.Drawing.Point(9, 186);
+			this.label8.Location = new System.Drawing.Point(7, 210);
 			this.label8.Name = "label8";
 			this.label8.Size = new System.Drawing.Size(303, 13);
 			this.label8.TabIndex = 28;
@@ -346,7 +347,7 @@
 			// 
 			// numericUpDownTryCountPerThread
 			// 
-			this.numericUpDownTryCountPerThread.Location = new System.Drawing.Point(334, 184);
+			this.numericUpDownTryCountPerThread.Location = new System.Drawing.Point(332, 208);
 			this.numericUpDownTryCountPerThread.Name = "numericUpDownTryCountPerThread";
 			this.numericUpDownTryCountPerThread.Size = new System.Drawing.Size(54, 20);
 			this.numericUpDownTryCountPerThread.TabIndex = 29;
@@ -358,7 +359,7 @@
 			// 
 			// numericUpDownTryCountInsideEachThread
 			// 
-			this.numericUpDownTryCountInsideEachThread.Location = new System.Drawing.Point(334, 210);
+			this.numericUpDownTryCountInsideEachThread.Location = new System.Drawing.Point(332, 234);
 			this.numericUpDownTryCountInsideEachThread.Name = "numericUpDownTryCountInsideEachThread";
 			this.numericUpDownTryCountInsideEachThread.Size = new System.Drawing.Size(54, 20);
 			this.numericUpDownTryCountInsideEachThread.TabIndex = 31;
@@ -371,7 +372,7 @@
 			// label10
 			// 
 			this.label10.AutoSize = true;
-			this.label10.Location = new System.Drawing.Point(9, 212);
+			this.label10.Location = new System.Drawing.Point(7, 236);
 			this.label10.Name = "label10";
 			this.label10.Size = new System.Drawing.Size(319, 13);
 			this.label10.TabIndex = 32;
@@ -381,17 +382,28 @@
 			// 
 			this.progressBar1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
 			| System.Windows.Forms.AnchorStyles.Right)));
-			this.progressBar1.Location = new System.Drawing.Point(12, 342);
+			this.progressBar1.Location = new System.Drawing.Point(12, 364);
 			this.progressBar1.Name = "progressBar1";
 			this.progressBar1.Size = new System.Drawing.Size(744, 23);
 			this.progressBar1.TabIndex = 27;
 			this.progressBar1.Text = "multipleProgressBar1";
 			// 
+			// checkBoxUseAccurateMode
+			// 
+			this.checkBoxUseAccurateMode.AutoSize = true;
+			this.checkBoxUseAccurateMode.Location = new System.Drawing.Point(12, 161);
+			this.checkBoxUseAccurateMode.Name = "checkBoxUseAccurateMode";
+			this.checkBoxUseAccurateMode.Size = new System.Drawing.Size(374, 17);
+			this.checkBoxUseAccurateMode.TabIndex = 33;
+			this.checkBoxUseAccurateMode.Text = "Использовать аккуратный режим (только при двух и более потоках)";
+			this.checkBoxUseAccurateMode.UseVisualStyleBackColor = true;
+			// 
 			// Form1
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(768, 377);
+			this.ClientSize = new System.Drawing.Size(768, 399);
+			this.Controls.Add(this.checkBoxUseAccurateMode);
 			this.Controls.Add(this.label10);
 			this.Controls.Add(this.numericUpDownTryCountInsideEachThread);
 			this.Controls.Add(this.numericUpDownTryCountPerThread);
@@ -468,5 +480,6 @@
 		private System.Windows.Forms.NumericUpDown numericUpDownTryCountPerThread;
 		private System.Windows.Forms.NumericUpDown numericUpDownTryCountInsideEachThread;
 		private System.Windows.Forms.Label label10;
+		private System.Windows.Forms.CheckBox checkBoxUseAccurateMode;
 	}
 }

@@ -164,11 +164,16 @@ namespace MultiThreadedDownloaderLib
 		/// <summary>
 		/// Execute the downloading task.
 		/// </summary>
+		/// <param name="accurateMode">
+		/// If 'true' - locks the thread list object before accessing it.
+		/// It's prevents losing the downloaded file parts sometimes.
+		/// But it's may be some slower.
+		/// This is a quick test bugfix. It's must be fixed another way.</param>
 		/// <param name="bufferSize">
 		/// Buffer size per thread.
 		/// Warning! Do not use numbers smaller than 8192!
 		/// Leave zero for auto select.</param>
-		public async Task<int> Download(int bufferSize = 0)
+		public async Task<int> Download(bool accurateMode, int bufferSize = 0)
 		{
 			IsActive = true;
 			Preparing?.Invoke(this);
@@ -267,8 +272,20 @@ namespace MultiThreadedDownloaderLib
 
 			void OnProgressUpdatedFunc(DownloadableContentChunk contentChunk)
 			{
-				contentChunks[contentChunk.TaskId] = contentChunk;
-				DownloadedBytes = contentChunks.Sum(item => item.Value.ProcessedBytes);
+				if (accurateMode && ThreadCount > 1)
+				{
+					lock (contentChunks)
+					{
+						contentChunks[contentChunk.TaskId] = contentChunk;
+						DownloadedBytes = contentChunks.Sum(item => item.Value.ProcessedBytes);
+					}
+				}
+				else
+				{
+					contentChunks[contentChunk.TaskId] = contentChunk;
+					DownloadedBytes = contentChunks.Sum(item => item.Value.ProcessedBytes);
+				}
+
 				DownloadProgress?.Invoke(this, contentChunks);
 			}
 
@@ -554,6 +571,11 @@ namespace MultiThreadedDownloaderLib
 
 			IsActive = false;
 			return LastErrorCode;
+		}
+
+		public async Task<int> Download(int bufferSize = 0)
+		{
+			return await Download(false, bufferSize);
 		}
 
 		public bool Stop()
