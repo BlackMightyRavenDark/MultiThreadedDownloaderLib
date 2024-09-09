@@ -523,7 +523,7 @@ namespace MultiThreadedDownloaderLib
 				return LastErrorCode;
 			}
 
-			List<DownloadingTask> downloadingTasks = BuildChunkSequence(contentChunks, out bool isValid);
+			List<DownloadingTask> downloadingTasks = BuildChunkSequence(contentChunks, chunkCount, out bool isValid);
 			if (!isValid || downloadingTasks == null || downloadingTasks.Count <= 0)
 			{
 				contentChunks = null;
@@ -599,13 +599,14 @@ namespace MultiThreadedDownloaderLib
 		}
 
 		private List<DownloadingTask> BuildChunkSequence(
-			ConcurrentDictionary<int, DownloadableContentChunk> contentChunks, out bool isValid)
+			ConcurrentDictionary<int, DownloadableContentChunk> contentChunks,
+			int threadCount, out bool isValid)
 		{
-			int count = contentChunks.Count;
-			if (count > 0)
+			int elementCount = contentChunks.Count;
+			if (elementCount > 0 && elementCount == threadCount)
 			{
 				isValid = true;
-				for (int i = 0; i < count; ++i)
+				for (int i = 0; i < threadCount; ++i)
 				{
 					isValid &= contentChunks.ContainsKey(i) &&
 						contentChunks[i]?.DownloadingTask?.OutputStream != null;
