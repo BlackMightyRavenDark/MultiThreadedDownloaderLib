@@ -165,6 +165,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
 			singleThreadedDownloader = new FileDownloader();
 			singleThreadedDownloader.Preparing += OnPreparing;
+			singleThreadedDownloader.HeadersReceiving += OnHeadersReceiving;
+			singleThreadedDownloader.HeadersReceived += OnHeadersReceived;
 			singleThreadedDownloader.Connecting += OnConnecting;
 			singleThreadedDownloader.Connected += OnConnected;
 			singleThreadedDownloader.WorkStarted += OnWorkStarted;
@@ -495,6 +497,41 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				lblDownloadingProgress.Text = "Подготовка к скачиванию...";
 				lblMergingProgress.Text = null;
 				progressBar1.SetItem("Подготовка...");
+			}
+		}
+
+		private void OnHeadersReceiving(object sender, string url, DownloadingTask downloadingTask)
+		{
+			if (InvokeRequired)
+			{
+				Invoke(new MethodInvoker(() => OnHeadersReceiving(sender, url, downloadingTask)));
+			}
+			else
+			{
+				lblDownloadingProgress.Text = "Получение заголовков...";
+				System.Diagnostics.Debug.WriteLine($"Получение заголовков... {url}");
+			}
+		}
+
+		private void OnHeadersReceived(object sender, string url,
+			DownloadingTask downloadingTask, NameValueCollection headers, int errorCode)
+		{
+			if (InvokeRequired)
+			{
+				Invoke(new MethodInvoker(() => OnHeadersReceived(sender, url, downloadingTask, headers, errorCode)));
+			}
+			else
+			{
+				if (errorCode == 200 || errorCode == 206)
+				{
+					System.Diagnostics.Debug.WriteLine("Заголовки получены:");
+					string t = HttpRequestResult.HeadersToString(headers);
+					System.Diagnostics.Debug.WriteLine(t);
+				}
+				else
+				{
+					System.Diagnostics.Debug.WriteLine($"Ошибка при получении заголовков! Код: {errorCode}");
+				}
 			}
 		}
 

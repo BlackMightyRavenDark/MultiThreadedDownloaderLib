@@ -49,6 +49,9 @@ namespace MultiThreadedDownloaderLib
 		public const int DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT = -11;
 
 		public delegate void PreparingDelegate(object sender, string url, DownloadingTask downloadingTask);
+		public delegate void HeadersReceivingDelegate(object sender, string url, DownloadingTask downloadingTask);
+		public delegate void HeadersReceivedDelegate(object sender, string url,
+			DownloadingTask downloadingTask, NameValueCollection headers, int errorCode);
 		public delegate void ConnectingDelegate(object sender, string url, int tryNumber, int maxTryCount);
 		public delegate int ConnectedDelegate(object sender, string url, long contentLength, int errorCode);
 		public delegate void WorkStartedDelegate(object sender, long contentLength, int tryNumber, int maxTryCount);
@@ -57,6 +60,8 @@ namespace MultiThreadedDownloaderLib
 		public delegate void WorkFinishedDelegate(object sender, long bytesTransferred, long contentLength,
 			int tryNumber, int maxTryCount, int errorCode);
 		public PreparingDelegate Preparing;
+		public HeadersReceivingDelegate HeadersReceiving;
+		public HeadersReceivedDelegate HeadersReceived;
 		public ConnectingDelegate Connecting;
 		public ConnectedDelegate Connected;
 		public WorkStartedDelegate WorkStarted;
@@ -110,15 +115,18 @@ namespace MultiThreadedDownloaderLib
 			int maximumTryCount = TryCount;
 			bool isInfiniteRetries = maximumTryCount <= 0;
 
-			Connecting?.Invoke(this, Url, tryNumber, maximumTryCount);
+			HeadersReceiving?.Invoke(this, Url, downloadingTask);
 
 			LastErrorCode = GetUrlResponseHeaders(Url, Headers, out NameValueCollection responseHeaders, out string headersErrorText);
 			if (LastErrorCode != 200 && LastErrorCode != 206)
 			{
 				LastErrorMessage = headersErrorText;
+				HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, LastErrorCode);
 				WorkFinished?.Invoke(this, DownloadedInLastSession, -1L, tryNumber, maximumTryCount, LastErrorCode);
 				return LastErrorCode;
 			}
+
+			HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, LastErrorCode);
 
 			_cancellationTokenSource = cancellationTokenSource != null ?
 				cancellationTokenSource : new CancellationTokenSource();
@@ -139,8 +147,8 @@ namespace MultiThreadedDownloaderLib
 
 			do
 			{
-				tryNumber++;
-
+				Connecting?.Invoke(this, Url, ++tryNumber, maximumTryCount);
+				
 				long byteTo = downloadingTask.ByteTo == -1L ? contentLength - 1L : downloadingTask.ByteTo;
 				if (isRangeSupported && !SetRange(DownloadedInLastSession + downloadingTask.ByteFrom, byteTo))
 				{
