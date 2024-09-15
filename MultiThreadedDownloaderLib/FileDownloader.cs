@@ -17,7 +17,7 @@ namespace MultiThreadedDownloaderLib
 		/// </summary>
 		public int TryCount { get; set; } = 1;
 
-		public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
+		public NameValueCollection Headers { get => _headers; set { SetHeaders(value); } }
 		public double UpdateIntervalMilliseconds { get; set; } = 100.0;
 		public long DownloadedInLastSession { get; private set; } = 0L;
 		public long OutputStreamSize => DownloadingTask?.OutputStream?.Stream != null ?
@@ -128,8 +128,7 @@ namespace MultiThreadedDownloaderLib
 
 			HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, LastErrorCode);
 
-			_cancellationTokenSource = cancellationTokenSource != null ?
-				cancellationTokenSource : new CancellationTokenSource();
+			_cancellationTokenSource = cancellationTokenSource ?? new CancellationTokenSource();
 
 			Dictionary<int, long> chunkProcessingDict = new Dictionary<int, long>();
 
@@ -205,6 +204,7 @@ namespace MultiThreadedDownloaderLib
 				bool completed = false;
 				try
 				{
+					CancellationToken token = _cancellationTokenSource.Token;
 					bool gZipped = requestResult.IsZippedContent();
 					LastErrorCode = requestResult.WebContent.ContentToStream(
 						downloadingTask.OutputStream.Stream, bufferSize, gZipped, (long bytes) =>
@@ -221,7 +221,7 @@ namespace MultiThreadedDownloaderLib
 									lastTime = currentTime;
 								}
 							}
-						}, _cancellationTokenSource.Token);
+						}, token);
 					completed = true;
 				}
 				catch (Exception ex)

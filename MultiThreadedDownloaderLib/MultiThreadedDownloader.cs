@@ -53,7 +53,7 @@ namespace MultiThreadedDownloaderLib
 		public int TryCountInsideThread { get; set; } = 1;
 
 		public bool IsActive { get; private set; }
-		public NameValueCollection Headers { get { return _headers; } set { SetHeaders(value); } }
+		public NameValueCollection Headers { get => _headers; set { SetHeaders(value); } }
 		public int LastErrorCode { get; private set; }
 		public string LastErrorMessage { get; private set; }
 		public bool IsTempDirectoryAvailable => !string.IsNullOrEmpty(TempDirectory) &&
