@@ -505,9 +505,10 @@ namespace MultiThreadedDownloaderLib
 				ClearGarbage(contentChunks);
 				_cancellationTokenSource.Dispose();
 				_cancellationTokenSource = null;
-				int ret = (ex is OperationCanceledException) ? DOWNLOAD_ERROR_CANCELED_BY_USER : ex.HResult;
+				LastErrorCode = (ex is OperationCanceledException) ? DOWNLOAD_ERROR_CANCELED_BY_USER : ex.HResult;
+				DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
 				IsActive = false;
-				return ret;
+				return LastErrorCode;
 			}
 
 			downloaders = null;
@@ -524,6 +525,7 @@ namespace MultiThreadedDownloaderLib
 				LastErrorMessage = null;
 				_cancellationTokenSource.Dispose();
 				_cancellationTokenSource = null;
+				DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
 				IsActive = false;
 				return LastErrorCode;
 			}
