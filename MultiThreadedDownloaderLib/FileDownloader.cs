@@ -53,7 +53,7 @@ namespace MultiThreadedDownloaderLib
 		public delegate void HeadersReceivedDelegate(object sender, string url,
 			DownloadingTask downloadingTask, NameValueCollection headers, int errorCode);
 		public delegate void ConnectingDelegate(object sender, string url, int tryNumber, int maxTryCount);
-		public delegate int ConnectedDelegate(object sender, string url, long contentLength, int errorCode);
+		public delegate int ConnectedDelegate(object sender, string url, long contentLength, NameValueCollection headers, int errorCode);
 		public delegate void WorkStartedDelegate(object sender, long contentLength, int tryNumber, int maxTryCount);
 		public delegate void WorkProgressDelegate(object sender, long bytesTransferred, long contentLength,
 			int tryNumber, int maxTryCount);
@@ -180,7 +180,8 @@ namespace MultiThreadedDownloaderLib
 
 				if (Connected != null)
 				{
-					LastErrorCode = Connected.Invoke(this, Url, contentLength, LastErrorCode);
+					LastErrorCode = Connected.Invoke(this, Url, contentLength,
+						requestResult.HttpWebResponse.Headers, LastErrorCode);
 				}
 
 				if (HasErrors)

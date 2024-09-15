@@ -555,16 +555,19 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			}
 		}    
 
-		private int OnConnected(object sender, string url, long contentLength, int errorCode)
+		private int OnConnected(object sender, string url, long contentLength, NameValueCollection headers, int errorCode)
 		{
 			if (InvokeRequired)
 			{
-				Invoke(new MethodInvoker(() => OnConnected(sender, url, contentLength, errorCode)));
+				Invoke(new MethodInvoker(() => OnConnected(sender, url, contentLength, headers, errorCode)));
 			}
 			else
 			{
 				if (errorCode == 200 || errorCode == 206)
 				{
+					string t = HttpRequestResult.HeadersToString(headers);
+					System.Diagnostics.Debug.WriteLine($"Заголовки получены:\n{t}");
+
 					lblDownloadingProgress.Text = "Подключено!";
 					if (contentLength > 0L)
 					{
