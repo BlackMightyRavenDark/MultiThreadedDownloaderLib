@@ -8,13 +8,17 @@ namespace MultiThreadedDownloaderLib
 	public static class HttpRequestSender
 	{
 		public static HttpRequestResult Send(string method, string url,
-			Stream body, NameValueCollection headers, bool sendExpect100ContinueHeader = false)
+			Stream body, NameValueCollection headers, int timeout, bool sendExpect100ContinueHeader = false)
 		{
 			try
 			{
 				HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
 				httpWebRequest.Method = method;
 				httpWebRequest.ServicePoint.Expect100Continue = sendExpect100ContinueHeader;
+				if (timeout >= 500)
+				{
+					httpWebRequest.Timeout = timeout;
+				}
 
 				if (headers != null && headers.Count > 0)
 				{
@@ -71,36 +75,66 @@ namespace MultiThreadedDownloaderLib
 			}
 		}
 
-	   public static HttpRequestResult Send(string method, string url,
-			byte[] body, NameValueCollection headers = null)
+		public static HttpRequestResult Send(string method, string url,
+			Stream body, NameValueCollection headers, bool sendExpect100ContinueHeader = false)
+		{
+			return Send(method, url, body, headers, 0, sendExpect100ContinueHeader);
+		}
+
+		public static HttpRequestResult Send(string method, string url,
+			byte[] body, int timeout, NameValueCollection headers = null)
 		{
 			Stream stream = body?.ToStream(true);
-			HttpRequestResult result = Send(method, url, stream, headers, false);
+			HttpRequestResult result = Send(method, url, stream, headers, timeout, false);
 			stream?.Close();
 			return result;
 		}
 
 		public static HttpRequestResult Send(string method, string url,
-			 string body, Encoding bodyEncoding, NameValueCollection headers = null)
+			byte[] body, NameValueCollection headers = null)
 		{
-			byte[] bodyBytes = !string.IsNullOrEmpty(body) ? bodyEncoding.GetBytes(body) : null;
-			return Send(method, url, bodyBytes, headers);
+			return Send(method, url, body, 0, headers);
 		}
 
 		public static HttpRequestResult Send(string method, string url,
-			 string body, NameValueCollection headers = null)
+			 string body, Encoding bodyEncoding, int timeout, NameValueCollection headers = null)
 		{
-			return Send(method, url, body, Encoding.UTF8, headers);
+			byte[] bodyBytes = !string.IsNullOrEmpty(body) ? bodyEncoding.GetBytes(body) : null;
+			return Send(method, url, bodyBytes, timeout, headers);
+		}
+
+		public static HttpRequestResult Send(string method, string url,
+			string body, Encoding bodyEncoding, NameValueCollection headers = null)
+		{
+			return Send(method, url, body, bodyEncoding, 0, headers);
+		}
+
+		public static HttpRequestResult Send(string method, string url,
+			string body, int timeout, NameValueCollection headers = null)
+		{
+			return Send(method, url, body, Encoding.UTF8, timeout, headers);
+		}
+
+		public static HttpRequestResult Send(string method, string url,
+			string body, NameValueCollection headers = null)
+		{
+			return Send(method, url, body, 0, headers);
+		}
+
+		public static HttpRequestResult Send(string method, string url,
+			int timeout, NameValueCollection headers = null)
+		{
+			return Send(method, url, (byte[])null, timeout, headers);
 		}
 
 		public static HttpRequestResult Send(string method, string url, NameValueCollection headers = null)
 		{
-			return Send(method, url, (byte[])null, headers);
+			return Send(method, url, 0, headers);
 		}
 
-		public static HttpRequestResult Send(string url)
+		public static HttpRequestResult Send(string url, int timeout = 0)
 		{
-			return Send("GET", url);
+			return Send("GET", url, timeout);
 		}
 
 		public static void SetRequestHeaders(HttpWebRequest request, NameValueCollection headers)
