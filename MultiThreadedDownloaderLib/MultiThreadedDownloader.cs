@@ -174,7 +174,7 @@ namespace MultiThreadedDownloaderLib
 		/// Buffer size per thread.
 		/// Warning! Do not use numbers smaller than 8192!
 		/// Leave zero for auto select.</param>
-		public async Task<int> Download(bool accurateMode, int bufferSize = 0)
+		public int Download(bool accurateMode, int bufferSize = 0)
 		{
 			IsActive = true;
 			Preparing?.Invoke(this);
@@ -495,7 +495,7 @@ namespace MultiThreadedDownloaderLib
 
 			try
 			{
-				await Task.WhenAll(tasks);
+				Task.WhenAll(tasks).Wait();
 			}
 			catch (Exception ex)
 			{
@@ -541,7 +541,7 @@ namespace MultiThreadedDownloaderLib
 			if (UseRamForTempFiles || downloadingTasks.Count > 1)
 			{
 				ChunkMergingStarted?.Invoke(this, downloadingTasks.Count);
-				LastErrorCode = await Task.Run(() => MergeChunks(downloadingTasks));
+				LastErrorCode = MergeChunks(downloadingTasks);
 				ChunkMergingFinished?.Invoke(this, LastErrorCode);
 			}
 			else if (!UseRamForTempFiles && downloadingTasks.Count == 1)
@@ -574,9 +574,9 @@ namespace MultiThreadedDownloaderLib
 			return LastErrorCode;
 		}
 
-		public async Task<int> Download(int bufferSize = 0)
+		public int Download(int bufferSize = 0)
 		{
-			return await Download(false, bufferSize);
+			return Download(false, bufferSize);
 		}
 
 		public bool Stop()
