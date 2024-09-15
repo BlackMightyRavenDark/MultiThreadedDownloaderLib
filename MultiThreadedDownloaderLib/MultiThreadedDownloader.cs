@@ -66,6 +66,7 @@ namespace MultiThreadedDownloaderLib
 
 		private NameValueCollection _headers = new NameValueCollection();
 		private bool _isCanceled = false;
+		private bool _isDisposed = false;
 
 		private CancellationTokenSource _cancellationTokenSource;
 
@@ -104,11 +105,10 @@ namespace MultiThreadedDownloaderLib
 
 		public void Dispose()
 		{
-			if (_cancellationTokenSource != null)
+			if (!_isDisposed)
 			{
+				_isDisposed = true;
 				Stop();
-				_cancellationTokenSource.Dispose();
-				_cancellationTokenSource = null;
 			}
 		}
 
@@ -503,6 +503,8 @@ namespace MultiThreadedDownloaderLib
 				LastErrorMessage = ex.Message;
 				AbortTasks(downloaders);
 				ClearGarbage(contentChunks);
+				_cancellationTokenSource.Dispose();
+				_cancellationTokenSource = null;
 				int ret = (ex is OperationCanceledException) ? DOWNLOAD_ERROR_CANCELED_BY_USER : ex.HResult;
 				IsActive = false;
 				return ret;
@@ -520,6 +522,8 @@ namespace MultiThreadedDownloaderLib
 				ClearGarbage(contentChunks);
 				LastErrorCode = DOWNLOAD_ERROR_CANCELED_BY_USER;
 				LastErrorMessage = null;
+				_cancellationTokenSource.Dispose();
+				_cancellationTokenSource = null;
 				IsActive = false;
 				return LastErrorCode;
 			}
@@ -531,6 +535,8 @@ namespace MultiThreadedDownloaderLib
 				if (UseRamForTempFiles && downloadingTasks != null) { ClearGarbage(downloadingTasks); }
 				LastErrorCode = DOWNLOAD_ERROR_CHUNK_SEQUENCE;
 				LastErrorMessage = null;
+				_cancellationTokenSource.Dispose();
+				_cancellationTokenSource = null;
 				DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
 				IsActive = false;
 				return LastErrorCode;
@@ -567,6 +573,9 @@ namespace MultiThreadedDownloaderLib
 			{
 				LastErrorCode = 400;
 			}
+
+			_cancellationTokenSource.Dispose();
+			_cancellationTokenSource = null;
 
 			DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
 
