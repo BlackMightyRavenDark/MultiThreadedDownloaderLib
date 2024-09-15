@@ -293,8 +293,12 @@ namespace MultiThreadedDownloaderLib
 			void CallProgressUpdaterFunc(FileDownloader fd, long processedBytes,
 				int taskId, DownloadableContentChunkState state)
 			{
-				fd.GetRange(out long byteFrom, out long byteTo);
-				DownloadingTask downloadingTask = new DownloadingTask(fd.DownloadingTask.OutputStream, byteFrom, byteTo);
+				DownloadingTask downloadingTask = null;
+				if (state != DownloadableContentChunkState.Preparing)
+				{
+					fd.GetRange(out long byteFrom, out long byteTo);
+					downloadingTask = new DownloadingTask(fd.DownloadingTask.OutputStream, byteFrom, byteTo);
+				}
 				DownloadableContentChunk contentChunk = new DownloadableContentChunk(
 					downloadingTask, taskId, processedBytes, state);
 				OnProgressUpdatedFunc(contentChunk);
@@ -317,6 +321,12 @@ namespace MultiThreadedDownloaderLib
 			if (bufferSize == 0)
 			{
 				bufferSize = isRangeSupported ? 8192 : 4096;
+			}
+
+			for (int i = 0; i < ThreadCount; ++i)
+			{
+				contentChunks[i] = new DownloadableContentChunk(
+					null, i, 0L, DownloadableContentChunkState.Preparing);
 			}
 
 			bool isInfiniteRetries = TryCountPerThread <= 0;

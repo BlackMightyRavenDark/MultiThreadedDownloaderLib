@@ -329,6 +329,10 @@ namespace MultiThreadedDownloaderLib.GuiTest
 						double percentItem = 0.0;
 						switch (item.State)
 						{
+							case DownloadableContentChunkState.Preparing:
+								itemText = $"{item.TaskId}: Preparing...";
+								break;
+
 							case DownloadableContentChunkState.Connecting:
 								itemText = $"{item.TaskId}: Connecting...";
 								break;

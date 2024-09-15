@@ -14,7 +14,7 @@ namespace MultiThreadedDownloaderLib
 		{
 			DownloadingTask = downloadingTask;
 			TaskId = taskId;
-			TotalBytes = downloadingTask.ByteTo >= 0L ?
+			TotalBytes = downloadingTask != null && downloadingTask.ByteTo >= 0L ?
 				downloadingTask.ByteTo - downloadingTask.ByteFrom + 1L : -1L;
 			ProcessedBytes = processedBytes;
 			State = state;
@@ -28,6 +28,6 @@ namespace MultiThreadedDownloaderLib
 
 	public enum DownloadableContentChunkState
 	{
-		Connecting, Connected, Downloading, Finished, Errored
+		Preparing, Connecting, Connected, Downloading, Finished, Errored
 	}
 }
