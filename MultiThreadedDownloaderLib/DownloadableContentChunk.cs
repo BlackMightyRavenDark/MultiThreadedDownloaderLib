@@ -7,7 +7,7 @@ namespace MultiThreadedDownloaderLib
 		public int TaskId { get; }
 		public long TotalBytes { get; }
 		public long ProcessedBytes { get; }
-		public DownloadableContentChunkState State { get; private set; }
+		public DownloadableContentChunkState State { get; }
 
 		public DownloadableContentChunk(DownloadingTask downloadingTask,
 			int taskId, long processedBytes, DownloadableContentChunkState state)
@@ -17,11 +17,6 @@ namespace MultiThreadedDownloaderLib
 			TotalBytes = downloadingTask != null && downloadingTask.ByteTo >= 0L ?
 				downloadingTask.ByteTo - downloadingTask.ByteFrom + 1L : -1L;
 			ProcessedBytes = processedBytes;
-			State = state;
-		}
-
-		internal void SetState(DownloadableContentChunkState state)
-		{
 			State = state;
 		}
 	}
