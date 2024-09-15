@@ -266,12 +266,16 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			{
 				Invoke(new MethodInvoker(() => lblDownloadingProgress.Text = "Подключение..."));
 			};
-			multiThreadedDownloader.Connected += (object s, string url, long contentLength, CustomError customError) =>
+			multiThreadedDownloader.Connected += (object s, string url, long contentLength,
+				NameValueCollection headers, CustomError customError) =>
 			{
 				Invoke(new MethodInvoker(() =>
 				{
 					if (customError.ErrorCode == 200 || customError.ErrorCode == 206)
 					{
+						string t = HttpRequestResult.HeadersToString(headers);
+						System.Diagnostics.Debug.WriteLine($"Заголовки получены:\n{t}");
+
 						lblDownloadingProgress.Text = "Подключено!";
 						if (contentLength > 0L)
 						{

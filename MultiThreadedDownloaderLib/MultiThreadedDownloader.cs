@@ -82,7 +82,8 @@ namespace MultiThreadedDownloaderLib
 
 		public delegate void PreparingDelegate(object sender);
 		public delegate void ConnectingDelegate(object sender, string url);
-		public delegate void ConnectedDelegate(object sender, string url, long contentLength, CustomError customError);
+		public delegate void ConnectedDelegate(object sender, string url, long contentLength,
+			NameValueCollection headers, CustomError customError);
 		public delegate void DownloadStartedDelegate(object sender, long contentLength);
 		public delegate void DownloadProgressDelegate(object sender, ConcurrentDictionary<int, DownloadableContentChunk> contentChunks);
 		public delegate void DownloadFinishedDelegate(object sender, long bytesTransferred, int errorCode, string fileName);
@@ -246,7 +247,7 @@ namespace MultiThreadedDownloaderLib
 			if (ContentLength < -1L) { ContentLength = -1L; }
 
 			CustomError customError = new CustomError(LastErrorCode, null);
-			Connected?.Invoke(this, Url, ContentLength, customError);
+			Connected?.Invoke(this, Url, ContentLength, responseHeaders, customError);
 			if (LastErrorCode != customError.ErrorCode)
 			{
 				LastErrorCode = customError.ErrorCode;
