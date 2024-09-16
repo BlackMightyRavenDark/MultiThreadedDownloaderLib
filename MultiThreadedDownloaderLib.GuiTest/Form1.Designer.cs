@@ -56,19 +56,22 @@
 			this.numericUpDownTryCountPerThread = new System.Windows.Forms.NumericUpDown();
 			this.numericUpDownTryCountInsideEachThread = new System.Windows.Forms.NumericUpDown();
 			this.label10 = new System.Windows.Forms.Label();
-			this.progressBar1 = new MultiThreadedDownloaderLib.MultipleProgressBar();
 			this.checkBoxUseAccurateMode = new System.Windows.Forms.CheckBox();
+			this.label9 = new System.Windows.Forms.Label();
+			this.numericUpDownTimeout = new System.Windows.Forms.NumericUpDown();
+			this.progressBar1 = new MultiThreadedDownloaderLib.MultipleProgressBar();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownThreadCount)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownUpdateInterval)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownChunksMergingUpdateInterval)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownTryCountPerThread)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownTryCountInsideEachThread)).BeginInit();
+			((System.ComponentModel.ISupportInitialize)(this.numericUpDownTimeout)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// btnDownloadSingleThreaded
 			// 
 			this.btnDownloadSingleThreaded.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.btnDownloadSingleThreaded.Location = new System.Drawing.Point(12, 314);
+			this.btnDownloadSingleThreaded.Location = new System.Drawing.Point(12, 336);
 			this.btnDownloadSingleThreaded.Name = "btnDownloadSingleThreaded";
 			this.btnDownloadSingleThreaded.Size = new System.Drawing.Size(138, 23);
 			this.btnDownloadSingleThreaded.TabIndex = 0;
@@ -86,7 +89,7 @@
 			// btnDownloadMultiThreaded
 			// 
 			this.btnDownloadMultiThreaded.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.btnDownloadMultiThreaded.Location = new System.Drawing.Point(156, 314);
+			this.btnDownloadMultiThreaded.Location = new System.Drawing.Point(156, 336);
 			this.btnDownloadMultiThreaded.Name = "btnDownloadMultiThreaded";
 			this.btnDownloadMultiThreaded.Size = new System.Drawing.Size(148, 23);
 			this.btnDownloadMultiThreaded.TabIndex = 3;
@@ -98,7 +101,7 @@
 			// 
 			this.lblDownloadingProgress.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
 			this.lblDownloadingProgress.AutoSize = true;
-			this.lblDownloadingProgress.Location = new System.Drawing.Point(9, 348);
+			this.lblDownloadingProgress.Location = new System.Drawing.Point(9, 370);
 			this.lblDownloadingProgress.Name = "lblDownloadingProgress";
 			this.lblDownloadingProgress.Size = new System.Drawing.Size(58, 13);
 			this.lblDownloadingProgress.TabIndex = 4;
@@ -226,7 +229,7 @@
 			// 
 			this.lblMergingProgress.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
 			this.lblMergingProgress.AutoSize = true;
-			this.lblMergingProgress.Location = new System.Drawing.Point(73, 348);
+			this.lblMergingProgress.Location = new System.Drawing.Point(73, 370);
 			this.lblMergingProgress.Name = "lblMergingProgress";
 			this.lblMergingProgress.Size = new System.Drawing.Size(96, 13);
 			this.lblMergingProgress.TabIndex = 17;
@@ -378,16 +381,6 @@
 			this.label10.TabIndex = 32;
 			this.label10.Text = "Количество попыток внутри каждого потока (0 - бесконечно):";
 			// 
-			// progressBar1
-			// 
-			this.progressBar1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-			| System.Windows.Forms.AnchorStyles.Right)));
-			this.progressBar1.Location = new System.Drawing.Point(12, 364);
-			this.progressBar1.Name = "progressBar1";
-			this.progressBar1.Size = new System.Drawing.Size(744, 23);
-			this.progressBar1.TabIndex = 27;
-			this.progressBar1.Text = "multipleProgressBar1";
-			// 
 			// checkBoxUseAccurateMode
 			// 
 			this.checkBoxUseAccurateMode.AutoSize = true;
@@ -398,11 +391,59 @@
 			this.checkBoxUseAccurateMode.Text = "Использовать аккуратный режим (только при двух и более потоках)";
 			this.checkBoxUseAccurateMode.UseVisualStyleBackColor = true;
 			// 
+			// label9
+			// 
+			this.label9.AutoSize = true;
+			this.label9.Location = new System.Drawing.Point(9, 314);
+			this.label9.Name = "label9";
+			this.label9.Size = new System.Drawing.Size(181, 13);
+			this.label9.TabIndex = 34;
+			this.label9.Text = "Время ожидания соединения (ms):";
+			// 
+			// numericUpDownTimeout
+			// 
+			this.numericUpDownTimeout.Increment = new decimal(new int[] {
+			100,
+			0,
+			0,
+			0});
+			this.numericUpDownTimeout.Location = new System.Drawing.Point(332, 312);
+			this.numericUpDownTimeout.Maximum = new decimal(new int[] {
+			100000,
+			0,
+			0,
+			0});
+			this.numericUpDownTimeout.Minimum = new decimal(new int[] {
+			500,
+			0,
+			0,
+			0});
+			this.numericUpDownTimeout.Name = "numericUpDownTimeout";
+			this.numericUpDownTimeout.Size = new System.Drawing.Size(67, 20);
+			this.numericUpDownTimeout.TabIndex = 35;
+			this.numericUpDownTimeout.Value = new decimal(new int[] {
+			5000,
+			0,
+			0,
+			0});
+			// 
+			// progressBar1
+			// 
+			this.progressBar1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+			| System.Windows.Forms.AnchorStyles.Right)));
+			this.progressBar1.Location = new System.Drawing.Point(12, 386);
+			this.progressBar1.Name = "progressBar1";
+			this.progressBar1.Size = new System.Drawing.Size(744, 23);
+			this.progressBar1.TabIndex = 27;
+			this.progressBar1.Text = "multipleProgressBar1";
+			// 
 			// Form1
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(768, 399);
+			this.ClientSize = new System.Drawing.Size(768, 421);
+			this.Controls.Add(this.numericUpDownTimeout);
+			this.Controls.Add(this.label9);
 			this.Controls.Add(this.checkBoxUseAccurateMode);
 			this.Controls.Add(this.label10);
 			this.Controls.Add(this.numericUpDownTryCountInsideEachThread);
@@ -444,6 +485,7 @@
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownChunksMergingUpdateInterval)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownTryCountPerThread)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownTryCountInsideEachThread)).EndInit();
+			((System.ComponentModel.ISupportInitialize)(this.numericUpDownTimeout)).EndInit();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -481,5 +523,7 @@
 		private System.Windows.Forms.NumericUpDown numericUpDownTryCountInsideEachThread;
 		private System.Windows.Forms.Label label10;
 		private System.Windows.Forms.CheckBox checkBoxUseAccurateMode;
+		private System.Windows.Forms.Label label9;
+		private System.Windows.Forms.NumericUpDown numericUpDownTimeout;
 	}
 }

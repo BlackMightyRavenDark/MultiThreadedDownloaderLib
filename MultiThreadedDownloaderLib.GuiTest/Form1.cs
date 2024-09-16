@@ -177,6 +177,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			singleThreadedDownloader.Headers = headerCollection;
 			singleThreadedDownloader.UpdateIntervalMilliseconds = (double)numericUpDownUpdateInterval.Value;
 			singleThreadedDownloader.TryCount = (int)numericUpDownTryCountInsideEachThread.Value;
+			singleThreadedDownloader.Timeout = (int)numericUpDownTimeout.Value;
 
 			Stream stream = File.OpenWrite(fn);
 			int errorCode = await Task.Run(() => singleThreadedDownloader.Download(stream, fn));
@@ -432,6 +433,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			multiThreadedDownloader.UseRamForTempFiles = checkBoxUseRamForTempFiles.Checked;
 			multiThreadedDownloader.UpdateIntervalMilliseconds = (int)numericUpDownUpdateInterval.Value;
 			multiThreadedDownloader.ChunksMergingUpdateIntervalMilliseconds = (int)numericUpDownChunksMergingUpdateInterval.Value;
+			multiThreadedDownloader.Timeout = (int)numericUpDownTimeout.Value;
 
 			bool useAccurateMode = checkBoxUseAccurateMode.Checked;
 			int errorCode = await Task.Run(() => multiThreadedDownloader.Download(useAccurateMode));

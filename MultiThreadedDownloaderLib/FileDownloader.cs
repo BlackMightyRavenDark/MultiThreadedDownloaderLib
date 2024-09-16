@@ -11,6 +11,7 @@ namespace MultiThreadedDownloaderLib
 	public sealed class FileDownloader : IDisposable
 	{
 		public string Url { get; set; }
+		public int Timeout { get; set; }
 
 		/// <summary>
 		/// Set it to zero or less for infinite retries.
@@ -117,7 +118,8 @@ namespace MultiThreadedDownloaderLib
 
 			HeadersReceiving?.Invoke(this, Url, downloadingTask);
 
-			LastErrorCode = GetUrlResponseHeaders(Url, Headers, out NameValueCollection responseHeaders, out string headersErrorText);
+			LastErrorCode = GetUrlResponseHeaders(Url, Headers, Timeout,
+				out NameValueCollection responseHeaders, out string headersErrorText);
 			if (LastErrorCode != 200 && LastErrorCode != 206)
 			{
 				LastErrorMessage = headersErrorText;
@@ -155,7 +157,7 @@ namespace MultiThreadedDownloaderLib
 					LastErrorMessage = "Ошибка диапазона! Скачивание прервано!";
 					return LastErrorCode;
 				}
-				HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, Headers);
+				HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, Timeout, Headers);
 				LastErrorCode = requestResult.ErrorCode;
 				LastErrorMessage = HasErrors ? requestResult.ErrorMessage : null;
 				if (HasErrors)
@@ -400,9 +402,9 @@ namespace MultiThreadedDownloaderLib
 		}
 
 		public static int GetUrlContentLength(string url, NameValueCollection inHeaders,
-			out long contentLength, out string errorText)
+			out long contentLength, out string errorText, int timeout = 0)
 		{
-			int errorCode = GetUrlResponseHeaders(url, inHeaders,
+			int errorCode = GetUrlResponseHeaders(url, inHeaders, timeout,
 				out NameValueCollection responseHeaders, out errorText);
 			if (errorCode == 200)
 			{
@@ -413,20 +415,20 @@ namespace MultiThreadedDownloaderLib
 			return errorCode;
 		}
 
-		public static int GetUrlContentLength(string url, out long contentLength, out string errorText)
+		public static int GetUrlContentLength(string url, out long contentLength, out string errorText, int timeout = 0)
 		{
-			return GetUrlContentLength(url, null, out contentLength, out errorText);
+			return GetUrlContentLength(url, null, out contentLength, out errorText, timeout);
 		}
 
-		public static int GetUrlContentLength(string url, out long contentLength)
+		public static int GetUrlContentLength(string url, out long contentLength, int timeout = 0)
 		{
-			return GetUrlContentLength(url, out contentLength, out _);
+			return GetUrlContentLength(url, out contentLength, out _, timeout);
 		}
 
 		public static int IsRangeSupported(string url, NameValueCollection inHeaders,
-			out bool result, out string errorText)
+			out bool result, out string errorText, int timeout = 0)
 		{
-			int errorCode = GetUrlResponseHeaders(url, inHeaders,
+			int errorCode = GetUrlResponseHeaders(url, inHeaders, timeout,
 				out NameValueCollection responseHeaders, out errorText);
 			if (errorCode == 200)
 			{
@@ -438,14 +440,14 @@ namespace MultiThreadedDownloaderLib
 		}
 
 		public static int IsRangeSupported(string url, NameValueCollection inHeaders,
-			out bool result)
+			out bool result, int timeout = 0)
 		{
-			return IsRangeSupported(url, inHeaders, out result, out _);
+			return IsRangeSupported(url, inHeaders, out result, out _, timeout);
 		}
 
-		public static int IsRangeSupported(string url, out bool result)
+		public static int IsRangeSupported(string url, out bool result, int timeout = 0)
 		{
-			return IsRangeSupported(url, null, out result);
+			return IsRangeSupported(url, null, out result, timeout);
 		}
 
 		public static bool IsRangeSupported(NameValueCollection responseHeaders)
@@ -499,9 +501,9 @@ namespace MultiThreadedDownloaderLib
 		}
 
 		public static int GetUrlResponseHeaders(string url, NameValueCollection inHeaders,
-			out NameValueCollection outHeaders, out string errorText)
+			int timeout, out NameValueCollection outHeaders, out string errorText)
 		{
-			HttpRequestResult requestResult = HttpRequestSender.Send("HEAD", url, inHeaders);
+			HttpRequestResult requestResult = HttpRequestSender.Send("HEAD", url, timeout, inHeaders);
 			if (requestResult.ErrorCode == 200 || requestResult.ErrorCode == 206)
 			{
 				outHeaders = new NameValueCollection();
@@ -522,6 +524,12 @@ namespace MultiThreadedDownloaderLib
 			int errorCode = requestResult.ErrorCode;
 			requestResult.Dispose();
 			return errorCode;
+		}
+
+		public static int GetUrlResponseHeaders(string url, NameValueCollection inHeaders,
+			out NameValueCollection outHeaders, out string errorText)
+		{
+			return GetUrlResponseHeaders(url, inHeaders, 0, out outHeaders, out errorText);
 		}
 
 		public void GetRange(out long rangeFrom, out long rangeTo)
