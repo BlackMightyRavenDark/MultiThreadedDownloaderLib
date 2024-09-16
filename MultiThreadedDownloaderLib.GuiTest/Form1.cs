@@ -690,6 +690,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			numericUpDownTryCountInsideEachThread.Enabled = false;
 			numericUpDownUpdateInterval.Enabled = false;
 			numericUpDownChunksMergingUpdateInterval.Enabled = false;
+			numericUpDownTimeout.Enabled = false;
 		}
 
 		private void EnableControls()
@@ -710,6 +711,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			numericUpDownTryCountInsideEachThread.Enabled = true;
 			numericUpDownUpdateInterval.Enabled = true;
 			numericUpDownChunksMergingUpdateInterval.Enabled = true;
+			numericUpDownTimeout.Enabled = true;
 		}
 
 		private bool IsEnoughDiskSpace(IEnumerable<char> driveLetters, long contentLength)
