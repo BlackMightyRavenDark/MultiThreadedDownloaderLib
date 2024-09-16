@@ -231,16 +231,34 @@ namespace MultiThreadedDownloaderLib
 				return DOWNLOAD_ERROR_DRIVE_NOT_READY;
 			}
 
-			Connecting?.Invoke(this, Url);
+			_cancellationTokenSource = new CancellationTokenSource();
 
-			LastErrorCode = GetUrlResponseHeaders(Url, Headers, Timeout,
-				out NameValueCollection responseHeaders, out string headersErrorMessage);
-			if (LastErrorCode != 200 && LastErrorCode != 206)
+			int headersReceivingTryNumber = 0;
+			bool isInfiniteRetries = TryCountPerThread <= 0;
+			NameValueCollection responseHeaders = null;
+			while (true)
 			{
-				LastErrorMessage = headersErrorMessage;
-				DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
-				IsActive = false;
-				return LastErrorCode;
+				if (!isInfiniteRetries) { headersReceivingTryNumber++; }
+				Connecting?.Invoke(this, Url);
+				LastErrorCode = GetUrlResponseHeaders(Url, Headers, Timeout,
+					out responseHeaders, out string headersErrorMessage);
+				
+				if (_cancellationTokenSource.IsCancellationRequested)
+				{
+					LastErrorCode = DOWNLOAD_ERROR_CANCELED_BY_USER;
+					LastErrorMessage = null;
+					IsActive = false;
+					return LastErrorCode;
+				}
+				else if (LastErrorCode == 200 || LastErrorCode == 206) { break; }
+				else if (!isInfiniteRetries && headersReceivingTryNumber + 1 > TryCountPerThread)
+				{
+					LastErrorCode = DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT;
+					LastErrorMessage = "Не удалось получить HTTP-заголовки!";
+					DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
+					IsActive = false;
+					return LastErrorCode;
+				}
 			}
 
 			ExtractContentLengthFromHeaders(responseHeaders, out long fullContentLength);
@@ -266,8 +284,6 @@ namespace MultiThreadedDownloaderLib
 				IsActive = false;
 				return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
 			}
-
-			_cancellationTokenSource = new CancellationTokenSource();
 
 			DownloadStarted?.Invoke(this, ContentLength);
 
@@ -331,7 +347,6 @@ namespace MultiThreadedDownloaderLib
 					null, i, 0L, DownloadableContentChunkState.Preparing);
 			}
 
-			bool isInfiniteRetries = TryCountPerThread <= 0;
 			bool isOutOfTries = false;
 			bool isExceptionRaised = false;
 

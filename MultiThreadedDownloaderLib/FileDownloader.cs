@@ -111,26 +111,46 @@ namespace MultiThreadedDownloaderLib
 				return DOWNLOAD_ERROR_RANGE;
 			}
 
+			_cancellationTokenSource = cancellationTokenSource ?? new CancellationTokenSource();
+
 			long outputStreamInitialPosition = downloadingTask.OutputStream.Stream.Position;
 			int tryNumber = 0;
 			int maximumTryCount = TryCount;
 			bool isInfiniteRetries = maximumTryCount <= 0;
 
-			HeadersReceiving?.Invoke(this, Url, downloadingTask);
-
-			LastErrorCode = GetUrlResponseHeaders(Url, Headers, Timeout,
-				out NameValueCollection responseHeaders, out string headersErrorText);
-			if (LastErrorCode != 200 && LastErrorCode != 206)
+			NameValueCollection responseHeaders = null;
+			while (true)
 			{
-				LastErrorMessage = headersErrorText;
-				HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, LastErrorCode);
-				WorkFinished?.Invoke(this, DownloadedInLastSession, -1L, tryNumber, maximumTryCount, LastErrorCode);
-				return LastErrorCode;
+				if (!isInfiniteRetries) { tryNumber++; }
+				HeadersReceiving?.Invoke(this, Url, downloadingTask);
+				LastErrorCode = GetUrlResponseHeaders(Url, Headers, Timeout,
+					out responseHeaders, out string headersErrorText);
+
+				if (_cancellationTokenSource.IsCancellationRequested)
+				{
+					LastErrorCode = _isAborted ? DOWNLOAD_ERROR_ABORTED : DOWNLOAD_ERROR_CANCELED_BY_USER;
+					LastErrorMessage = null;
+					IsActive = false;
+					return LastErrorCode;
+				}
+				else if (LastErrorCode == 200 || LastErrorCode == 206)
+				{
+					tryNumber = 0;
+					break;
+				}
+
+				if (!isInfiniteRetries && tryNumber + 1 > maximumTryCount)
+				{
+					LastErrorCode = DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT;
+					LastErrorMessage = "Не удалось получить HTTP-заголовки!";
+					HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, LastErrorCode);
+					WorkFinished?.Invoke(this, DownloadedInLastSession, -1L, tryNumber, maximumTryCount, LastErrorCode);
+					IsActive = false;
+					return LastErrorCode;
+				}
 			}
 
 			HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, LastErrorCode);
-
-			_cancellationTokenSource = cancellationTokenSource ?? new CancellationTokenSource();
 
 			Dictionary<int, long> chunkProcessingDict = new Dictionary<int, long>();
 
