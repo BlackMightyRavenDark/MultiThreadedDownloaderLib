@@ -235,7 +235,7 @@ namespace MultiThreadedDownloaderLib
 
 			LastErrorCode = GetUrlResponseHeaders(Url, Headers, Timeout,
 				out NameValueCollection responseHeaders, out string headersErrorMessage);
-			if (LastErrorCode != 200)
+			if (LastErrorCode != 200 && LastErrorCode != 206)
 			{
 				LastErrorMessage = headersErrorMessage;
 				DownloadFinished?.Invoke(this, DownloadedBytes, LastErrorCode, OutputFileName);
