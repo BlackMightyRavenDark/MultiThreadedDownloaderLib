@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<VersionPrefix>1.5.1</VersionPrefix>
 		<TargetFramework>netstandard2.0</TargetFramework>
-		<AssemblyName>MultiThreadedDownloader</AssemblyName>
+		<AssemblyName>MultiThreadedDownloaderLib</AssemblyName>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
