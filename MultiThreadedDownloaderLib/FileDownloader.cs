@@ -137,6 +137,7 @@ namespace MultiThreadedDownloaderLib
 				}
 				else if (LastErrorCode == 200 || LastErrorCode == 206)
 				{
+					HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, tryNumber, maximumTryCount, LastErrorCode);
 					tryNumber = 0;
 					break;
 				}
@@ -151,8 +152,6 @@ namespace MultiThreadedDownloaderLib
 					return LastErrorCode;
 				}
 			}
-
-			HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, tryNumber, maximumTryCount, LastErrorCode);
 
 			Dictionary<int, long> chunkProcessingDict = new Dictionary<int, long>();
 
