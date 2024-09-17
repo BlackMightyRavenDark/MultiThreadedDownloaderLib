@@ -16,7 +16,7 @@ namespace MultiThreadedDownloaderLib
 		/// <summary>
 		/// Set it to zero or less for infinite retries.
 		/// </summary>
-		public int TryCount { get; set; } = 1;
+		public int TryCountLimit { get; set; } = 1;
 
 		public NameValueCollection Headers { get => _headers; set { SetHeaders(value); } }
 		public double UpdateIntervalMilliseconds { get; set; } = 100.0;
@@ -51,18 +51,18 @@ namespace MultiThreadedDownloaderLib
 
 		public delegate void PreparingDelegate(object sender, string url, DownloadingTask downloadingTask);
 		public delegate void HeadersReceivingDelegate(object sender, string url, DownloadingTask downloadingTask,
-			int tryNumber, int maxTryCount);
+			int tryNumber, int tryCountLimit);
 		public delegate void HeadersReceivedDelegate(object sender, string url,
 			DownloadingTask downloadingTask, NameValueCollection headers,
-			int tryNumber, int maxTryCount, int errorCode);
-		public delegate void ConnectingDelegate(object sender, string url, int tryNumber, int maxTryCount);
+			int tryNumber, int tryCountLimit, int errorCode);
+		public delegate void ConnectingDelegate(object sender, string url, int tryNumber, int tryCountLimit);
 		public delegate int ConnectedDelegate(object sender, string url, long contentLength,
-			NameValueCollection headers, int tryNumber, int maxTryCount, int errorCode);
-		public delegate void WorkStartedDelegate(object sender, long contentLength, int tryNumber, int maxTryCount);
+			NameValueCollection headers, int tryNumber, int tryCountLimit, int errorCode);
+		public delegate void WorkStartedDelegate(object sender, long contentLength, int tryNumber, int tryCountLimit);
 		public delegate void WorkProgressDelegate(object sender, long bytesTransferred, long contentLength,
-			int tryNumber, int maxTryCount);
+			int tryNumber, int tryCountLimit);
 		public delegate void WorkFinishedDelegate(object sender, long bytesTransferred, long contentLength,
-			int tryNumber, int maxTryCount, int errorCode);
+			int tryNumber, int tryCountLimit, int errorCode);
 		public PreparingDelegate Preparing;
 		public HeadersReceivingDelegate HeadersReceiving;
 		public HeadersReceivedDelegate HeadersReceived;
@@ -118,13 +118,13 @@ namespace MultiThreadedDownloaderLib
 
 			long outputStreamInitialPosition = downloadingTask.OutputStream.Stream.Position;
 			int tryNumber = 0;
-			int maximumTryCount = TryCount;
-			bool isInfiniteRetries = maximumTryCount <= 0;
+			int tryCountLimit = TryCountLimit;
+			bool isInfiniteRetries = tryCountLimit <= 0;
 
 			NameValueCollection responseHeaders = null;
 			while (true)
 			{
-				HeadersReceiving?.Invoke(this, Url, downloadingTask, ++tryNumber, maximumTryCount);
+				HeadersReceiving?.Invoke(this, Url, downloadingTask, ++tryNumber, tryCountLimit);
 				LastErrorCode = GetUrlResponseHeaders(Url, Headers, Timeout,
 					out responseHeaders, out string headersErrorText);
 
@@ -137,17 +137,17 @@ namespace MultiThreadedDownloaderLib
 				}
 				else if (LastErrorCode == 200 || LastErrorCode == 206)
 				{
-					HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, tryNumber, maximumTryCount, LastErrorCode);
+					HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, tryNumber, tryCountLimit, LastErrorCode);
 					tryNumber = 0;
 					break;
 				}
 
-				if (!isInfiniteRetries && tryNumber + 1 > maximumTryCount)
+				if (!isInfiniteRetries && tryNumber + 1 > tryCountLimit)
 				{
 					LastErrorCode = DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT;
 					LastErrorMessage = "Не удалось получить HTTP-заголовки!";
-					HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, tryNumber, maximumTryCount, LastErrorCode);
-					WorkFinished?.Invoke(this, DownloadedInLastSession, -1L, tryNumber, maximumTryCount, LastErrorCode);
+					HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, tryNumber, tryCountLimit, LastErrorCode);
+					WorkFinished?.Invoke(this, DownloadedInLastSession, -1L, tryNumber, tryCountLimit, LastErrorCode);
 					IsActive = false;
 					return LastErrorCode;
 				}
@@ -169,7 +169,7 @@ namespace MultiThreadedDownloaderLib
 
 			do
 			{
-				Connecting?.Invoke(this, Url, ++tryNumber, maximumTryCount);
+				Connecting?.Invoke(this, Url, ++tryNumber, tryCountLimit);
 				
 				long byteTo = downloadingTask.ByteTo == -1L ? contentLength - 1L : downloadingTask.ByteTo;
 				if (isRangeSupported && !SetRange(DownloadedInLastSession + downloadingTask.ByteFrom, byteTo))
@@ -204,7 +204,7 @@ namespace MultiThreadedDownloaderLib
 				{
 					LastErrorCode = Connected.Invoke(this, Url, contentLength,
 						requestResult.HttpWebResponse.Headers,
-						tryNumber, maximumTryCount, LastErrorCode);
+						tryNumber, tryCountLimit, LastErrorCode);
 				}
 
 				if (HasErrors)
@@ -222,7 +222,7 @@ namespace MultiThreadedDownloaderLib
 					return DOWNLOAD_ERROR_ZERO_LENGTH_CONTENT;
 				}
 
-				WorkStarted?.Invoke(this, contentLength, tryNumber, maximumTryCount);
+				WorkStarted?.Invoke(this, contentLength, tryNumber, tryCountLimit);
 
 				int lastTime = Environment.TickCount;
 				bool completed = false;
@@ -241,7 +241,7 @@ namespace MultiThreadedDownloaderLib
 								if (currentTime - lastTime >= UpdateIntervalMilliseconds)
 								{
 									WorkProgress.Invoke(this, DownloadedInLastSession, contentLength,
-										tryNumber, maximumTryCount);
+										tryNumber, tryCountLimit);
 									lastTime = currentTime;
 								}
 							}
@@ -255,16 +255,16 @@ namespace MultiThreadedDownloaderLib
 					{
 						System.Diagnostics.Debug.WriteLine($"Restarting... Try №{++tryNumber}");
 					}
-					else if (tryNumber < maximumTryCount)
+					else if (tryNumber < tryCountLimit)
 					{
-						System.Diagnostics.Debug.WriteLine($"Restarting... Try №{tryNumber + 1} / {maximumTryCount}");
+						System.Diagnostics.Debug.WriteLine($"Restarting... Try №{tryNumber + 1} / {tryCountLimit}");
 					}
 				}
 
 				requestResult.Dispose();
 
 				if (completed) { break; }
-				else if (!isInfiniteRetries && tryNumber >= maximumTryCount)
+				else if (!isInfiniteRetries && tryNumber >= tryCountLimit)
 				{
 					System.Diagnostics.Debug.WriteLine("Out of tries");
 					LastErrorCode = DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT;
@@ -285,7 +285,7 @@ namespace MultiThreadedDownloaderLib
 
 			if (!_isAborted && WorkFinished != null)
 			{
-				WorkFinished.Invoke(this, DownloadedInLastSession, contentLength, tryNumber, maximumTryCount, LastErrorCode);
+				WorkFinished.Invoke(this, DownloadedInLastSession, contentLength, tryNumber, tryCountLimit, LastErrorCode);
 			}
 
 			IsActive = false;

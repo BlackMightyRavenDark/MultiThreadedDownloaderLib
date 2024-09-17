@@ -367,7 +367,7 @@ namespace MultiThreadedDownloaderLib
 				int taskTryNumber = 0;
 
 				FileDownloader downloader = new FileDownloader()
-					{ Url = Url, Timeout = Timeout, Headers = Headers, TryCount = TryCountInsideThread };
+					{ Url = Url, Timeout = Timeout, Headers = Headers, TryCountLimit = TryCountInsideThread };
 				lock (downloaders) { downloaders.Add(downloader); }
 
 				int lastTime = Environment.TickCount;
