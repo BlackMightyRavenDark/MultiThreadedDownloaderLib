@@ -570,11 +570,13 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			}
 		}    
 
-		private int OnConnected(object sender, string url, long contentLength, NameValueCollection headers, int errorCode)
+		private int OnConnected(object sender, string url, long contentLength, NameValueCollection headers,
+			int tryNumber, int maxTryCount, int errorCode)
 		{
 			if (InvokeRequired)
 			{
-				Invoke(new MethodInvoker(() => OnConnected(sender, url, contentLength, headers, errorCode)));
+				Invoke(new MethodInvoker(() => OnConnected(sender, url, contentLength,
+					headers, tryNumber, maxTryCount, errorCode)));
 			}
 			else
 			{
@@ -583,7 +585,10 @@ namespace MultiThreadedDownloaderLib.GuiTest
 					string t = HttpRequestResult.HeadersToString(headers);
 					System.Diagnostics.Debug.WriteLine($"Заголовки получены:\n{t}");
 
-					lblDownloadingProgress.Text = "Подключено!";
+					string s = maxTryCount > 0 ?
+						$"Подключено! (попытка №{tryNumber} / {maxTryCount})" :
+						$"Подключено! (попытка №{tryNumber})";
+					lblDownloadingProgress.Text = s;
 					if (contentLength > 0L)
 					{
 						string fn = editFileName.Text;

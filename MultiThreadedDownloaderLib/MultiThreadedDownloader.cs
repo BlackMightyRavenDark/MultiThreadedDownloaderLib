@@ -377,7 +377,8 @@ namespace MultiThreadedDownloaderLib
 					FileDownloader d = sender as FileDownloader;
 					CallProgressUpdaterFunc(d, -1L, taskId, DownloadableContentChunkState.Connecting);
 				};
-				downloader.Connected += (object sender, string url, long contentLength, NameValueCollection headers, int errCode) =>
+				downloader.Connected += (object sender, string url, long contentLength,
+					NameValueCollection headers, int tryNumber, int maxTryCount, int errCode) =>
 				{
 					FileDownloader d = sender as FileDownloader;
 					DownloadableContentChunkState state = errCode == 200 || errCode == 206 ?
