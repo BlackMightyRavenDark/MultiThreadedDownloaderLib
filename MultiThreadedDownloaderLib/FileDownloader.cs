@@ -50,9 +50,11 @@ namespace MultiThreadedDownloaderLib
 		public const int DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT = -11;
 
 		public delegate void PreparingDelegate(object sender, string url, DownloadingTask downloadingTask);
-		public delegate void HeadersReceivingDelegate(object sender, string url, DownloadingTask downloadingTask);
+		public delegate void HeadersReceivingDelegate(object sender, string url, DownloadingTask downloadingTask,
+			int tryNumber, int maxTryCount);
 		public delegate void HeadersReceivedDelegate(object sender, string url,
-			DownloadingTask downloadingTask, NameValueCollection headers, int errorCode);
+			DownloadingTask downloadingTask, NameValueCollection headers,
+			int tryNumber, int maxTryCount, int errorCode);
 		public delegate void ConnectingDelegate(object sender, string url, int tryNumber, int maxTryCount);
 		public delegate int ConnectedDelegate(object sender, string url, long contentLength, NameValueCollection headers, int errorCode);
 		public delegate void WorkStartedDelegate(object sender, long contentLength, int tryNumber, int maxTryCount);
@@ -121,8 +123,7 @@ namespace MultiThreadedDownloaderLib
 			NameValueCollection responseHeaders = null;
 			while (true)
 			{
-				if (!isInfiniteRetries) { tryNumber++; }
-				HeadersReceiving?.Invoke(this, Url, downloadingTask);
+				HeadersReceiving?.Invoke(this, Url, downloadingTask, ++tryNumber, maximumTryCount);
 				LastErrorCode = GetUrlResponseHeaders(Url, Headers, Timeout,
 					out responseHeaders, out string headersErrorText);
 
@@ -143,14 +144,14 @@ namespace MultiThreadedDownloaderLib
 				{
 					LastErrorCode = DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT;
 					LastErrorMessage = "Не удалось получить HTTP-заголовки!";
-					HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, LastErrorCode);
+					HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, tryNumber, maximumTryCount, LastErrorCode);
 					WorkFinished?.Invoke(this, DownloadedInLastSession, -1L, tryNumber, maximumTryCount, LastErrorCode);
 					IsActive = false;
 					return LastErrorCode;
 				}
 			}
 
-			HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, LastErrorCode);
+			HeadersReceived?.Invoke(this, Url, downloadingTask, responseHeaders, tryNumber, maximumTryCount, LastErrorCode);
 
 			Dictionary<int, long> chunkProcessingDict = new Dictionary<int, long>();
 

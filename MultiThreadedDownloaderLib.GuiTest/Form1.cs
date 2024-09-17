@@ -510,31 +510,40 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			}
 		}
 
-		private void OnHeadersReceiving(object sender, string url, DownloadingTask downloadingTask)
+		private void OnHeadersReceiving(object sender, string url,
+			DownloadingTask downloadingTask, int tryNumber, int maxTryCount)
 		{
 			if (InvokeRequired)
 			{
-				Invoke(new MethodInvoker(() => OnHeadersReceiving(sender, url, downloadingTask)));
+				Invoke(new MethodInvoker(() => OnHeadersReceiving(sender, url, downloadingTask, tryNumber, maxTryCount)));
 			}
 			else
 			{
-				lblDownloadingProgress.Text = "Получение заголовков...";
-				System.Diagnostics.Debug.WriteLine($"Получение заголовков... {url}");
+				string t = $"Получение заголовков... Попытка №{tryNumber}";
+				if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
+				lblDownloadingProgress.Text = t;
+				progressBar1.ClearItems();
+				System.Diagnostics.Debug.WriteLine($"{t} {url}");
 			}
 		}
 
 		private void OnHeadersReceived(object sender, string url,
-			DownloadingTask downloadingTask, NameValueCollection headers, int errorCode)
+			DownloadingTask downloadingTask, NameValueCollection headers,
+			int tryNumber, int maxTryCount, int errorCode)
 		{
 			if (InvokeRequired)
 			{
-				Invoke(new MethodInvoker(() => OnHeadersReceived(sender, url, downloadingTask, headers, errorCode)));
+				Invoke(new MethodInvoker(() => OnHeadersReceived(sender, url,
+					downloadingTask, headers, tryNumber, maxTryCount, errorCode)));
 			}
 			else
 			{
 				if (errorCode == 200 || errorCode == 206)
 				{
-					System.Diagnostics.Debug.WriteLine("Заголовки получены:");
+					string s = maxTryCount > 0 ?
+						$"Заголовки получены (попытка №{tryNumber} / {maxTryCount}):" :
+						$"Заголовки получены (попытка №{tryNumber}):";
+					System.Diagnostics.Debug.WriteLine(s);
 					string t = HttpRequestResult.HeadersToString(headers);
 					System.Diagnostics.Debug.WriteLine(t);
 				}
