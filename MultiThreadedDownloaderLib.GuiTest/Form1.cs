@@ -263,12 +263,17 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			{
 				Invoke(new MethodInvoker(() => lblDownloadingProgress.Text = "Подготовка..."));
 			};
-			multiThreadedDownloader.Connecting += (s, url) =>
+			multiThreadedDownloader.Connecting += (s, url, tryNumber, maxTryCount) =>
 			{
-				Invoke(new MethodInvoker(() => lblDownloadingProgress.Text = "Подключение..."));
+				Invoke(new MethodInvoker(() =>
+				{
+					string t = $"Подключение... Попытка №{tryNumber}";
+					if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
+					lblDownloadingProgress.Text = t;
+				}));
 			};
 			multiThreadedDownloader.Connected += (object s, string url, long contentLength,
-				NameValueCollection headers, CustomError customError) =>
+				NameValueCollection headers, int tryNumber, int maxTryCount, CustomError customError) =>
 			{
 				Invoke(new MethodInvoker(() =>
 				{
@@ -277,7 +282,10 @@ namespace MultiThreadedDownloaderLib.GuiTest
 						string t = HttpRequestResult.HeadersToString(headers);
 						System.Diagnostics.Debug.WriteLine($"Заголовки получены:\n{t}");
 
-						lblDownloadingProgress.Text = "Подключено!";
+						string connectedString = maxTryCount > 0 ?
+							$"Подключено! (попытка №{tryNumber} / {maxTryCount}" :
+							$"Подключено! (попытка №{tryNumber}";
+						lblDownloadingProgress.Text = connectedString;
 						if (contentLength > 0L)
 						{
 							long minimumFreeSpaceRequired = (long)(contentLength * 1.1);

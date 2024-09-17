@@ -83,9 +83,9 @@ namespace MultiThreadedDownloaderLib
 		public const int DOWNLOAD_ERROR_CHUNK_SEQUENCE = -207;
 
 		public delegate void PreparingDelegate(object sender);
-		public delegate void ConnectingDelegate(object sender, string url);
+		public delegate void ConnectingDelegate(object sender, string url, int tryNumber, int maxTryCount);
 		public delegate void ConnectedDelegate(object sender, string url, long contentLength,
-			NameValueCollection headers, CustomError customError);
+			NameValueCollection headers, int tryNumber, int maxTryCount, CustomError customError);
 		public delegate void DownloadStartedDelegate(object sender, long contentLength);
 		public delegate void DownloadProgressDelegate(object sender, ConcurrentDictionary<int, DownloadableContentChunk> contentChunks);
 		public delegate void DownloadFinishedDelegate(object sender, long bytesTransferred, int errorCode, string fileName);
@@ -238,8 +238,7 @@ namespace MultiThreadedDownloaderLib
 			NameValueCollection responseHeaders = null;
 			while (true)
 			{
-				if (!isInfiniteRetries) { headersReceivingTryNumber++; }
-				Connecting?.Invoke(this, Url);
+				Connecting?.Invoke(this, Url, ++headersReceivingTryNumber, TryCountPerThread);
 				LastErrorCode = GetUrlResponseHeaders(Url, Headers, Timeout,
 					out responseHeaders, out string headersErrorMessage);
 				
@@ -267,7 +266,8 @@ namespace MultiThreadedDownloaderLib
 			if (ContentLength < -1L) { ContentLength = -1L; }
 
 			CustomError customError = new CustomError(LastErrorCode, null);
-			Connected?.Invoke(this, Url, ContentLength, responseHeaders, customError);
+			Connected?.Invoke(this, Url, ContentLength, responseHeaders,
+				headersReceivingTryNumber, TryCountPerThread, customError);
 			if (LastErrorCode != customError.ErrorCode)
 			{
 				LastErrorCode = customError.ErrorCode;
