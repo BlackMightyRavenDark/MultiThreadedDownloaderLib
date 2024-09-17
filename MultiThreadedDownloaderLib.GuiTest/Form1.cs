@@ -582,9 +582,6 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			{
 				if (errorCode == 200 || errorCode == 206)
 				{
-					string t = HttpRequestResult.HeadersToString(headers);
-					System.Diagnostics.Debug.WriteLine($"Заголовки получены:\n{t}");
-
 					string s = maxTryCount > 0 ?
 						$"Подключено! (попытка №{tryNumber} / {maxTryCount})" :
 						$"Подключено! (попытка №{tryNumber})";
