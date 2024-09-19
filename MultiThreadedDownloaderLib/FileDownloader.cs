@@ -454,7 +454,8 @@ namespace MultiThreadedDownloaderLib
 				out NameValueCollection responseHeaders, out errorText);
 			if (errorCode == 200)
 			{
-				return IsAcceptRangeBytes(responseHeaders, out result);
+				errorCode = IsAcceptRangeBytes(responseHeaders, out result);
+				return result ? errorCode : IsContentRangeBytes(responseHeaders, out result);
 			}
 
 			result = false;
@@ -475,6 +476,7 @@ namespace MultiThreadedDownloaderLib
 		public static bool IsRangeSupported(NameValueCollection responseHeaders)
 		{
 			IsAcceptRangeBytes(responseHeaders, out bool result);
+			if (!result) { IsContentRangeBytes(responseHeaders, out result); }
 			return result;
 		}
 
@@ -484,6 +486,29 @@ namespace MultiThreadedDownloaderLib
 			{
 				string headerName = responseHeaders.GetKey(i);
 				if (string.Compare(headerName, "accept-ranges", StringComparison.OrdinalIgnoreCase) == 0)
+				{
+					string headerValue = responseHeaders.Get(i);
+					if (headerValue.ToLower().Contains("bytes"))
+					{
+						result = true;
+						return 200;
+					}
+
+					result = false;
+					return 204;
+				}
+			}
+
+			result = false;
+			return 404;
+		}
+
+		private static int IsContentRangeBytes(NameValueCollection responseHeaders, out bool result)
+		{
+			for (int i = 0; i < responseHeaders.Count; ++i)
+			{
+				string headerName = responseHeaders.GetKey(i);
+				if (string.Compare(headerName, "content-range", StringComparison.OrdinalIgnoreCase) == 0)
 				{
 					string headerValue = responseHeaders.Get(i);
 					if (headerValue.ToLower().Contains("bytes"))
