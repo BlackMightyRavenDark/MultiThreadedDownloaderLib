@@ -431,8 +431,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
 			multiThreadedDownloader.Headers = headerCollection;
 			multiThreadedDownloader.ThreadCount = (int)numericUpDownThreadCount.Value;
-			multiThreadedDownloader.TryCountPerThread = (int)numericUpDownTryCountPerThread.Value;
-			multiThreadedDownloader.TryCountInsideThread = (int)numericUpDownTryCountInsideEachThread.Value;
+			multiThreadedDownloader.TryCountLimitPerThread = (int)numericUpDownTryCountPerThread.Value;
+			multiThreadedDownloader.TryCountLimitInsideThread = (int)numericUpDownTryCountInsideEachThread.Value;
 			multiThreadedDownloader.Url = editUrl.Text;
 			multiThreadedDownloader.OutputFileName = editFileName.Text;
 			multiThreadedDownloader.TempDirectory = editTempPath.Text;
