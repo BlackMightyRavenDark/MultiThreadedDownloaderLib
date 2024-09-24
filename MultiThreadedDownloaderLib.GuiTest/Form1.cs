@@ -263,17 +263,17 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			{
 				Invoke(new MethodInvoker(() => lblDownloadingProgress.Text = "Подготовка..."));
 			};
-			multiThreadedDownloader.Connecting += (s, url, tryNumber, maxTryCount) =>
+			multiThreadedDownloader.Connecting += (s, url, tryNumber, tryCountLimit) =>
 			{
 				Invoke(new MethodInvoker(() =>
 				{
 					string t = $"Подключение... Попытка №{tryNumber}";
-					if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
+					if (tryCountLimit > 0) { t += $" / {tryCountLimit}"; }
 					lblDownloadingProgress.Text = t;
 				}));
 			};
 			multiThreadedDownloader.Connected += (object s, string url, long contentLength,
-				NameValueCollection headers, int tryNumber, int maxTryCount, CustomError customError) =>
+				NameValueCollection headers, int tryNumber, int tryCountLimit, CustomError customError) =>
 			{
 				Invoke(new MethodInvoker(() =>
 				{
@@ -282,8 +282,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
 						string t = HttpRequestResult.HeadersToString(headers);
 						System.Diagnostics.Debug.WriteLine($"Заголовки получены:\n{t}");
 
-						string connectedString = maxTryCount > 0 ?
-							$"Подключено! (попытка №{tryNumber} / {maxTryCount}" :
+						string connectedString = tryCountLimit > 0 ?
+							$"Подключено! (попытка №{tryNumber} / {tryCountLimit}" :
 							$"Подключено! (попытка №{tryNumber}";
 						lblDownloadingProgress.Text = connectedString;
 						if (contentLength > 0L)
@@ -519,16 +519,16 @@ namespace MultiThreadedDownloaderLib.GuiTest
 		}
 
 		private void OnHeadersReceiving(object sender, string url,
-			DownloadingTask downloadingTask, int tryNumber, int maxTryCount)
+			DownloadingTask downloadingTask, int tryNumber, int tryCountLimit)
 		{
 			if (InvokeRequired)
 			{
-				Invoke(new MethodInvoker(() => OnHeadersReceiving(sender, url, downloadingTask, tryNumber, maxTryCount)));
+				Invoke(new MethodInvoker(() => OnHeadersReceiving(sender, url, downloadingTask, tryNumber, tryCountLimit)));
 			}
 			else
 			{
 				string t = $"Получение заголовков... Попытка №{tryNumber}";
-				if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
+				if (tryCountLimit > 0) { t += $" / {tryCountLimit}"; }
 				lblDownloadingProgress.Text = t;
 				progressBar1.ClearItems();
 				System.Diagnostics.Debug.WriteLine($"{t} {url}");
@@ -537,19 +537,19 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
 		private void OnHeadersReceived(object sender, string url,
 			DownloadingTask downloadingTask, NameValueCollection headers,
-			int tryNumber, int maxTryCount, int errorCode)
+			int tryNumber, int tryCountLimit, int errorCode)
 		{
 			if (InvokeRequired)
 			{
 				Invoke(new MethodInvoker(() => OnHeadersReceived(sender, url,
-					downloadingTask, headers, tryNumber, maxTryCount, errorCode)));
+					downloadingTask, headers, tryNumber, tryCountLimit, errorCode)));
 			}
 			else
 			{
 				if (errorCode == 200 || errorCode == 206)
 				{
-					string s = maxTryCount > 0 ?
-						$"Заголовки получены (попытка №{tryNumber} / {maxTryCount}):" :
+					string s = tryCountLimit > 0 ?
+						$"Заголовки получены (попытка №{tryNumber} / {tryCountLimit}):" :
 						$"Заголовки получены (попытка №{tryNumber}):";
 					System.Diagnostics.Debug.WriteLine(s);
 					string t = HttpRequestResult.HeadersToString(headers);
@@ -562,16 +562,16 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			}
 		}
 
-		public void OnConnecting(object sender, string url, int tryNumber, int maxTryCount)
+		public void OnConnecting(object sender, string url, int tryNumber, int tryCountLimit)
 		{
 			if (InvokeRequired)
 			{
-				Invoke(new MethodInvoker(() => OnConnecting(sender, url, tryNumber, maxTryCount)));
+				Invoke(new MethodInvoker(() => OnConnecting(sender, url, tryNumber, tryCountLimit)));
 			}
 			else
 			{
 				string t = $"Подключение... Попытка №{tryNumber}";
-				if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
+				if (tryCountLimit > 0) { t += $" / {tryCountLimit}"; }
 				lblDownloadingProgress.Text = t;
 
 				progressBar1.SetItem(t);
@@ -579,19 +579,19 @@ namespace MultiThreadedDownloaderLib.GuiTest
 		}    
 
 		private int OnConnected(object sender, string url, long contentLength, NameValueCollection headers,
-			int tryNumber, int maxTryCount, int errorCode)
+			int tryNumber, int tryCountLimit, int errorCode)
 		{
 			if (InvokeRequired)
 			{
 				Invoke(new MethodInvoker(() => OnConnected(sender, url, contentLength,
-					headers, tryNumber, maxTryCount, errorCode)));
+					headers, tryNumber, tryCountLimit, errorCode)));
 			}
 			else
 			{
 				if (errorCode == 200 || errorCode == 206)
 				{
-					string s = maxTryCount > 0 ?
-						$"Подключено! (попытка №{tryNumber} / {maxTryCount})" :
+					string s = tryCountLimit > 0 ?
+						$"Подключено! (попытка №{tryNumber} / {tryCountLimit})" :
 						$"Подключено! (попытка №{tryNumber})";
 					lblDownloadingProgress.Text = s;
 					if (contentLength > 0L)
@@ -625,27 +625,27 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			return errorCode;
 		}
 
-		public void OnWorkStarted(object sender, long contentLength, int tryNumber, int maxTryCount)
+		public void OnWorkStarted(object sender, long contentLength, int tryNumber, int tryCountLimit)
 		{
 			if (InvokeRequired)
 			{
-				Invoke(new MethodInvoker(() => OnWorkStarted(sender, contentLength, tryNumber, maxTryCount)));
+				Invoke(new MethodInvoker(() => OnWorkStarted(sender, contentLength, tryNumber, tryCountLimit)));
 			}
 			else
 			{
 				string t = $"Скачано: 0 из {contentLength}, Попытка №{tryNumber}";
-				if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
+				if (tryCountLimit > 0) { t += $" / {tryCountLimit}"; }
 				lblDownloadingProgress.Text = t;
 
 				progressBar1.SetItem("0,000%");
 			}
 		}
 
-		public void OnWorkProgress(object sender, long bytesTransferred, long contentLength, int tryNumber, int maxTryCount)
+		public void OnWorkProgress(object sender, long bytesTransferred, long contentLength, int tryNumber, int tryCountLimit)
 		{
 			if (InvokeRequired)
 			{
-				Invoke(new MethodInvoker(() => OnWorkProgress(sender, bytesTransferred, contentLength, tryNumber, maxTryCount)));
+				Invoke(new MethodInvoker(() => OnWorkProgress(sender, bytesTransferred, contentLength, tryNumber, tryCountLimit)));
 			}
 			else
 			{
@@ -654,7 +654,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 					double percent = 100.0 / contentLength * bytesTransferred;
 					string percentFormatted = string.Format("{0:F3}", percent);
 					string t = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%), Попытка №{tryNumber}";
-					if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
+					if (tryCountLimit > 0) { t += $" / {tryCountLimit}"; }
 					lblDownloadingProgress.Text = t;
 					progressBar1.SetItem(0, 100, (int)percent, $"{percentFormatted}%");
 				}
@@ -666,11 +666,11 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			}
 		}
 
-		public void OnWorkFinished(object sender, long bytesTransferred, long contentLength, int tryNumber, int maxTryCount, int errorCode)
+		public void OnWorkFinished(object sender, long bytesTransferred, long contentLength, int tryNumber, int tryCountLimit, int errorCode)
 		{
 			if (InvokeRequired)
 			{
-				Invoke(new MethodInvoker(() => OnWorkFinished(sender, bytesTransferred, contentLength, tryNumber, maxTryCount, errorCode)));
+				Invoke(new MethodInvoker(() => OnWorkFinished(sender, bytesTransferred, contentLength, tryNumber, tryCountLimit, errorCode)));
 			}
 			else
 			{
@@ -679,7 +679,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 					double percent = 100.0 / contentLength * bytesTransferred;
 					string percentFormatted = string.Format("{0:F3}", percent);
 					string t = $"Скачано {bytesTransferred} из {contentLength} ({percentFormatted}%), Попытка №{tryNumber}";
-					if (maxTryCount > 0) { t += $" / {maxTryCount}"; }
+					if (tryCountLimit > 0) { t += $" / {tryCountLimit}"; }
 					lblDownloadingProgress.Text = t;
 					progressBar1.SetItem(0, 100, (int)percent, $"{percentFormatted}%");
 				}
