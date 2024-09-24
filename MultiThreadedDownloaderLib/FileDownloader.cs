@@ -11,7 +11,7 @@ namespace MultiThreadedDownloaderLib
 	public sealed class FileDownloader : IDisposable
 	{
 		public string Url { get; set; }
-		public int Timeout { get; set; }
+		public int ConnectionTimeout { get; set; }
 
 		/// <summary>
 		/// Set it to zero or less for infinite retries.
@@ -125,7 +125,7 @@ namespace MultiThreadedDownloaderLib
 			while (true)
 			{
 				HeadersReceiving?.Invoke(this, Url, downloadingTask, ++tryNumber, tryCountLimit);
-				LastErrorCode = GetUrlResponseHeaders(Url, Headers, Timeout,
+				LastErrorCode = GetUrlResponseHeaders(Url, Headers, ConnectionTimeout,
 					out responseHeaders, out string headersErrorText);
 
 				if (_cancellationTokenSource.IsCancellationRequested)
@@ -178,7 +178,7 @@ namespace MultiThreadedDownloaderLib
 					LastErrorMessage = "Ошибка диапазона! Скачивание прервано!";
 					return LastErrorCode;
 				}
-				HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, Timeout, Headers);
+				HttpRequestResult requestResult = HttpRequestSender.Send("GET", Url, ConnectionTimeout, Headers);
 				LastErrorCode = requestResult.ErrorCode;
 				LastErrorMessage = HasErrors ? requestResult.ErrorMessage : null;
 				if (HasErrors)

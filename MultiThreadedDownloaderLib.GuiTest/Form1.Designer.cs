@@ -58,14 +58,14 @@
 			this.label10 = new System.Windows.Forms.Label();
 			this.checkBoxUseAccurateMode = new System.Windows.Forms.CheckBox();
 			this.label9 = new System.Windows.Forms.Label();
-			this.numericUpDownTimeout = new System.Windows.Forms.NumericUpDown();
+			this.numericUpDownConnectionTimeout = new System.Windows.Forms.NumericUpDown();
 			this.progressBar1 = new MultiThreadedDownloaderLib.MultipleProgressBar();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownThreadCount)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownUpdateInterval)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownChunksMergingUpdateInterval)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownTryCountPerThread)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownTryCountInsideEachThread)).BeginInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDownTimeout)).BeginInit();
+			((System.ComponentModel.ISupportInitialize)(this.numericUpDownConnectionTimeout)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// btnDownloadSingleThreaded
@@ -400,28 +400,28 @@
 			this.label9.TabIndex = 34;
 			this.label9.Text = "Время ожидания соединения (ms):";
 			// 
-			// numericUpDownTimeout
+			// numericUpDownConnectionTimeout
 			// 
-			this.numericUpDownTimeout.Increment = new decimal(new int[] {
+			this.numericUpDownConnectionTimeout.Increment = new decimal(new int[] {
 			100,
 			0,
 			0,
 			0});
-			this.numericUpDownTimeout.Location = new System.Drawing.Point(332, 312);
-			this.numericUpDownTimeout.Maximum = new decimal(new int[] {
+			this.numericUpDownConnectionTimeout.Location = new System.Drawing.Point(332, 312);
+			this.numericUpDownConnectionTimeout.Maximum = new decimal(new int[] {
 			100000,
 			0,
 			0,
 			0});
-			this.numericUpDownTimeout.Minimum = new decimal(new int[] {
+			this.numericUpDownConnectionTimeout.Minimum = new decimal(new int[] {
 			500,
 			0,
 			0,
 			0});
-			this.numericUpDownTimeout.Name = "numericUpDownTimeout";
-			this.numericUpDownTimeout.Size = new System.Drawing.Size(67, 20);
-			this.numericUpDownTimeout.TabIndex = 35;
-			this.numericUpDownTimeout.Value = new decimal(new int[] {
+			this.numericUpDownConnectionTimeout.Name = "numericUpDownConnectionTimeout";
+			this.numericUpDownConnectionTimeout.Size = new System.Drawing.Size(67, 20);
+			this.numericUpDownConnectionTimeout.TabIndex = 35;
+			this.numericUpDownConnectionTimeout.Value = new decimal(new int[] {
 			5000,
 			0,
 			0,
@@ -442,7 +442,7 @@
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(768, 421);
-			this.Controls.Add(this.numericUpDownTimeout);
+			this.Controls.Add(this.numericUpDownConnectionTimeout);
 			this.Controls.Add(this.label9);
 			this.Controls.Add(this.checkBoxUseAccurateMode);
 			this.Controls.Add(this.label10);
@@ -485,7 +485,7 @@
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownChunksMergingUpdateInterval)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownTryCountPerThread)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownTryCountInsideEachThread)).EndInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDownTimeout)).EndInit();
+			((System.ComponentModel.ISupportInitialize)(this.numericUpDownConnectionTimeout)).EndInit();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -524,6 +524,6 @@
 		private System.Windows.Forms.Label label10;
 		private System.Windows.Forms.CheckBox checkBoxUseAccurateMode;
 		private System.Windows.Forms.Label label9;
-		private System.Windows.Forms.NumericUpDown numericUpDownTimeout;
+		private System.Windows.Forms.NumericUpDown numericUpDownConnectionTimeout;
 	}
 }

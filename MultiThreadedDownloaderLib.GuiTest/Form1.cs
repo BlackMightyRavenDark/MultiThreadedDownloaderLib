@@ -177,7 +177,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			singleThreadedDownloader.Headers = headerCollection;
 			singleThreadedDownloader.UpdateIntervalMilliseconds = (double)numericUpDownUpdateInterval.Value;
 			singleThreadedDownloader.TryCountLimit = (int)numericUpDownTryCountInsideEachThread.Value;
-			singleThreadedDownloader.Timeout = (int)numericUpDownTimeout.Value;
+			singleThreadedDownloader.ConnectionTimeout = (int)numericUpDownConnectionTimeout.Value;
 
 			Stream stream = File.OpenWrite(fn);
 			int errorCode = await Task.Run(() => singleThreadedDownloader.Download(stream, fn));
@@ -441,7 +441,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			multiThreadedDownloader.UseRamForTempFiles = checkBoxUseRamForTempFiles.Checked;
 			multiThreadedDownloader.UpdateIntervalMilliseconds = (int)numericUpDownUpdateInterval.Value;
 			multiThreadedDownloader.ChunksMergingUpdateIntervalMilliseconds = (int)numericUpDownChunksMergingUpdateInterval.Value;
-			multiThreadedDownloader.Timeout = (int)numericUpDownTimeout.Value;
+			multiThreadedDownloader.ConnectionTimeout = (int)numericUpDownConnectionTimeout.Value;
 
 			bool useAccurateMode = checkBoxUseAccurateMode.Checked;
 			int errorCode = await Task.Run(() => multiThreadedDownloader.Download(useAccurateMode));
@@ -709,7 +709,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			numericUpDownTryCountInsideEachThread.Enabled = enable;
 			numericUpDownUpdateInterval.Enabled = enable;
 			numericUpDownChunksMergingUpdateInterval.Enabled = enable;
-			numericUpDownTimeout.Enabled = enable;
+			numericUpDownConnectionTimeout.Enabled = enable;
 		}
 
 		private bool IsEnoughDiskSpace(IEnumerable<char> driveLetters, long contentLength)

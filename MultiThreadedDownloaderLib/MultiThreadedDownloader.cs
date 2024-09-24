@@ -15,7 +15,7 @@ namespace MultiThreadedDownloaderLib
 	public sealed class MultiThreadedDownloader : IDisposable
 	{
 		public string Url { get; set; } = null;
-		public int Timeout { get; set; }
+		public int ConnectionTimeout { get; set; }
 
 		/// <summary>
 		/// Warning! The file name will be automatically changed after downloading if a file with that name already exists!
@@ -239,7 +239,7 @@ namespace MultiThreadedDownloaderLib
 			while (true)
 			{
 				Connecting?.Invoke(this, Url, ++headersReceivingTryNumber, TryCountLimitPerThread);
-				LastErrorCode = GetUrlResponseHeaders(Url, Headers, Timeout,
+				LastErrorCode = GetUrlResponseHeaders(Url, Headers, ConnectionTimeout,
 					out responseHeaders, out string headersErrorMessage);
 				
 				if (_cancellationTokenSource.IsCancellationRequested)
@@ -367,7 +367,7 @@ namespace MultiThreadedDownloaderLib
 				int taskTryNumber = 0;
 
 				FileDownloader downloader = new FileDownloader()
-					{ Url = Url, Timeout = Timeout, Headers = Headers, TryCountLimit = TryCountLimitInsideThread };
+					{ Url = Url, ConnectionTimeout = ConnectionTimeout, Headers = Headers, TryCountLimit = TryCountLimitInsideThread };
 				lock (downloaders) { downloaders.Add(downloader); }
 
 				int lastTime = Environment.TickCount;
