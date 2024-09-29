@@ -805,7 +805,7 @@ namespace MultiThreadedDownloaderLib
 		{
 			if (UseRamForTempFiles)
 			{
-				var tasks = dictionary.Values.Where(x => x.DownloadingTask != null).Select(x => x.DownloadingTask);
+				var tasks = dictionary.Values.Where(item => item.DownloadingTask != null).Select(item => item.DownloadingTask);
 				ClearGarbage(tasks);
 			}
 		}
@@ -814,7 +814,7 @@ namespace MultiThreadedDownloaderLib
 		{
 			if (UseRamForTempFiles)
 			{
-				var chunks = downloadingTasks.Where(x => x.OutputStream != null).Select(x => x.OutputStream);
+				var chunks = downloadingTasks.Where(item => item.OutputStream != null).Select(item => item.OutputStream);
 				ClearGarbage(chunks);
 			}
 		}
