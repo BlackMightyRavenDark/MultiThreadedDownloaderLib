@@ -20,6 +20,7 @@ namespace MultiThreadedDownloaderLib
 
 		public NameValueCollection Headers { get => _headers; set { SetHeaders(value); } }
 		public double UpdateIntervalMilliseconds { get; set; } = 100.0;
+		public bool IgnoreStreamSizeExceededError { get; set; } = false;
 		public long DownloadedInLastSession { get; private set; } = 0L;
 		public long OutputStreamSize => DownloadingTask?.OutputStream?.Stream != null ?
 			DownloadingTask.OutputStream.Stream.Length : 0L;
@@ -48,6 +49,8 @@ namespace MultiThreadedDownloaderLib
 		public const int DOWNLOAD_ERROR_NULL_CONTENT = -9;
 		public const int DOWNLOAD_ERROR_ABORTED = -10;
 		public const int DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT = -11;
+		public const int DOWNLOAD_ERROR_STREAM_SIZE_EXCEEDED = -12;
+		public const int DOWNLOAD_ERROR_STREAM_SIZE_EXCEEDED_PREDICTED = -13;
 
 		public delegate void PreparingDelegate(object sender, string url, DownloadingTask downloadingTask);
 		public delegate void HeadersReceivingDelegate(object sender, string url, DownloadingTask downloadingTask,
@@ -167,6 +170,15 @@ namespace MultiThreadedDownloaderLib
 				ResetRange();
 			}
 
+			if (!IgnoreStreamSizeExceededError &&
+				contentLength > 0L && outputStreamInitialPosition + contentLength <
+				downloadingTask.OutputStream.Stream.Length)
+			{
+				IsActive = false;
+				LastErrorCode = DOWNLOAD_ERROR_STREAM_SIZE_EXCEEDED_PREDICTED;
+				return LastErrorCode;
+			}
+
 			do
 			{
 				Connecting?.Invoke(this, Url, ++tryNumber, tryCountLimit);
@@ -281,6 +293,11 @@ namespace MultiThreadedDownloaderLib
 			if (_cancellationTokenSource.IsCancellationRequested)
 			{
 				LastErrorCode = _isAborted ? DOWNLOAD_ERROR_ABORTED : DOWNLOAD_ERROR_CANCELED_BY_USER;
+			}
+			else if (!IgnoreStreamSizeExceededError &&
+				contentLength > 0L && downloadingTask.OutputStream.Stream.Length > contentLength)
+			{
+				LastErrorCode = DOWNLOAD_ERROR_STREAM_SIZE_EXCEEDED;
 			}
 
 			if (!_isAborted && WorkFinished != null)
@@ -712,6 +729,12 @@ namespace MultiThreadedDownloaderLib
 
 				case DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT:
 					return "Закончились попытки!";
+
+				case DOWNLOAD_ERROR_STREAM_SIZE_EXCEEDED:
+					return "Скачано успешно, но размер файла больше размера скачанного! Файл содержит лишние данные!";
+
+				case DOWNLOAD_ERROR_STREAM_SIZE_EXCEEDED_PREDICTED:
+					return "Размер файла может получиться больше размера скачанного! Данные могут быть повреждены!";
 
 				default:
 					return $"Код ошибки: {errorCode}";

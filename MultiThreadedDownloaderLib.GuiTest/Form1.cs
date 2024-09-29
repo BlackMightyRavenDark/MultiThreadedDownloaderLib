@@ -206,6 +206,15 @@ namespace MultiThreadedDownloaderLib.GuiTest
 							lblDownloadingProgress.Text = "Ошибка: Закончились попытки! Скачивание прервано!";
 							break;
 
+						case FileDownloader.DOWNLOAD_ERROR_STREAM_SIZE_EXCEEDED_PREDICTED:
+							{
+								string t = FileDownloader.ErrorCodeToString(errorCode);
+								lblDownloadingProgress.Text = t;
+								MessageBox.Show($"Попытка скачивания в уже существующий не пустой файл!\n{t} ", "Ошибка!",
+									MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+							}
+							break;
+
 						default:
 							if (singleThreadedDownloader.HasErrorMessage)
 							{
@@ -215,16 +224,19 @@ namespace MultiThreadedDownloaderLib.GuiTest
 							break;
 					}
 
-					string messageText = MultiThreadedDownloader.ErrorCodeToString(errorCode);
-					if (singleThreadedDownloader.HasErrorMessage)
+					if (errorCode != FileDownloader.DOWNLOAD_ERROR_STREAM_SIZE_EXCEEDED_PREDICTED)
 					{
-						messageText += $"{Environment.NewLine}Текст ошибки: {singleThreadedDownloader.LastErrorMessage}";
+						string messageText = MultiThreadedDownloader.ErrorCodeToString(errorCode);
+						if (singleThreadedDownloader.HasErrorMessage)
+						{
+							messageText += $"{Environment.NewLine}Текст ошибки: {singleThreadedDownloader.LastErrorMessage}";
+						}
+						else if (errorCode == FileDownloader.DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT)
+						{
+							messageText = $"Скачивание прервано!{Environment.NewLine}{messageText}";
+						}
+						ShowErrorMessage(errorCode, messageText);
 					}
-					else if (errorCode == FileDownloader.DOWNLOAD_ERROR_OUT_OF_TRIES_LEFT)
-					{
-						messageText = $"Скачивание прервано!{Environment.NewLine}{messageText}";
-					}
-					ShowErrorMessage(errorCode, messageText);
 				}
 
 				isDownloading = false;
