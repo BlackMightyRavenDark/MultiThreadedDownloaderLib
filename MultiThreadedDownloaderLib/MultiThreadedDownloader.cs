@@ -358,7 +358,7 @@ namespace MultiThreadedDownloaderLib
 				long chunkFirstByte = range.Item1;
 				long chunkLastByte = range.Item2;
 
-				string chunkFileName = GetTempChunkFilePath(chunkCount, taskId);
+				string chunkFileName = GetTempChunkFilePath(chunkCount, chunkFirstByte, chunkLastByte);
 				if (!string.IsNullOrEmpty(chunkFileName))
 				{
 					chunkFileName = GetNumberedFileName(chunkFileName);
@@ -833,30 +833,31 @@ namespace MultiThreadedDownloaderLib
 			}
 		}
 
-		private string GetTempChunkFilePath(int chunkCount, int taskId)
+		private string GetTempChunkFilePath(int chunkCount, long byteStart, long byteEnd)
 		{
 			if (!UseRamForTempFiles)
 			{
+				string fn = Path.GetFileName(OutputFileName);
+				string suffix = $".chunk_{byteStart}-{byteEnd}.tmp";
+
 				string chunkFileName;
 				if (chunkCount > 1)
 				{
-					string fn = Path.GetFileName(OutputFileName);
-					string suffix = $".chunk_{taskId}.tmp";
 					chunkFileName = IsTempDirectoryAvailable ?
 						Path.Combine(TempDirectory, fn + suffix) : fn + suffix;
 				}
 				else if (IsTempDirectoryAvailable)
 				{
-					string fn = Path.GetFileName(OutputFileName);
-					string suffix = $".chunk_{taskId}.tmp";
 					chunkFileName = Path.Combine(TempDirectory, fn + suffix);
 				}
 				else
 				{
-					chunkFileName = OutputFileName + ".tmp";
+					chunkFileName = $"{OutputFileName}_{byteStart}-{byteEnd}.tmp";
 				}
+
 				return chunkFileName;
 			}
+
 			return null;
 		}
 
