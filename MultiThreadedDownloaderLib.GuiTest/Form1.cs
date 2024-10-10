@@ -273,7 +273,11 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			multiThreadedDownloader = new MultiThreadedDownloader();
 			multiThreadedDownloader.Preparing += (s) =>
 			{
-				Invoke(new MethodInvoker(() => lblDownloadingProgress.Text = "Подготовка..."));
+				Invoke(new MethodInvoker(() =>
+				{
+					lblDownloadingProgress.Text = "Подготовка...";
+					progressBar1.SetItem("Подготовка...");
+				}));
 			};
 			multiThreadedDownloader.Connecting += (s, url, tryNumber, tryCountLimit) =>
 			{
