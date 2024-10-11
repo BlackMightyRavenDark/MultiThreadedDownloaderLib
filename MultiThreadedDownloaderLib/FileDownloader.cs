@@ -19,7 +19,7 @@ namespace MultiThreadedDownloaderLib
 		public int TryCountLimit { get; set; } = 1;
 
 		public NameValueCollection Headers { get => _headers; set { SetHeaders(value); } }
-		public double UpdateIntervalMilliseconds { get; set; } = 100.0;
+		public int UpdateIntervalMilliseconds { get; set; } = 100;
 		public bool IgnoreStreamSizeExceededError { get; set; } = false;
 		public long DownloadedInLastSession { get; private set; } = 0L;
 		public long OutputStreamSize => DownloadingTask?.OutputStream?.Stream != null ?

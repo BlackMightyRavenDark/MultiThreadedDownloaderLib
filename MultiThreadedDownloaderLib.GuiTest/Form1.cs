@@ -175,7 +175,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 
 			singleThreadedDownloader.Url = editUrl.Text;
 			singleThreadedDownloader.Headers = headerCollection;
-			singleThreadedDownloader.UpdateIntervalMilliseconds = (double)numericUpDownUpdateInterval.Value;
+			singleThreadedDownloader.UpdateIntervalMilliseconds = (int)numericUpDownUpdateInterval.Value;
 			singleThreadedDownloader.TryCountLimit = (int)numericUpDownTryCountInsideEachThread.Value;
 			singleThreadedDownloader.ConnectionTimeout = (int)numericUpDownConnectionTimeout.Value;
 
