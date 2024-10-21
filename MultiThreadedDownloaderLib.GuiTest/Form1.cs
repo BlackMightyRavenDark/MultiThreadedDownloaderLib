@@ -28,6 +28,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			MultiThreadedDownloader.SetDefaultMaximumConnectionLimit(100);
 			lblDownloadingProgress.Text = null;
 			lblMergingProgress.Text = null;
+			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = checkBoxMergeChunksAutomatically.Checked;
 
 			headerCollection = new NameValueCollection()
 			{
@@ -59,6 +60,11 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				isClosing = false;
 				Close();
 			}
+		}
+
+		private void checkBoxMergeChunksAutomatically_CheckedChanged(object sender, EventArgs e)
+		{
+			cbKeepDownloadedFileInTempOrMergingDirectory.Enabled = checkBoxMergeChunksAutomatically.Checked;
 		}
 
 		private void btnSelectFile_Click(object sender, EventArgs e)
@@ -407,6 +413,12 @@ namespace MultiThreadedDownloaderLib.GuiTest
 					}
 				}));
 			};
+			multiThreadedDownloader.ChunksDownloaded += (s, taskList, contentLength) =>
+			{
+				string msg = "Manual chunk merging is not implemented";
+				Invoke(new MethodInvoker(() => progressBar1.SetItem($"{msg}!")));
+				return new CustomError(msg);
+			};
 			multiThreadedDownloader.DownloadFinished += (s, bytesTransferred, errCode, fileName) =>
 			{
 				Invoke(new MethodInvoker(() =>
@@ -457,6 +469,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			multiThreadedDownloader.UseRamForTempFiles = checkBoxUseRamForTempFiles.Checked;
 			multiThreadedDownloader.UpdateIntervalMilliseconds = (int)numericUpDownUpdateInterval.Value;
 			multiThreadedDownloader.ChunksMergingUpdateIntervalMilliseconds = (int)numericUpDownChunksMergingUpdateInterval.Value;
+			multiThreadedDownloader.MergeChunksAutomatically = checkBoxMergeChunksAutomatically.Checked;
 			multiThreadedDownloader.ConnectionTimeout = (int)numericUpDownConnectionTimeout.Value;
 
 			bool useAccurateMode = checkBoxUseAccurateMode.Checked;
