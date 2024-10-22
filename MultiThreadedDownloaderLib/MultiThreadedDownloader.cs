@@ -663,7 +663,7 @@ namespace MultiThreadedDownloaderLib
 			}
 		}
 
-		private List<DownloadingTask> BuildChunkSequence(
+		private static List<DownloadingTask> BuildChunkSequence(
 			ConcurrentDictionary<int, DownloadableContentChunk> contentChunks,
 			int threadCount, out bool isValidSequence)
 		{
