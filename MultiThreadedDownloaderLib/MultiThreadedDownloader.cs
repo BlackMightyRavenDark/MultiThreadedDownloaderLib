@@ -82,6 +82,7 @@ namespace MultiThreadedDownloaderLib
 		public const int DOWNLOAD_ERROR_MERGING_DIR_NOT_EXISTS = -205;
 		public const int DOWNLOAD_ERROR_CUSTOM = -206;
 		public const int DOWNLOAD_ERROR_CHUNK_SEQUENCE = -207;
+		public const int DOWNLOAD_ERROR_UNDEFINED = -208;
 
 		public delegate void PreparingDelegate(object sender);
 		public delegate void ConnectingDelegate(object sender, string url, int tryNumber, int tryCountLimit);
@@ -617,6 +618,11 @@ namespace MultiThreadedDownloaderLib
 					LastErrorCode = customError.ErrorCode;
 					LastErrorMessage = customError.ErrorMessage;
 				}
+				else
+				{
+					LastErrorCode = DOWNLOAD_ERROR_UNDEFINED;
+					LastErrorMessage = "'customError' is NULL";
+				}
 			}
 			else
 			{
@@ -1012,6 +1018,9 @@ namespace MultiThreadedDownloaderLib
 
 				case DOWNLOAD_ERROR_CHUNK_SEQUENCE:
 					return "Неправильная последовательность чанков!";
+
+				case DOWNLOAD_ERROR_UNDEFINED:
+					return "Неопределённая ошибка!";
 
 				default:
 					return FileDownloader.ErrorCodeToString(errorCode);
