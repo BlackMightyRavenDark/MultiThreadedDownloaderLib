@@ -485,6 +485,12 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			{
 				if (errorCode != 200 && errorCode != 206)
 				{
+					if (errorCode == MultiThreadedDownloader.DOWNLOAD_ERROR_NO_URL_SPECIFIED ||
+						errorCode == MultiThreadedDownloader.DOWNLOAD_ERROR_NO_FILE_NAME_SPECIFIED)
+					{
+						progressBar1.ClearItems();
+					}
+
 					switch (errorCode)
 					{
 						case FileDownloader.DOWNLOAD_ERROR_INSUFFICIENT_DISK_SPACE:
