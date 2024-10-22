@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<VersionPrefix>1.5.1</VersionPrefix>
+		<VersionPrefix>1.6.0</VersionPrefix>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<AssemblyName>MultiThreadedDownloaderLib</AssemblyName>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
