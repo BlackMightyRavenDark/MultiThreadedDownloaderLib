@@ -345,7 +345,9 @@ namespace MultiThreadedDownloaderLib
 				bufferSize = isRangeSupported ? 8192 : 4096;
 			}
 
-			for (int i = 0; i < ThreadCount; ++i)
+			int chunkCount = isRangeSupported && ContentLength > MEGABYTE ? ThreadCount : 1;
+			ThreadCount = chunkCount;
+			for (int i = 0; i < chunkCount; ++i)
 			{
 				contentChunks[i] = new DownloadableContentChunk(
 					null, i, 0L, -1, TryCountLimitPerThread, DownloadableContentChunkState.Preparing);
@@ -354,7 +356,6 @@ namespace MultiThreadedDownloaderLib
 			bool isOutOfTries = false;
 			bool isExceptionRaised = false;
 
-			int chunkCount = isRangeSupported && ContentLength > MEGABYTE ? ThreadCount : 1;
 			List<FileDownloader> downloaders = new List<FileDownloader>();
 			var chunkRanges = SplitContentToChunks(fullContentLength, chunkCount);
 			var tasks = chunkRanges.Select((range, taskId) => Task.Run(() =>
