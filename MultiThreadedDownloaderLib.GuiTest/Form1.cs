@@ -443,12 +443,13 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			{
 				Invoke(new MethodInvoker(() =>
 				{
-					progressBar1.SetItem(0, chunkCount, chunkId + 1);
-
 					double percent = 100.0 / chunkSize * chunkPosition;
 					string percentFormatted = string.Format("{0:F3}", percent);
 					lblMergingProgress.Text = $"Объединение чанков: {chunkId + 1} / {chunkCount}, " +
 						$"{chunkPosition} / {chunkSize} ({percentFormatted}%)";
+
+					MultipleProgressBarItem[] progressBarItems = GenerageChunkMergingProgressVisualizationItems(chunkCount, chunkId, percent);
+					progressBar1.SetItems(progressBarItems);
 				}));
 			};
 			multiThreadedDownloader.ChunkMergingFinished += (s, errCode) =>
@@ -745,6 +746,23 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			numericUpDownUpdateInterval.Enabled = enable;
 			numericUpDownChunksMergingUpdateInterval.Enabled = enable;
 			numericUpDownConnectionTimeout.Enabled = enable;
+		}
+
+		private static MultipleProgressBarItem[] GenerageChunkMergingProgressVisualizationItems(
+			int chunkCount, int currentChunkId, double currentChunnKProgressPercent)
+		{
+			MultipleProgressBarItem[] items = new MultipleProgressBarItem[chunkCount];
+			for (int i = 0; i < chunkCount; ++i)
+			{
+				if (i < currentChunkId) { items[i] = new MultipleProgressBarItem(0, 100, 100, "100,00%", Color.Lime); }
+				else if (i > currentChunkId) { items[i] = new MultipleProgressBarItem(0, 100, 0, "0,00%", Color.Lime); }
+				else
+				{
+					string percentFormatted = string.Format("{0:F2}", currentChunnKProgressPercent);
+					items[i] = new MultipleProgressBarItem(0, 100, (int)currentChunnKProgressPercent, $"{percentFormatted}%", Color.Lime);
+				}
+			}
+			return items;
 		}
 
 		private bool IsEnoughDiskSpace(IEnumerable<char> driveLetters, long contentLength)
