@@ -765,17 +765,13 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			return items;
 		}
 
-		private bool IsEnoughDiskSpace(IEnumerable<char> driveLetters, long contentLength)
+		private static bool IsEnoughDiskSpace(IEnumerable<char> driveLetters, long contentLength)
 		{
-			foreach (char letter in driveLetters)
+			return driveLetters.All(driveLetter =>
 			{
-				DriveInfo driveInfo = new DriveInfo(letter.ToString());
-				if (driveInfo.AvailableFreeSpace < contentLength)
-				{
-					return false;
-				}
-			}
-			return true;
+				DriveInfo driveInfo = new DriveInfo(driveLetter.ToString());
+				return driveInfo.AvailableFreeSpace < contentLength;
+			});
 		}
 
 		private void ShowErrorMessage(int errorCode, string errorText)
