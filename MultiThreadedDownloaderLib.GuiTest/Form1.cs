@@ -754,12 +754,12 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			MultipleProgressBarItem[] items = new MultipleProgressBarItem[chunkCount];
 			for (int i = 0; i < chunkCount; ++i)
 			{
-				if (i < currentChunkId) { items[i] = new MultipleProgressBarItem(0, 100, 100, "100,00%", Color.Lime); }
-				else if (i > currentChunkId) { items[i] = new MultipleProgressBarItem(0, 100, 0, "0,00%", Color.Lime); }
+				if (i < currentChunkId) { items[i] = new MultipleProgressBarItem(100, "100,00%"); }
+				else if (i > currentChunkId) { items[i] = new MultipleProgressBarItem(0, "0,00%"); }
 				else
 				{
 					string percentFormatted = string.Format("{0:F2}", currentChunnKProgressPercent);
-					items[i] = new MultipleProgressBarItem(0, 100, (int)currentChunnKProgressPercent, $"{percentFormatted}%", Color.Lime);
+					items[i] = new MultipleProgressBarItem((int)currentChunnKProgressPercent, $"{percentFormatted}%");
 				}
 			}
 			return items;
