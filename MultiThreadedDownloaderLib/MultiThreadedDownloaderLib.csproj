@@ -7,5 +7,5 @@
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
-	
+
 </Project>
