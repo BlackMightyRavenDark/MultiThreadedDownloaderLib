@@ -448,7 +448,7 @@ namespace MultiThreadedDownloaderLib.GuiTest
 					lblMergingProgress.Text = $"Объединение чанков: {chunkId + 1} / {chunkCount}, " +
 						$"{chunkPosition} / {chunkSize} ({percentFormatted}%)";
 
-					MultipleProgressBarItem[] progressBarItems = GenerageChunkMergingProgressVisualizationItems(chunkCount, chunkId, percent);
+					MultipleProgressBarItem[] progressBarItems = GenerateChunkMergingProgressVisualizationItems(chunkCount, chunkId, percent);
 					progressBar1.SetItems(progressBarItems);
 				}));
 			};
@@ -748,8 +748,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
 			numericUpDownConnectionTimeout.Enabled = enable;
 		}
 
-		private static MultipleProgressBarItem[] GenerageChunkMergingProgressVisualizationItems(
-			int chunkCount, int currentChunkId, double currentChunnKProgressPercent)
+		private static MultipleProgressBarItem[] GenerateChunkMergingProgressVisualizationItems(
+			int chunkCount, int currentChunkId, double currentChunkProgressPercent)
 		{
 			MultipleProgressBarItem[] items = new MultipleProgressBarItem[chunkCount];
 			for (int i = 0; i < chunkCount; ++i)
@@ -758,8 +758,8 @@ namespace MultiThreadedDownloaderLib.GuiTest
 				else if (i > currentChunkId) { items[i] = new MultipleProgressBarItem(0, "0,00%"); }
 				else
 				{
-					string percentFormatted = string.Format("{0:F2}", currentChunnKProgressPercent);
-					items[i] = new MultipleProgressBarItem((int)currentChunnKProgressPercent, $"{percentFormatted}%");
+					string percentFormatted = string.Format("{0:F2}", currentChunkProgressPercent);
+					items[i] = new MultipleProgressBarItem((int)currentChunkProgressPercent, $"{percentFormatted}%");
 				}
 			}
 			return items;
